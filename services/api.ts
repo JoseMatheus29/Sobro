@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken } from './storage';
 
 
 const api = axios.create({
