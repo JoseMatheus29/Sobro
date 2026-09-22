@@ -1,11 +1,5 @@
-import React from 'react';
-import { View } from 'react-native';
-import { LoginForm } from './login/LoginForm';
+import { Redirect } from 'expo-router';
 
-export default function LoginScreen() {
-  return (
-    <View className="flex-1 bg-white">
-      <LoginForm />
-    </View>
-  );
+export default function Index() {
+  return <Redirect href="/dashboard" />;
 }
