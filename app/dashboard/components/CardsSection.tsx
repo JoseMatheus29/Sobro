@@ -1,12 +1,16 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Card from '../../components/card';
+import { type CardRecord } from '@/db/cards';
 
 interface CardsSectionProps {
+  cards: CardRecord[];
   onSeeAll: () => void;
 }
 
-export default function CardsSection({ onSeeAll }: CardsSectionProps) {
+export default function CardsSection({ cards, onSeeAll }: CardsSectionProps) {
+  const primaryCard = cards[0];
+
   return (
     <View className="mb-7">
       <View className="flex-row justify-between items-center mb-3.5">
@@ -15,11 +19,17 @@ export default function CardsSection({ onSeeAll }: CardsSectionProps) {
           <Text className="text-[13px] text-[#3161B2] font-semibold">Ver todos</Text>
         </TouchableOpacity>
       </View>
-      <Card
-        cardName="Cartão 01"
-        cardNumber="****333"
-        expensesAmount={3578}
-      />
+      {primaryCard ? (
+        <Card
+          cardName={primaryCard.name}
+          cardNumber={`****${primaryCard.number}`}
+          expensesAmount={primaryCard.balance}
+          backgroundColor={primaryCard.color}
+          lightColor={primaryCard.lightColor}
+        />
+      ) : (
+        <Text className="text-sm text-[#A0AEC0]">Nenhuma conta cadastrada ainda.</Text>
+      )}
     </View>
   );
 }

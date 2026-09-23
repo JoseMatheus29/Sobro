@@ -1,26 +1,49 @@
 import React from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import SideBar from '../components/sidebar';
 import ScreenHeader from '../components/ui/ScreenHeader';
-import TransactionList, { Transaction } from '../components/ui/TransactionList';
+import TransactionList from '../components/ui/TransactionList';
 import ExpenseChart from './components/ExpenseChart';
 import MonthlyProgress from './components/MonthlyProgress';
+import { useCategoryTotals, useProfile, useTransactions } from '@/db/hooks';
+import { formatShortDate } from '@/utils/format';
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  { id: 1, name: 'Shopping', date: '10 jan 2022', amount: -200.80, category: 'Lazer', type: 'expense' },
-  { id: 2, name: 'Mercado', date: '12 jan 2022', amount: 100.80, category: 'Alimentação', type: 'income' },
-  { id: 3, name: 'Carro', date: '15 jan 2022', amount: -417.80, category: 'Transporte', type: 'expense' },
-];
-
-const PIE_DATA = [
-  { value: 40, color: '#3161B2', label: 'Transporte' },
-  { value: 35, color: '#7998CD', label: 'Lazer' },
-  { value: 25, color: '#4A74BB', label: 'Outros' },
-];
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
 
 export default function MyDetailing() {
-  const totalGastos = 3578;
+  const router = useRouter();
+  const month = currentMonth();
+
+  const { transactions } = useTransactions({ month });
+  const { totals: categoryTotals } = useCategoryTotals({ month });
+  const { profile } = useProfile();
+
+  const totalGastos = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+  const pieData = categoryTotals.map((c) => ({
+    value: totalGastos > 0 ? Math.round((c.total / totalGastos) * 100) : 0,
+    color: c.color,
+    label: c.categoryName,
+  }));
+
+  const hasBudget = profile?.monthlyBudget != null;
+  const progress = hasBudget ? Math.min(totalGastos / (profile!.monthlyBudget as number), 1) : 0;
+  const percentage = Math.round(progress * 100);
+
+  const displayTransactions = transactions
+    .filter((t) => t.type === 'expense')
+    .map((t) => ({
+      id: t.id,
+      name: t.name,
+      date: formatShortDate(t.occurredAt),
+      amount: t.amount,
+      category: t.categoryName,
+      categoryIcon: t.categoryIcon,
+      type: t.type,
+    }));
 
   return (
     <View className="flex-1 bg-[#F7F9FC]">
@@ -34,18 +57,26 @@ export default function MyDetailing() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        <ExpenseChart pieData={PIE_DATA} totalGastos={totalGastos} />
+        {pieData.length > 0 ? (
+          <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
+        ) : (
+          <View className="bg-white mx-4 rounded-3xl p-5 mb-4 shadow-lg shadow-[#3161B2]/10 elevation-4">
+            <Text className="text-sm text-[#A0AEC0] text-center">Nenhum gasto registrado neste mês.</Text>
+          </View>
+        )}
 
         <MonthlyProgress
           totalGastos={totalGastos}
-          progress={0.72}
-          percentage={72}
+          progress={progress}
+          percentage={percentage}
+          hasBudget={hasBudget}
         />
 
         <TransactionList
           title="Seus Gastos"
           actionLabel="Ver todos"
-          transactions={MOCK_TRANSACTIONS}
+          transactions={displayTransactions}
+          onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
         />
       </ScrollView>
 

@@ -8,6 +8,7 @@ export interface Transaction {
   date: string;
   amount: number;
   category: string;
+  categoryIcon: string;
   type: 'income' | 'expense';
 }
 
@@ -16,13 +17,15 @@ interface TransactionListProps {
   actionLabel?: string;
   transactions: Transaction[];
   onActionPress?: () => void;
+  onPressItem?: (id: number) => void;
 }
 
 export default function TransactionList({
   title = 'Transações',
   actionLabel = 'Ver todos',
   transactions,
-  onActionPress
+  onActionPress,
+  onPressItem,
 }: TransactionListProps) {
   return (
     <View className="px-4">
@@ -39,7 +42,9 @@ export default function TransactionList({
           date={t.date}
           amount={t.amount}
           category={t.category}
+          icon={t.categoryIcon}
           type={t.type}
+          onPress={() => onPressItem?.(t.id)}
         />
       ))}
     </View>

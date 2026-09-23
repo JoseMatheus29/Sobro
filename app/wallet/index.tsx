@@ -1,33 +1,49 @@
 import React, { useState, useRef } from 'react';
-import { View, FlatList, Dimensions, ScrollView, TouchableOpacity } from 'react-native';
+import { View, FlatList, Dimensions, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { useRouter } from 'expo-router';
 
 import SideBar from '../components/sidebar';
 import ScreenHeader from '../components/ui/ScreenHeader';
-import TransactionList, { Transaction } from '../components/ui/TransactionList';
+import TransactionList from '../components/ui/TransactionList';
 import CardCarousel from './components/CardCarousel';
 import WalletSummary from './components/WalletSummary';
-import { CardType } from './wallet-type';
+import CardFormModal from './components/CardFormModal';
+import { useCards, useTransactions } from '@/db/hooks';
+import { type CardRecord } from '@/db/cards';
+import { formatShortDate } from '@/utils/format';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 48;
 
-const CARDS: CardType[] = [
-  { id: 1, name: 'Cartão Principal', number: '333', color: '#3161B2', lightColor: '#4A74BB', balance: 3578 },
-  { id: 2, name: 'Cartão Secundário', number: '771', color: '#254E8F', lightColor: '#3161B2', balance: 1250 },
-  { id: 3, name: 'Cartão Virtual', number: '982', color: '#4A74BB', lightColor: '#7998CD', balance: 890.50 },
-];
-
-const TRANSACTIONS: Transaction[] = [
-  { id: 1, name: 'Shopping', date: '10 jan 2022', amount: -200.80, category: 'Lazer', type: 'expense' },
-  { id: 2, name: 'Mercado', date: '12 jan 2022', amount: 100.80, category: 'Alimentação', type: 'income' },
-  { id: 3, name: 'Carro', date: '15 jan 2022', amount: -417.80, category: 'Transporte', type: 'expense' },
-];
-
 export default function WalletScreen() {
+  const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const activeCard = CARDS[activeIndex];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
+
+  const { cards, refetch: refetchCards } = useCards();
+  const activeCard = cards[activeIndex];
+  const { transactions, refetch: refetchTransactions } = useTransactions({ cardId: activeCard?.id });
+
+  if (!activeCard) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
+        <ActivityIndicator size="large" color="#3161B2" />
+      </View>
+    );
+  }
+
+  const displayTransactions = transactions.map((t) => ({
+    id: t.id,
+    name: t.name,
+    date: formatShortDate(t.occurredAt),
+    amount: t.amount,
+    category: t.categoryName,
+    categoryIcon: t.categoryIcon,
+    type: t.type,
+  }));
 
   return (
     <View className="flex-1 bg-[#F7F9FC]">
@@ -35,7 +51,13 @@ export default function WalletScreen() {
         title="Carteira"
         gradientColors={['#254E8F', '#3161B2', '#4A74BB']}
         rightComponent={
-          <TouchableOpacity className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center">
+          <TouchableOpacity
+            className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center"
+            onPress={() => {
+              setEditingCard(null);
+              setModalVisible(true);
+            }}
+          >
             <Icon name="add" size={20} color="#fff" />
           </TouchableOpacity>
         }
@@ -47,21 +69,40 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
       >
         <CardCarousel
-          cards={CARDS}
+          cards={cards}
           activeIndex={activeIndex}
           setActiveIndex={setActiveIndex}
           flatListRef={flatListRef}
           cardWidth={CARD_WIDTH}
         />
 
-        <WalletSummary activeCard={activeCard} />
+        <WalletSummary
+          activeCard={activeCard}
+          transactions={transactions}
+          onEditCard={() => {
+            setEditingCard(activeCard);
+            setModalVisible(true);
+          }}
+        />
 
         <TransactionList
           title="Transações"
           actionLabel="Filtrar"
-          transactions={TRANSACTIONS}
+          transactions={displayTransactions}
+          onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
         />
       </ScrollView>
+
+      <CardFormModal
+        visible={modalVisible}
+        initialCard={editingCard}
+        onClose={() => setModalVisible(false)}
+        onSaved={() => {
+          setModalVisible(false);
+          refetchCards();
+          refetchTransactions();
+        }}
+      />
 
       <SideBar />
     </View>

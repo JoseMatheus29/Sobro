@@ -33,7 +33,14 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O app usa suas fotos para definir a imagem do seu perfil."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

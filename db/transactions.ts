@@ -167,3 +167,51 @@ export async function updateTransaction(
 export async function deleteTransaction(db: SQLiteDatabase, id: number): Promise<void> {
   await db.runAsync('DELETE FROM transactions WHERE id = ?', id);
 }
+
+export interface CategoryTotal {
+  categoryId: string;
+  categoryName: string;
+  icon: string;
+  color: string;
+  bg: string;
+  total: number; // positive magnitude of expenses
+}
+
+export async function getCategoryTotals(
+  db: SQLiteDatabase,
+  filters: { month?: string } = {}
+): Promise<CategoryTotal[]> {
+  const conditions = ["t.type = 'expense'"];
+  const params: string[] = [];
+  if (filters.month) {
+    conditions.push('t.occurred_at LIKE ?');
+    params.push(`${filters.month}%`);
+  }
+
+  const rows = await db.getAllAsync<{
+    category_id: string;
+    category_name: string;
+    icon: string;
+    color: string;
+    bg: string;
+    total: number;
+  }>(
+    `SELECT t.category_id, cat.name as category_name, cat.icon, cat.color, cat.bg,
+            SUM(ABS(t.amount)) as total
+     FROM transactions t
+     JOIN categories cat ON cat.id = t.category_id
+     WHERE ${conditions.join(' AND ')}
+     GROUP BY t.category_id
+     ORDER BY total DESC`,
+    params
+  );
+
+  return rows.map((r) => ({
+    categoryId: r.category_id,
+    categoryName: r.category_name,
+    icon: r.icon,
+    color: r.color,
+    bg: r.bg,
+    total: r.total,
+  }));
+}

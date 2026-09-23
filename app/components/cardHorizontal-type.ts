@@ -3,5 +3,7 @@ export interface CardHorizontalProps {
   date?: string;
   amount?: number;
   category?: string;
+  icon?: string;
   type?: 'income' | 'expense';
+  onPress?: () => void;
 }

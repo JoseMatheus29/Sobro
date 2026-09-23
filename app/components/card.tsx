@@ -13,11 +13,12 @@ export const Card: React.FC<CardValues> = ({
   cardNumber,
   expensesAmount,
   backgroundColor,
+  lightColor,
   style,
   isSelected,
 }) => {
   const baseColor = backgroundColor ?? '#3161B2';
-  const lighterColor = backgroundColor ?? '#4A74BB';
+  const lighterColor = lightColor ?? '#4A74BB';
 
   return (
     <View

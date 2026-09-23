@@ -4,17 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { CardCategory } from './categoryCard-type';
 
-const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
-  Lazer: { icon: 'sports-esports', color: '#7998CD', bg: 'rgba(121,152,205,0.12)' },
-  Transporte: { icon: 'directions-car', color: '#3161B2', bg: 'rgba(49,97,178,0.12)' },
-  Alimentação: { icon: 'restaurant', color: '#36A83A', bg: 'rgba(54,168,58,0.12)' },
-  Saúde: { icon: 'favorite', color: '#A83636', bg: 'rgba(168,54,54,0.12)' },
-};
-
-const DEFAULT_CONFIG = { icon: 'category', color: '#3161B2', bg: 'rgba(49,97,178,0.12)' };
-
-export const CategoryCard: React.FC<CardCategory> = ({ value, total, name }) => {
-  const config = CATEGORY_CONFIG[name] ?? DEFAULT_CONFIG;
+export const CategoryCard: React.FC<CardCategory> = ({ value, total, name, icon, color, bg }) => {
   const pct = Math.min((value / total) * 100, 100);
 
   const formatCurrency = (v: number) =>
@@ -28,9 +18,9 @@ export const CategoryCard: React.FC<CardCategory> = ({ value, total, name }) => 
       {/* Ícone */}
       <View
         className="w-11 h-11 rounded-[14px] items-center justify-center mb-3"
-        style={{ backgroundColor: config.bg }}
+        style={{ backgroundColor: bg }}
       >
-        <Icon name={config.icon} size={22} color={config.color} />
+        <Icon name={icon} size={22} color={color} />
       </View>
 
       {/* Label */}
@@ -47,7 +37,7 @@ export const CategoryCard: React.FC<CardCategory> = ({ value, total, name }) => 
       <View className="h-1 bg-[#EBF1F6] rounded-sm overflow-hidden">
         <View
           className="h-full rounded-sm"
-          style={{ width: `${pct}%`, backgroundColor: config.color }}
+          style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </View>
       <Text className="text-[10px] text-[#A0AEC0] mt-1">

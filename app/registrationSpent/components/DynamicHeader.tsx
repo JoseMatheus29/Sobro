@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { TxType } from '../registrationSpent-type';
 
 interface DynamicHeaderProps {
+  title: string;
   type: TxType;
   setType: (t: TxType) => void;
   amount: string;
@@ -15,7 +16,7 @@ interface DynamicHeaderProps {
 }
 
 export default function DynamicHeader({
-  type, setType, amount, setAmount, gradientColors, formatAmount
+  title, type, setType, amount, setAmount, gradientColors, formatAmount
 }: DynamicHeaderProps) {
   const router = useRouter();
 
@@ -38,7 +39,7 @@ export default function DynamicHeader({
         >
           <Icon name="close" size={20} color="#fff" />
         </TouchableOpacity>
-        <Text className="text-white text-[17px] font-bold">Nova Transação</Text>
+        <Text className="text-white text-[17px] font-bold">{title}</Text>
         <View className="w-9" />
       </View>
 

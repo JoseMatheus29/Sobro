@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, FlatList, TouchableOpacity } from 'react-native';
 import { Card } from '../../components/card';
-import { CardType } from '../wallet-type';
+import { type CardRecord } from '@/db/cards';
 
 interface CardCarouselProps {
-  cards: CardType[];
+  cards: CardRecord[];
   activeIndex: number;
   setActiveIndex: (index: number) => void;
   flatListRef: React.RefObject<FlatList>;
@@ -40,6 +40,7 @@ export default function CardCarousel({
               cardNumber={`****${item.number}`}
               expensesAmount={item.balance}
               backgroundColor={item.color}
+              lightColor={item.lightColor}
             />
           </View>
         )}

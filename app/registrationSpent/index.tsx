@@ -1,39 +1,71 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   Alert,
   KeyboardAvoidingView,
   Platform,
+  View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
 
 import SideBar from '../components/sidebar';
 import GradientButton from '../components/ui/GradientButton';
 import DynamicHeader from './components/DynamicHeader';
 import CategorySelector from './components/CategorySelector';
+import CardSelector from './components/CardSelector';
 import TransactionDetails from './components/TransactionDetails';
-import { TxType, Category } from './registrationSpent-type';
-
-const CATEGORIES: Category[] = [
-  { id: 'food',      name: 'Alimentação',  icon: 'restaurant',         color: '#E67E22', bg: 'rgba(230,126,34,0.12)'  },
-  { id: 'transport', name: 'Transporte',   icon: 'directions-car',     color: '#3161B2', bg: 'rgba(49,97,178,0.12)'   },
-  { id: 'leisure',   name: 'Lazer',        icon: 'sports-esports',     color: '#7998CD', bg: 'rgba(121,152,205,0.12)' },
-  { id: 'health',    name: 'Saúde',        icon: 'favorite',           color: '#A83636', bg: 'rgba(168,54,54,0.12)'   },
-  { id: 'shopping',  name: 'Shopping',     icon: 'shopping-bag',       color: '#9B59B6', bg: 'rgba(155,89,182,0.12)'  },
-  { id: 'salary',    name: 'Salário',      icon: 'account-balance',    color: '#36A83A', bg: 'rgba(54,168,58,0.12)'   },
-  { id: 'invest',    name: 'Investimento', icon: 'trending-up',        color: '#1ABC9C', bg: 'rgba(26,188,156,0.12)'  },
-  { id: 'other',     name: 'Outros',       icon: 'category',           color: '#95A5A6', bg: 'rgba(149,165,166,0.12)' },
-];
+import { TxType } from './registrationSpent-type';
+import { useCards, useCategories } from '@/db/hooks';
+import { createTransaction, getTransactionById, updateTransaction } from '@/db/transactions';
 
 export default function RegistrationSpent() {
   const router = useRouter();
+  const db = useSQLiteContext();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const editingId = id ? Number(id) : null;
+
+  const { categories, refetch: refetchCategories } = useCategories();
+  const { cards } = useCards();
 
   const [type, setType]               = useState<TxType>('expense');
   const [amount, setAmount]           = useState('');
   const [nome, setNome]               = useState('');
   const [descricao, setDescricao]     = useState('');
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const [date, setDate]               = useState(new Date());
   const [focused, setFocused]         = useState('');
+  const [loadingExisting, setLoadingExisting] = useState(!!editingId);
+
+  // Prefill the form from the existing transaction when opened in edit mode.
+  useEffect(() => {
+    if (!editingId) return;
+    let cancelled = false;
+    (async () => {
+      const tx = await getTransactionById(db, editingId);
+      if (!tx || cancelled) return;
+      setType(tx.type);
+      setAmount(Math.round(Math.abs(tx.amount) * 100).toString());
+      setNome(tx.name);
+      setDescricao(tx.description ?? '');
+      setSelectedCat(tx.categoryId);
+      setSelectedCardId(tx.cardId);
+      setDate(new Date(tx.occurredAt));
+      setLoadingExisting(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingId, db]);
+
+  // Default to the first card for a brand-new transaction, once cards load.
+  useEffect(() => {
+    if (!editingId && selectedCardId === null && cards.length > 0) {
+      setSelectedCardId(cards[0].id);
+    }
+  }, [editingId, selectedCardId, cards]);
 
   const isExpense = type === 'expense';
   const primaryColor = isExpense ? '#A83636' : '#36A83A';
@@ -48,14 +80,42 @@ export default function RegistrationSpent() {
     return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
   };
 
-  const handleSalvar = () => {
+  const handleSalvar = async () => {
     if (!amount) { Alert.alert('Atenção', 'Informe o valor da transação.'); return; }
     if (!selectedCat) { Alert.alert('Atenção', 'Selecione uma categoria.'); return; }
+    if (!selectedCardId) { Alert.alert('Atenção', 'Selecione uma conta.'); return; }
     if (!nome.trim()) { Alert.alert('Atenção', 'Informe o nome da transação.'); return; }
-    Alert.alert('✅ Transação salva!', `${isExpense ? 'Saída' : 'Entrada'} de R$ ${formatAmount(amount)} registrada.`, [
-      { text: 'Ok', onPress: () => router.push('/dashboard') },
-    ]);
+
+    const payload = {
+      cardId: selectedCardId,
+      categoryId: selectedCat,
+      name: nome.trim(),
+      description: descricao.trim() || undefined,
+      amount: parseInt(amount, 10) / 100,
+      type,
+      occurredAt: date.toISOString(),
+    };
+
+    if (editingId) {
+      await updateTransaction(db, editingId, payload);
+      Alert.alert('✅ Transação atualizada!', `${isExpense ? 'Saída' : 'Entrada'} de R$ ${formatAmount(amount)} atualizada.`, [
+        { text: 'Ok', onPress: () => router.back() },
+      ]);
+    } else {
+      await createTransaction(db, payload);
+      Alert.alert('✅ Transação salva!', `${isExpense ? 'Saída' : 'Entrada'} de R$ ${formatAmount(amount)} registrada.`, [
+        { text: 'Ok', onPress: () => router.push('/dashboard') },
+      ]);
+    }
   };
+
+  if (loadingExisting) {
+    return (
+      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
+        <ActivityIndicator size="large" color="#3161B2" />
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -63,6 +123,7 @@ export default function RegistrationSpent() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <DynamicHeader
+        title={editingId ? 'Editar Transação' : 'Nova Transação'}
         type={type} setType={setType}
         amount={amount} setAmount={setAmount}
         gradientColors={gradientColors}
@@ -76,9 +137,16 @@ export default function RegistrationSpent() {
         keyboardShouldPersistTaps="handled"
       >
         <CategorySelector
-          categories={CATEGORIES}
+          categories={categories}
           selectedCat={selectedCat}
           setSelectedCat={setSelectedCat}
+          onCategoryCreated={refetchCategories}
+        />
+
+        <CardSelector
+          cards={cards}
+          selectedCardId={selectedCardId}
+          setSelectedCardId={setSelectedCardId}
         />
 
         <TransactionDetails
@@ -86,10 +154,11 @@ export default function RegistrationSpent() {
           descricao={descricao} setDescricao={setDescricao}
           focused={focused} setFocused={setFocused}
           primaryColor={primaryColor}
+          date={date} setDate={setDate}
         />
 
         <GradientButton
-          title={`Registrar ${isExpense ? 'Saída' : 'Entrada'}`}
+          title={editingId ? 'Salvar Alterações' : `Registrar ${isExpense ? 'Saída' : 'Entrada'}`}
           onPress={handleSalvar}
           colors={gradientColors.slice(0, 2) as [string, string]}
           shadowColor={primaryColor}

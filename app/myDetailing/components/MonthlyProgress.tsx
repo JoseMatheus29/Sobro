@@ -7,9 +7,10 @@ interface MonthlyProgressProps {
   totalGastos: number;
   progress: number;
   percentage: number;
+  hasBudget: boolean;
 }
 
-export default function MonthlyProgress({ totalGastos, progress, percentage }: MonthlyProgressProps) {
+export default function MonthlyProgress({ totalGastos, progress, percentage, hasBudget }: MonthlyProgressProps) {
   return (
     <LinearGradient
       colors={['#3161B2', '#4A74BB']}
@@ -33,7 +34,7 @@ export default function MonthlyProgress({ totalGastos, progress, percentage }: M
         height={6}
       />
       <Text className="text-white/65 text-[11px] mt-1.5">
-        {percentage}% do orçamento utilizado
+        {hasBudget ? `${percentage}% do orçamento utilizado` : 'Defina um orçamento mensal no seu perfil'}
       </Text>
     </LinearGradient>
   );

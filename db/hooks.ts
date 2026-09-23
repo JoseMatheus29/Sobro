@@ -5,7 +5,13 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { getCards, type CardRecord } from './cards';
 import { getCategories, type CategoryRecord } from './categories';
 import { getProfile, type ProfileRecord } from './profile';
-import { getTransactions, type TransactionFilters, type TransactionRecord } from './transactions';
+import {
+  getCategoryTotals,
+  getTransactions,
+  type CategoryTotal,
+  type TransactionFilters,
+  type TransactionRecord,
+} from './transactions';
 
 // Screens under a Stack navigator stay mounted when you navigate away and back
 // (e.g. registrationSpent -> wallet), so a plain useEffect-on-mount would miss
@@ -51,6 +57,27 @@ export function useTransactions(filters: TransactionFilters = {}) {
   );
 
   return { transactions, loading, refetch };
+}
+
+export function useCategoryTotals(filters: { month?: string } = {}) {
+  const db = useSQLiteContext();
+  const { month } = filters;
+  const [totals, setTotals] = useState<CategoryTotal[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setTotals(await getCategoryTotals(db, { month }));
+    setLoading(false);
+  }, [db, month]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  return { totals, loading, refetch };
 }
 
 export function useCategories() {

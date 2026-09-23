@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface TransactionDetailsProps {
   nome: string;
@@ -10,11 +11,15 @@ interface TransactionDetailsProps {
   focused: string;
   setFocused: (v: string) => void;
   primaryColor: string;
+  date: Date;
+  setDate: (d: Date) => void;
 }
 
 export default function TransactionDetails({
-  nome, setNome, descricao, setDescricao, focused, setFocused, primaryColor
+  nome, setNome, descricao, setDescricao, focused, setFocused, primaryColor, date, setDate
 }: TransactionDetailsProps) {
+  const [showPicker, setShowPicker] = useState(false);
+
   return (
     <View className="bg-white rounded-[24px] p-5 mb-6 shadow-lg shadow-black/5 elevation-4">
       <Text className="text-[13px] font-bold text-[#1A2B4A] mb-3.5">Detalhes</Text>
@@ -59,13 +64,28 @@ export default function TransactionDetails({
       {/* Data */}
       <View>
         <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-1.5">Data</Text>
-        <TouchableOpacity className="flex-row items-center bg-[#F7F9FC] rounded-[14px] border-[1.5px] border-[#E8EEF5] px-3.5 h-[50px]">
+        <TouchableOpacity
+          className="flex-row items-center bg-[#F7F9FC] rounded-[14px] border-[1.5px] border-[#E8EEF5] px-3.5 h-[50px]"
+          onPress={() => setShowPicker(true)}
+        >
           <Icon name="calendar-today" size={16} color="#A0AEC0" />
           <Text className="ml-2.5 text-[14px] text-[#718096]">
-            {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+            {date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </Text>
           <Icon name="chevron-right" size={18} color="#C0CCDA" className="ml-auto" />
         </TouchableOpacity>
+        {showPicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            maximumDate={new Date()}
+            onChange={(_event, selected) => {
+              setShowPicker(false);
+              if (selected) setDate(selected);
+            }}
+          />
+        )}
       </View>
     </View>
   );

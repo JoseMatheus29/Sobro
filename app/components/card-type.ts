@@ -5,6 +5,7 @@ export interface CardValues {
   cardNumber: string;
   expensesAmount: number;
   backgroundColor?: string;
+  lightColor?: string;
   style?: ViewStyle;
   isSelected?: boolean;
 }

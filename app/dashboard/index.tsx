@@ -7,9 +7,25 @@ import CardBalance from './CardBalance';
 import DashboardHeader from './components/DashboardHeader';
 import CardsSection from './components/CardsSection';
 import CategoriesSection from './components/CategoriesSection';
+import { useCards, useCategoryTotals, useProfile, useTransactions } from '@/db/hooks';
+
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7);
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const month = currentMonth();
+
+  const { cards } = useCards();
+  const { transactions } = useTransactions({ month });
+  const { profile } = useProfile();
+  const { totals: categoryTotals } = useCategoryTotals({ month });
+
+  const income = transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expense = transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const totalExpense = categoryTotals.reduce((sum, c) => sum + c.total, 0);
+  const budgetOrTotal = profile?.monthlyBudget ?? totalExpense;
 
   return (
     <View className="flex-1 bg-[#F7F9FC]">
@@ -22,14 +38,18 @@ export default function DashboardScreen() {
       >
         <View className="mb-7">
           <CardBalance
-            valueTot={31627}
-            valueEnt={10512}
-            valueSai={3123}
+            valueTot={income - expense}
+            valueEnt={income}
+            valueSai={expense}
           />
         </View>
 
-        <CardsSection onSeeAll={() => router.push('/wallet')} />
-        <CategoriesSection onSeeAll={() => router.push('/myDetailing')} />
+        <CardsSection cards={cards} onSeeAll={() => router.push('/wallet')} />
+        <CategoriesSection
+          categories={categoryTotals}
+          budgetOrTotal={budgetOrTotal}
+          onSeeAll={() => router.push('/myDetailing')}
+        />
       </ScrollView>
 
       <SideBar />
