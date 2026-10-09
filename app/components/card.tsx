@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ViewStyle } from 'react-native';
+import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 

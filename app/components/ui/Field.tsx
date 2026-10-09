@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { palette } from '@/constants/palette';
 import { FieldProps } from '../../editAcount/editAcount-type';
 
 export default function Field({
@@ -16,9 +17,9 @@ export default function Field({
         {label}
       </Text>
       <View className={`flex-row items-center bg-[#F7F9FC] rounded-2xl border-[1.5px] px-3.5 h-[52px] ${focused ? 'border-[#3161B2]' : 'border-[#E8EEF5]'}`}>
-        <Icon name={icon} size={18} color={focused ? '#3161B2' : '#A0AEC0'} />
+        <Icon name={icon} size={18} color={focused ? palette.primary.DEFAULT : palette.subtle} />
         <TextInput
-          className="flex-1 ml-2.5 text-[15px] text-[#1A2B4A]"
+          className="flex-1 ml-2.5 text-[15px] text-ink"
           placeholder={placeholder}
           placeholderTextColor="#C0CCDA"
           value={value}
@@ -31,7 +32,7 @@ export default function Field({
         />
         {secure && (
           <TouchableOpacity onPress={() => setShowSecure(!showSecure)}>
-            <Icon name={showSecure ? 'visibility' : 'visibility-off'} size={18} color="#A0AEC0" />
+            <Icon name={showSecure ? 'visibility' : 'visibility-off'} size={18} color={palette.subtle} />
           </TouchableOpacity>
         )}
       </View>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+
 import CardHorizontal from '../cardHorizontal';
+import EmptyState from './EmptyState';
 
 export interface Transaction {
   id: number;
@@ -9,6 +11,7 @@ export interface Transaction {
   amount: number;
   category: string;
   categoryIcon: string;
+  categoryColor?: string;
   type: 'income' | 'expense';
 }
 
@@ -16,37 +19,45 @@ interface TransactionListProps {
   title?: string;
   actionLabel?: string;
   transactions: Transaction[];
+  /** When set, shown as a placeholder row while the list is empty. */
+  emptyMessage?: string;
   onActionPress?: () => void;
   onPressItem?: (id: number) => void;
 }
 
 export default function TransactionList({
   title = 'Transações',
-  actionLabel = 'Ver todos',
+  actionLabel = '',
   transactions,
+  emptyMessage,
   onActionPress,
   onPressItem,
 }: TransactionListProps) {
   return (
     <View className="px-4">
       <View className="flex-row justify-between items-center mb-3">
-        <Text className="text-base font-bold text-[#1A2B4A]">{title}</Text>
+        <Text className="text-base font-bold text-ink">{title}</Text>
         <TouchableOpacity onPress={onActionPress}>
-          <Text className="text-[13px] text-[#3161B2] font-semibold">{actionLabel}</Text>
+          <Text className="text-[13px] text-primary font-semibold">{actionLabel}</Text>
         </TouchableOpacity>
       </View>
-      {transactions.map((t) => (
-        <CardHorizontal
-          key={t.id}
-          name={t.name}
-          date={t.date}
-          amount={t.amount}
-          category={t.category}
-          icon={t.categoryIcon}
-          type={t.type}
-          onPress={() => onPressItem?.(t.id)}
-        />
-      ))}
+      {transactions.length === 0 && emptyMessage ? (
+        <EmptyState icon="receipt-long" message={emptyMessage} />
+      ) : (
+        transactions.map((t) => (
+          <CardHorizontal
+            key={t.id}
+            name={t.name}
+            date={t.date}
+            amount={t.amount}
+            category={t.category}
+            icon={t.categoryIcon}
+            iconColor={t.categoryColor}
+            type={t.type}
+            onPress={() => onPressItem?.(t.id)}
+          />
+        ))
+      )}
     </View>
   );
 }

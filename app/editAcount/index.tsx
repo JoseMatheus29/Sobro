@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ScrollView,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -11,15 +9,20 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import SideBar from '../components/sidebar';
+import { SCROLL_PADDING_WITH_SIDEBAR } from '../components/sidebar-type';
 import GradientButton from '../components/ui/GradientButton';
+import ScreenScroll from '../components/ui/ScreenScroll';
 import ProfileHeader from './components/ProfileHeader';
 import BasicInfoForm from './components/BasicInfoForm';
 import PreferencesForm from './components/PreferencesForm';
+import { useFeedback } from '../components/feedback/FeedbackProvider';
+import { PHOTO_PERMISSION_TOAST, PROFILE_SAVED_TOAST } from './editAcount-type';
 import { useProfile } from '@/db/hooks';
 import { updateProfile } from '@/db/profile';
 
 export default function EditAcount() {
   const db = useSQLiteContext();
+  const { showToast } = useFeedback();
   const { profile, loading, refetch } = useProfile();
 
   const [nome, setNome] = useState('');
@@ -38,7 +41,7 @@ export default function EditAcount() {
   const handlePickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Permita o acesso às fotos para escolher um avatar.');
+      showToast(PHOTO_PERMISSION_TOAST);
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -60,7 +63,7 @@ export default function EditAcount() {
       monthlyBudget: monthlyBudget ? Number(monthlyBudget.replace(',', '.')) : null,
     });
     await refetch();
-    Alert.alert('Salvo!', 'Suas informações foram atualizadas com sucesso.');
+    showToast(PROFILE_SAVED_TOAST);
   };
 
   if (loading) {
@@ -76,23 +79,22 @@ export default function EditAcount() {
       className="flex-1 bg-[#F7F9FC]"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ProfileHeader name={nome} avatarUri={avatarUri} onPickAvatar={handlePickAvatar} />
+      {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
+          cut the content off at its edge while scrolling. */}
+      <ScreenScroll bottomPadding={SCROLL_PADDING_WITH_SIDEBAR} keyboardShouldPersistTaps="handled">
+        <ProfileHeader name={nome} avatarUri={avatarUri} onPickAvatar={handlePickAvatar} />
 
-      <ScrollView
-        className="flex-1 -mt-7"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <BasicInfoForm nome={nome} setNome={setNome} />
+        <View className="px-5 -mt-7">
+          <BasicInfoForm nome={nome} setNome={setNome} />
 
-        <PreferencesForm
-          currency={currency} setCurrency={setCurrency}
-          monthlyBudget={monthlyBudget} setMonthlyBudget={setMonthlyBudget}
-        />
+          <PreferencesForm
+            currency={currency} setCurrency={setCurrency}
+            monthlyBudget={monthlyBudget} setMonthlyBudget={setMonthlyBudget}
+          />
 
-        <GradientButton title="Salvar Alterações" onPress={handleSalvar} />
-      </ScrollView>
+          <GradientButton title="Salvar Alterações" onPress={handleSalvar} />
+        </View>
+      </ScreenScroll>
 
       <SideBar />
     </KeyboardAvoidingView>

@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "JM-Finance",
+    "name": "Sobrô?",
     "slug": "JM-Finance",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo-app.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,21 +14,21 @@
     "android": {
       "package": "com.jm.finance",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/logo-app.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#2e6caf"
       }
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/logo-app.png"
+      "favicon": "./assets/images/icon.png"
     },
     "plugins": [
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/logo-app.png",
-          "imageWidth": 200,
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 140,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }

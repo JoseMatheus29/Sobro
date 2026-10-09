@@ -1,6 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+
+import { generateInsights } from '@/utils/insightRules';
+import { monthKey, previousMonthKey } from '@/utils/month';
 
 import { getCards, type CardRecord } from './cards';
 import { getCategories, type CategoryRecord } from './categories';
@@ -40,15 +43,15 @@ export function useCards() {
 
 export function useTransactions(filters: TransactionFilters = {}) {
   const db = useSQLiteContext();
-  const { cardId, month } = filters;
+  const { cardId, month, limit } = filters;
   const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refetch = useCallback(async () => {
     setLoading(true);
-    setTransactions(await getTransactions(db, { cardId, month }));
+    setTransactions(await getTransactions(db, { cardId, month, limit }));
     setLoading(false);
-  }, [db, cardId, month]);
+  }, [db, cardId, month, limit]);
 
   useFocusEffect(
     useCallback(() => {
@@ -57,6 +60,21 @@ export function useTransactions(filters: TransactionFilters = {}) {
   );
 
   return { transactions, loading, refetch };
+}
+
+// Tips and insights for the current month, drawn from this and the previous month's transactions.
+// It also hands back the two months it read, so a screen that needs them does not fetch them twice.
+export function useInsights() {
+  const now = new Date();
+  const { transactions: current } = useTransactions({ month: monthKey(now) });
+  const { transactions: previous } = useTransactions({ month: previousMonthKey(now) });
+
+  const insights = useMemo(
+    () => generateInsights({ current, previous, now: new Date() }),
+    [current, previous]
+  );
+
+  return { insights, current, previous };
 }
 
 export function useCategoryTotals(filters: { month?: string } = {}) {

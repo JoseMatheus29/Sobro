@@ -1,20 +1,28 @@
 import React, { useState, useRef } from 'react';
-import { View, FlatList, Dimensions, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { View, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import SideBar from '../components/sidebar';
+import AddTransactionFab from '../components/AddTransactionFab';
 import ScreenHeader from '../components/ui/ScreenHeader';
+import ScreenScroll from '../components/ui/ScreenScroll';
 import TransactionList from '../components/ui/TransactionList';
 import CardCarousel from './components/CardCarousel';
 import WalletSummary from './components/WalletSummary';
 import CardFormModal from './components/CardFormModal';
+import { palette } from '@/constants/palette';
 import { useCards, useTransactions } from '@/db/hooks';
 import { type CardRecord } from '@/db/cards';
 import { formatShortDate } from '@/utils/format';
+import {
+  CAROUSEL_GAP,
+  CAROUSEL_PEEK,
+  CAROUSEL_SIDE_PADDING,
+  EMPTY_TRANSACTIONS_MESSAGE,
+} from './wallet-type';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 48;
+const CARD_WIDTH = SCREEN_WIDTH - CAROUSEL_SIDE_PADDING - CAROUSEL_PEEK - CAROUSEL_GAP;
 
 export default function WalletScreen() {
   const router = useRouter();
@@ -23,14 +31,16 @@ export default function WalletScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
 
-  const { cards, refetch: refetchCards } = useCards();
-  const activeCard = cards[activeIndex];
+  const { cards, loading: loadingCards, refetch: refetchCards } = useCards();
+  // The carousel's last page is the "add card" tile; while it is focused the
+  // summary and transactions keep showing the last card.
+  const activeCard: CardRecord | undefined = cards[Math.min(activeIndex, cards.length - 1)];
   const { transactions, refetch: refetchTransactions } = useTransactions({ cardId: activeCard?.id });
 
-  if (!activeCard) {
+  if (loadingCards && cards.length === 0) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
-        <ActivityIndicator size="large" color="#3161B2" />
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <ActivityIndicator size="large" color={palette.primary.DEFAULT} />
       </View>
     );
   }
@@ -42,56 +52,52 @@ export default function WalletScreen() {
     amount: t.amount,
     category: t.categoryName,
     categoryIcon: t.categoryIcon,
+    categoryColor: t.categoryColor,
     type: t.type,
   }));
 
   return (
-    <View className="flex-1 bg-[#F7F9FC]">
-      <ScreenHeader
-        title="Carteira"
-        gradientColors={['#254E8F', '#3161B2', '#4A74BB']}
-        rightComponent={
-          <TouchableOpacity
-            className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center"
-            onPress={() => {
+    <View className="flex-1 bg-canvas">
+      {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
+          cut the content off at its edge while scrolling. */}
+      <ScreenScroll>
+        <ScreenHeader
+          title="Carteira"
+          gradientColors={[palette.primary.dark, palette.primary.DEFAULT, palette.primary.light]}
+        />
+
+        <View className="-mt-7">
+          <CardCarousel
+            cards={cards}
+            activeIndex={activeIndex}
+            setActiveIndex={setActiveIndex}
+            flatListRef={flatListRef}
+            cardWidth={CARD_WIDTH}
+            onAddCard={() => {
               setEditingCard(null);
               setModalVisible(true);
             }}
-          >
-            <Icon name="add" size={20} color="#fff" />
-          </TouchableOpacity>
-        }
-      />
+          />
 
-      <ScrollView
-        className="flex-1 -mt-7"
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <CardCarousel
-          cards={cards}
-          activeIndex={activeIndex}
-          setActiveIndex={setActiveIndex}
-          flatListRef={flatListRef}
-          cardWidth={CARD_WIDTH}
-        />
+          {activeCard && (
+            <WalletSummary
+              activeCard={activeCard}
+              transactions={transactions}
+              onEditCard={() => {
+                setEditingCard(activeCard);
+                setModalVisible(true);
+              }}
+            />
+          )}
 
-        <WalletSummary
-          activeCard={activeCard}
-          transactions={transactions}
-          onEditCard={() => {
-            setEditingCard(activeCard);
-            setModalVisible(true);
-          }}
-        />
-
-        <TransactionList
-          title="Transações"
-          actionLabel="Filtrar"
-          transactions={displayTransactions}
-          onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-        />
-      </ScrollView>
+          <TransactionList
+            title="Transações"
+            transactions={displayTransactions}
+            emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
+            onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+          />
+        </View>
+      </ScreenScroll>
 
       <CardFormModal
         visible={modalVisible}
@@ -105,6 +111,7 @@ export default function WalletScreen() {
       />
 
       <SideBar />
+      <AddTransactionFab />
     </View>
   );
 }

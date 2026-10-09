@@ -39,6 +39,11 @@ const MIGRATIONS: string[] = [
     monthly_budget REAL
   );
   `,
+  // v2: "Salário" moves to the darker income green (see constants/palette.ts)
+  `
+  UPDATE categories SET color = '#277F2B', bg = 'rgba(39,127,43,0.12)'
+  WHERE id = 'salary' AND color = '#36A83A';
+  `,
 ];
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {

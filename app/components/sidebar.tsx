@@ -5,21 +5,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
 
-const NAV_ITEMS = [
-  { id: 'dashboard', icon: 'home', label: 'Início', route: '/dashboard' },
-  { id: 'myDetailing', icon: 'bar-chart', label: 'Detalhes', route: '/myDetailing' },
-  { id: 'fab', icon: 'add', route: '/registrationSpent', isFab: true },
-  { id: 'wallet', icon: 'account-balance-wallet', label: 'Carteira', route: '/wallet' },
-  { id: 'editAcount', icon: 'person', label: 'Perfil', route: '/editAcount' },
-];
+import { palette } from '@/constants/palette';
+import { NAV_ITEMS, SIDEBAR_ITEM_HEIGHT } from './sidebar-type';
 
 export default function SideBar() {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
-  const currentRoute = segments[segments.length - 1] || 'index';
+  const currentRoute = segments[segments.length - 1];
 
-  const handlePress = (route: string, isFab?: boolean) => {
+  const handlePress = (route: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(route as any);
   };
@@ -29,36 +24,21 @@ export default function SideBar() {
       className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-[0_-8px_20px_rgba(49,97,178,0.06)] elevation-20 pt-3 px-4 flex-row items-end justify-between"
       style={{ paddingBottom: insets.bottom + 20 }}
     >
-      {NAV_ITEMS.map((item, index) => {
-        if (item.isFab) {
-          return (
-            <View key={item.id} className="items-center justify-center px-1">
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => handlePress(item.route, true)}
-                className="w-14 h-14 rounded-full shadow-lg shadow-[#3161B2]/40 elevation-8 relative -top-6 bg-[#3161B2]"
-              >
-                <View className="flex-1 items-center justify-center">
-                  <Icon name={item.icon} size={28} color="#fff" />
-                </View>
-              </TouchableOpacity>
-            </View>
-          );
-        }
-
-        const isActive = currentRoute === item.id || (currentRoute === 'index' && item.id === 'dashboard');
-        const color = isActive ? '#3161B2' : '#A0AEC0';
+      {NAV_ITEMS.map((item) => {
+        const isActive = currentRoute === item.id;
+        const color = isActive ? palette.primary.DEFAULT : palette.subtle;
 
         return (
           <TouchableOpacity
             key={item.id}
             activeOpacity={0.7}
             onPress={() => handlePress(item.route)}
-            className="flex-1 items-center justify-center pb-2"
+            className="flex-1 items-center justify-center"
+            style={{ height: SIDEBAR_ITEM_HEIGHT }}
           >
             {/* Indicador ativo */}
             {isActive && (
-              <View className="absolute -top-3 w-8 h-[3px] rounded-full bg-[#3161B2]" />
+              <View className="absolute -top-3 w-8 h-[3px] rounded-full bg-primary" />
             )}
 
             <Icon name={item.icon} size={24} color={color} />

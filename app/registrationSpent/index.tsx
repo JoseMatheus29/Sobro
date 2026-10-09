@@ -1,34 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  ScrollView,
-  Alert,
+  BackHandler,
+  Pressable,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   View,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import SideBar from '../components/sidebar';
-import GradientButton from '../components/ui/GradientButton';
-import DynamicHeader from './components/DynamicHeader';
-import CategorySelector from './components/CategorySelector';
-import CardSelector from './components/CardSelector';
-import TransactionDetails from './components/TransactionDetails';
-import { TxType } from './registrationSpent-type';
 import { useCards, useCategories } from '@/db/hooks';
-import { createTransaction, getTransactionById, updateTransaction } from '@/db/transactions';
+import { createTransaction } from '@/db/transactions';
+import { useFeedback } from '../components/feedback/FeedbackProvider';
+import AmountStep from './components/AmountStep';
+import CategoryStep from './components/CategoryStep';
+import DetailsStep from './components/DetailsStep';
+import FlowButton from './components/FlowButton';
+import FlowHeader from './components/FlowHeader';
+import {
+  CLOSE_LABEL,
+  FlowStep,
+  SAVE_LABELS,
+  SAVED_TITLES,
+  SHEET_DIM_COLOR,
+  SHEET_TOP_GAP,
+  TITLES,
+  TYPE_COLORS,
+  VALIDATION_MESSAGES,
+  TxType,
+} from './registrationSpent-type';
+import { categoriesForType, formatCents } from './utils';
 
 export default function RegistrationSpent() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { showToast } = useFeedback();
   const db = useSQLiteContext();
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  const editingId = id ? Number(id) : null;
 
   const { categories, refetch: refetchCategories } = useCategories();
   const { cards } = useCards();
 
+  const [step, setStep]               = useState<FlowStep>(1);
   const [type, setType]               = useState<TxType>('expense');
   const [amount, setAmount]           = useState('');
   const [nome, setNome]               = useState('');
@@ -36,57 +50,67 @@ export default function RegistrationSpent() {
   const [selectedCat, setSelectedCat] = useState<string | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [date, setDate]               = useState(new Date());
-  const [focused, setFocused]         = useState('');
-  const [loadingExisting, setLoadingExisting] = useState(!!editingId);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  // Prefill the form from the existing transaction when opened in edit mode.
   useEffect(() => {
-    if (!editingId) return;
-    let cancelled = false;
-    (async () => {
-      const tx = await getTransactionById(db, editingId);
-      if (!tx || cancelled) return;
-      setType(tx.type);
-      setAmount(Math.round(Math.abs(tx.amount) * 100).toString());
-      setNome(tx.name);
-      setDescricao(tx.description ?? '');
-      setSelectedCat(tx.categoryId);
-      setSelectedCardId(tx.cardId);
-      setDate(new Date(tx.occurredAt));
-      setLoadingExisting(false);
-    })();
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false));
     return () => {
-      cancelled = true;
+      show.remove();
+      hide.remove();
     };
-  }, [editingId, db]);
+  }, []);
 
-  // Default to the first card for a brand-new transaction, once cards load.
+  // Android back goes one step back first, and only closes the sheet from step 1.
   useEffect(() => {
-    if (!editingId && selectedCardId === null && cards.length > 0) {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (step > 1) {
+        setStep((step - 1) as FlowStep);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [step]);
+
+  // Default to the first card, once cards load.
+  useEffect(() => {
+    if (selectedCardId === null && cards.length > 0) {
       setSelectedCardId(cards[0].id);
     }
-  }, [editingId, selectedCardId, cards]);
+  }, [selectedCardId, cards]);
 
-  const isExpense = type === 'expense';
-  const primaryColor = isExpense ? '#A83636' : '#36A83A';
-  const gradientColors: [string, string, string] = isExpense
-    ? ['#7A1F1F', '#A83636', '#C0514A']
-    : ['#1A5C1F', '#36A83A', '#4ABD4F'];
+  const typeColor = TYPE_COLORS[type];
+  const amountText = formatCents(parseInt(amount || '0', 10) || 0);
+  const visibleCategories = categoriesForType(categories, type);
+  const category = categories.find((c) => c.id === selectedCat) ?? null;
 
-  const formatAmount = (raw: string) => {
-    const nums = raw.replace(/\D/g, '');
-    if (!nums) return '';
-    const cents = parseInt(nums, 10);
-    return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  // A category picked for one direction may not exist for the other.
+  const handleTypeChange = (next: TxType) => {
+    setType(next);
+    if (selectedCat && !categoriesForType(categories, next).some((c) => c.id === selectedCat)) {
+      setSelectedCat(null);
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 1) router.back();
+    else setStep((step - 1) as FlowStep);
+  };
+
+  const handlePickCategory = (catId: string) => {
+    setSelectedCat(catId);
+    setStep(3);
   };
 
   const handleSalvar = async () => {
-    if (!amount) { Alert.alert('Atenção', 'Informe o valor da transação.'); return; }
-    if (!selectedCat) { Alert.alert('Atenção', 'Selecione uma categoria.'); return; }
-    if (!selectedCardId) { Alert.alert('Atenção', 'Selecione uma conta.'); return; }
-    if (!nome.trim()) { Alert.alert('Atenção', 'Informe o nome da transação.'); return; }
+    const invalid = (message: string) => showToast({ type: 'error', title: message });
+    if (!amount) return invalid(VALIDATION_MESSAGES.amount);
+    if (!selectedCat) return invalid(VALIDATION_MESSAGES.category);
+    if (!selectedCardId) return invalid(VALIDATION_MESSAGES.card);
+    if (!nome.trim()) return invalid(VALIDATION_MESSAGES.name);
 
-    const payload = {
+    await createTransaction(db, {
       cardId: selectedCardId,
       categoryId: selectedCat,
       name: nome.trim(),
@@ -94,86 +118,80 @@ export default function RegistrationSpent() {
       amount: parseInt(amount, 10) / 100,
       type,
       occurredAt: date.toISOString(),
-    };
+    });
 
-    if (editingId) {
-      await updateTransaction(db, editingId, payload);
-      Alert.alert('✅ Transação atualizada!', `${isExpense ? 'Saída' : 'Entrada'} de R$ ${formatAmount(amount)} atualizada.`, [
-        { text: 'Ok', onPress: () => router.back() },
-      ]);
-    } else {
-      await createTransaction(db, payload);
-      Alert.alert('✅ Transação salva!', `${isExpense ? 'Saída' : 'Entrada'} de R$ ${formatAmount(amount)} registrada.`, [
-        { text: 'Ok', onPress: () => router.push('/dashboard') },
-      ]);
-    }
+    // The toast lives above the navigator, so it stays on screen after the sheet closes.
+    showToast({
+      type: 'success',
+      title: SAVED_TITLES[type],
+      message: `R$ ${amountText} em ${category?.name ?? ''}`.trim(),
+      icon: category?.icon,
+    });
+    router.back();
   };
 
-  if (loadingExisting) {
-    return (
-      <View className="flex-1 items-center justify-center bg-canvas">
-        <ActivityIndicator size="large" color="#3161B2" />
-      </View>
-    );
-  }
-
+  // Sheet frame: dimmed backdrop (tap to close) above a rounded surface.
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-canvas"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <DynamicHeader
-        title={editingId ? 'Editar transação' : 'Nova transação'}
-        type={type} setType={setType}
-        amount={amount} setAmount={setAmount}
-        gradientColors={gradientColors}
-        formatAmount={formatAmount}
+    <View className="flex-1" style={{ backgroundColor: SHEET_DIM_COLOR }}>
+      <Pressable
+        accessibilityLabel={CLOSE_LABEL}
+        onPress={() => router.back()}
+        style={{ height: insets.top + SHEET_TOP_GAP }}
       />
-
-      <ScrollView
-        className="flex-1 -mt-6"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
+      <KeyboardAvoidingView
+        className="flex-1 bg-canvas rounded-t-[28px] overflow-hidden"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {/* Uma única superfície pras 3 seções do formulário, com divisórias
-            finas entre elas, em vez de três cartões brancos empilhados. */}
-        <View className="bg-white rounded-t-[20px] px-4 pt-[18px] pb-1 shadow-sm shadow-black/5 elevation-2 mb-6">
-          <CategorySelector
-            categories={categories}
+        <FlowHeader title={TITLES[type]} step={step} onBack={handleBack} />
+
+        {step === 1 && (
+          <AmountStep
+            type={type}
+            setType={handleTypeChange}
+            amount={amount}
+            setAmount={setAmount}
+            typeColor={typeColor}
+            onNext={() => setStep(2)}
+          />
+        )}
+
+        {step === 2 && (
+          <CategoryStep
+            type={type}
+            categories={visibleCategories}
             selectedCat={selectedCat}
-            setSelectedCat={setSelectedCat}
+            amountText={amountText}
+            typeColor={typeColor}
+            onPick={handlePickCategory}
             onCategoryCreated={refetchCategories}
           />
+        )}
 
-          <View className="h-px bg-line -mx-4 my-4" />
-
-          <CardSelector
-            cards={cards}
-            selectedCardId={selectedCardId}
-            setSelectedCardId={setSelectedCardId}
-          />
-
-          <View className="h-px bg-line -mx-4 my-4" />
-
-          <TransactionDetails
-            nome={nome} setNome={setNome}
-            descricao={descricao} setDescricao={setDescricao}
-            focused={focused} setFocused={setFocused}
-            primaryColor={primaryColor}
-            date={date} setDate={setDate}
-          />
-        </View>
-
-        <GradientButton
-          title={editingId ? 'Salvar alterações' : `Registrar ${isExpense ? 'saída' : 'entrada'}`}
-          onPress={handleSalvar}
-          colors={gradientColors.slice(0, 2) as [string, string]}
-          shadowColor={primaryColor}
-        />
-      </ScrollView>
-
-      <SideBar />
-    </KeyboardAvoidingView>
+        {step === 3 && (
+          <>
+            <DetailsStep
+              typeColor={typeColor}
+              amountText={amountText}
+              category={category}
+              nome={nome} setNome={setNome}
+              descricao={descricao} setDescricao={setDescricao}
+              cards={cards}
+              selectedCardId={selectedCardId}
+              setSelectedCardId={setSelectedCardId}
+              date={date} setDate={setDate}
+              onEditAmount={() => setStep(1)}
+              onEditCategory={() => setStep(2)}
+            />
+            <FlowButton
+              label={SAVE_LABELS[type]}
+              type={type}
+              disabled={!amount || !selectedCat || !selectedCardId || !nome.trim()}
+              compact={keyboardVisible}
+              onPress={handleSalvar}
+            />
+          </>
+        )}
+      </KeyboardAvoidingView>
+    </View>
   );
 }

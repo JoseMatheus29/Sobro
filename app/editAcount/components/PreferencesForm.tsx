@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import { palette } from '@/constants/palette';
+
 const CURRENCIES = ['BRL', 'USD', 'EUR'];
 
 interface PreferencesFormProps {
@@ -20,7 +22,7 @@ export default function PreferencesForm({
         <View className="w-8 h-8 rounded-xl bg-[#3161B2]/10 items-center justify-center">
           <Icon name="tune" size={16} color="#3161B2" />
         </View>
-        <Text className="text-[15px] font-bold text-[#1A2B4A]">Preferências</Text>
+        <Text className="text-[15px] font-bold text-ink">Preferências</Text>
       </View>
 
       <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-1.5">Moeda</Text>
@@ -33,7 +35,7 @@ export default function PreferencesForm({
               onPress={() => setCurrency(c)}
               className={`flex-1 h-11 rounded-xl items-center justify-center border-[1.5px] ${active ? 'bg-[#3161B2]/10 border-[#3161B2]' : 'bg-[#F7F9FC] border-transparent'}`}
             >
-              <Text className={`text-sm ${active ? 'font-bold text-[#3161B2]' : 'font-medium text-[#718096]'}`}>
+              <Text className={`text-sm ${active ? 'font-bold text-[#3161B2]' : 'font-medium text-muted'}`}>
                 {c}
               </Text>
             </TouchableOpacity>
@@ -45,9 +47,9 @@ export default function PreferencesForm({
         Orçamento mensal
       </Text>
       <View className="flex-row items-center bg-[#F7F9FC] rounded-2xl border-[1.5px] border-[#E8EEF5] px-3.5 h-[52px]">
-        <Icon name="account-balance-wallet" size={18} color="#A0AEC0" />
+        <Icon name="account-balance-wallet" size={18} color={palette.subtle} />
         <TextInput
-          className="flex-1 ml-2.5 text-[15px] text-[#1A2B4A]"
+          className="flex-1 ml-2.5 text-[15px] text-ink"
           placeholder="0,00"
           placeholderTextColor="#C0CCDA"
           value={monthlyBudget}

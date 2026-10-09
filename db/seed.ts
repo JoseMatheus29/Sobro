@@ -6,7 +6,7 @@ const DEFAULT_CATEGORIES = [
   { id: 'leisure', name: 'Lazer', icon: 'sports-esports', color: '#7998CD', bg: 'rgba(121,152,205,0.12)' },
   { id: 'health', name: 'Saúde', icon: 'favorite', color: '#A83636', bg: 'rgba(168,54,54,0.12)' },
   { id: 'shopping', name: 'Shopping', icon: 'shopping-bag', color: '#9B59B6', bg: 'rgba(155,89,182,0.12)' },
-  { id: 'salary', name: 'Salário', icon: 'account-balance', color: '#36A83A', bg: 'rgba(54,168,58,0.12)' },
+  { id: 'salary', name: 'Salário', icon: 'account-balance', color: '#277F2B', bg: 'rgba(39,127,43,0.12)' },
   { id: 'invest', name: 'Investimento', icon: 'trending-up', color: '#1ABC9C', bg: 'rgba(26,188,156,0.12)' },
   { id: 'other', name: 'Outros', icon: 'category', color: '#95A5A6', bg: 'rgba(149,165,166,0.12)' },
 ];

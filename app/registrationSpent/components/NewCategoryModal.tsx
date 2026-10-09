@@ -3,6 +3,7 @@ import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from 'reac
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSQLiteContext } from 'expo-sqlite';
 
+import { palette } from '@/constants/palette';
 import { createCategory } from '@/db/categories';
 
 const ICON_OPTIONS = [
@@ -11,7 +12,7 @@ const ICON_OPTIONS = [
 ];
 
 const COLOR_OPTIONS = [
-  '#E67E22', '#3161B2', '#7998CD', '#A83636', '#9B59B6', '#36A83A',
+  '#E67E22', '#3161B2', '#7998CD', '#A83636', '#9B59B6', '#277F2B',
   '#1ABC9C', '#95A5A6', '#F1C40F', '#E74C3C',
 ];
 
@@ -82,7 +83,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
                     className="w-11 h-11 rounded-xl items-center justify-center"
                     style={{ backgroundColor: active ? hexToRgba(color, 0.12) : '#EBF1F6' }}
                   >
-                    <Icon name={opt} size={20} color={active ? color : '#A0AEC0'} />
+                    <Icon name={opt} size={20} color={active ? color : palette.subtle} />
                   </TouchableOpacity>
                 );
               })}
@@ -98,7 +99,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
                   key={opt}
                   onPress={() => setColor(opt)}
                   className="w-9 h-9 rounded-full items-center justify-center"
-                  style={{ backgroundColor: opt, borderWidth: active ? 2 : 0, borderColor: '#1A2B4A' }}
+                  style={{ backgroundColor: opt, borderWidth: active ? 2 : 0, borderColor: palette.ink }}
                 />
               );
             })}

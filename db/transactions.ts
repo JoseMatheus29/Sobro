@@ -38,6 +38,8 @@ export interface TransactionFilters {
   cardId?: number;
   /** 'YYYY-MM', matches transactions occurring in that month */
   month?: string;
+  /** Newest first, so this keeps the most recent N. */
+  limit?: number;
 }
 
 const SELECT_TRANSACTIONS = `
@@ -83,9 +85,10 @@ export async function getTransactions(
     params.push(`${filters.month}%`);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+  const limit = filters.limit !== undefined ? ` LIMIT ${Math.max(0, Math.floor(filters.limit))}` : '';
 
   const rows = await db.getAllAsync<TransactionRow>(
-    `${SELECT_TRANSACTIONS} ${where} ORDER BY t.occurred_at DESC, t.id DESC`,
+    `${SELECT_TRANSACTIONS} ${where} ORDER BY t.occurred_at DESC, t.id DESC${limit}`,
     params
   );
   return rows.map(mapRow);

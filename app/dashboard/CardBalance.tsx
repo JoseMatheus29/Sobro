@@ -1,64 +1,101 @@
 import React from 'react';
-import { View, Text } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { BalanceCard } from './cardBalance-type';
+import { palette } from '@/constants/palette';
+import { tint } from '@/utils/color';
+import { formatMoney, formatSignedMoney } from '@/utils/format';
+import {
+  BALANCE_LABEL,
+  BalanceCardProps,
+  BUDGET_BAR_MIN_PERCENT,
+  BUDGET_CEILING_LABEL,
+  BUDGET_LABEL,
+  BUDGET_OVER_LABEL,
+  BUDGET_REMAINING_LABEL,
+  BUDGET_SPENT_LABEL,
+  BUDGET_WARN_AT,
+  COMPARED_LABEL,
+  NO_BUDGET_LABEL,
+  TRANSACTION_COUNT_LABEL,
+} from './cardBalance-type';
 
-const formatCurrency = (value: number) =>
-  value.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+// The balance of the month, how it compares with the last one, and how much of the budget is spent.
+export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPressBudget }) => {
+  const { net, netChange } = summary;
+  const better = netChange !== null && netChange >= 0;
+  const changeColor = better ? palette.income : palette.expense;
 
-export const CardBalance: React.FC<BalanceCard> = ({ valueTot, valueEnt, valueSai }) => {
+  const use = summary.budgetUse;
+  const hasBudget = budget !== null && use !== null;
+  const over = hasBudget && use > 1 ? summary.expense - budget : 0;
+  const budgetColor = hasBudget && use >= BUDGET_WARN_AT ? palette.expense : palette.income;
+  const fillPercent = !hasBudget || use <= 0 ? 0 : Math.min(100, Math.max(BUDGET_BAR_MIN_PERCENT, use * 100));
+  const remaining = hasBudget ? Math.max(0, Math.round((1 - use) * 100)) : 0;
+
   return (
-    <LinearGradient
-      colors={['rgba(49,97,178,0.08)', '#EBF1F6']}
-      className="rounded-[24px] p-6 border border-[#D4E1EF]"
-    >
+    // Plain white: the gray-blue gradient the card used to have read as gray once it got taller.
+    <View className="bg-white rounded-[24px] p-6 border border-surface-dark shadow-sm shadow-black/5 elevation-2">
       {/* Saldo principal */}
-      <View className="mb-5">
-        <Text className="text-xs text-[#7998CD] font-semibold tracking-[0.8px] uppercase mb-1">
-          Saldo Mensal
-        </Text>
-        <Text className="text-[32px] font-extrabold text-[#1A2B4A] tracking-tight">
-          R$ {formatCurrency(valueTot)}
-        </Text>
+      <Text className="text-xs text-primary-lighter font-semibold tracking-[0.8px] uppercase mb-1">
+        {BALANCE_LABEL}
+      </Text>
+      <Text className="text-[32px] font-extrabold text-ink tracking-tight">
+        {formatMoney(net)}
+      </Text>
+
+      <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-2.5">
+        {netChange !== null && (
+          <View
+            className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
+            style={{ backgroundColor: tint(changeColor) }}
+          >
+            <Icon name={better ? 'arrow-upward' : 'arrow-downward'} size={12} color={changeColor} />
+            <Text className="text-xs font-bold" style={{ color: changeColor }}>
+              {formatSignedMoney(netChange)} {COMPARED_LABEL}
+            </Text>
+          </View>
+        )}
+        <Text className="text-xs text-muted">{TRANSACTION_COUNT_LABEL(summary.transactionCount)}</Text>
       </View>
 
       {/* Divisor */}
-      <View className="h-[1px] bg-[#D4E1EF] mb-4" />
+      <View className="h-[1px] bg-surface-dark my-4" />
 
-      {/* Entradas e Saídas */}
-      <View className="flex-row justify-between">
-        {/* Entradas */}
-        <View className="flex-1">
-          <View className="flex-row items-center gap-1.5 mb-1">
-            <View className="w-7 h-7 rounded-full bg-[rgba(54,168,58,0.12)] items-center justify-center">
-              <Icon name="arrow-downward" size={14} color="#36A83A" />
-            </View>
-            <Text className="text-xs text-[#718096] font-medium">Entradas</Text>
+      {/* Orçamento */}
+      {hasBudget ? (
+        <View>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-[13px] font-medium text-muted">{BUDGET_LABEL}</Text>
+            <Text className="text-[13px] font-bold" style={{ color: budgetColor }}>
+              {over > 0 ? BUDGET_OVER_LABEL(formatMoney(over)) : BUDGET_REMAINING_LABEL(remaining)}
+            </Text>
           </View>
-          <Text className="text-lg font-bold text-[#36A83A]">
-            R$ {formatCurrency(valueEnt)}
-          </Text>
-        </View>
 
-        {/* Separador vertical */}
-        <View className="w-[1px] bg-[#D4E1EF] mx-4" />
-
-        {/* Saídas */}
-        <View className="flex-1">
-          <View className="flex-row items-center gap-1.5 mb-1">
-            <View className="w-7 h-7 rounded-full bg-[rgba(168,54,54,0.12)] items-center justify-center">
-              <Icon name="arrow-upward" size={14} color="#A83636" />
-            </View>
-            <Text className="text-xs text-[#718096] font-medium">Saídas</Text>
+          <View className="h-2 rounded-full overflow-hidden mt-2.5" style={{ backgroundColor: palette.surface.DEFAULT }}>
+            <View
+              className="h-full rounded-full"
+              style={{ width: `${fillPercent}%`, backgroundColor: budgetColor }}
+            />
           </View>
-          <Text className="text-lg font-bold text-[#A83636]">
-            R$ {formatCurrency(valueSai)}
-          </Text>
+
+          <View className="flex-row items-center justify-between mt-2">
+            <Text className="text-xs text-muted">
+              {BUDGET_SPENT_LABEL}: {formatMoney(summary.expense)}
+            </Text>
+            <Text className="text-xs text-muted">
+              {BUDGET_CEILING_LABEL}: {formatMoney(budget)}
+            </Text>
+          </View>
         </View>
-      </View>
-    </LinearGradient>
+      ) : (
+        <TouchableOpacity onPress={onPressBudget} activeOpacity={0.8} className="flex-row items-center gap-2">
+          <Icon name="flag" size={16} color={palette.primary.DEFAULT} />
+          <Text className="flex-1 text-[13px] font-medium text-muted">{NO_BUDGET_LABEL}</Text>
+          <Icon name="chevron-right" size={18} color={palette.subtle} />
+        </TouchableOpacity>
+      )}
+    </View>
   );
 };
 

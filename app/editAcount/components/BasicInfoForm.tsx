@@ -15,7 +15,7 @@ export default function BasicInfoForm({ nome, setNome }: BasicInfoFormProps) {
         <View className="w-8 h-8 rounded-xl bg-[#3161B2]/10 items-center justify-center">
           <Icon name="person" size={16} color="#3161B2" />
         </View>
-        <Text className="text-[15px] font-bold text-[#1A2B4A]">Informações Básicas</Text>
+        <Text className="text-[15px] font-bold text-ink">Informações Básicas</Text>
       </View>
 
       <Field

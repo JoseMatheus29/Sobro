@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import ArrowBack from '../../components/arrowBack';
 
 interface ProfileHeaderProps {
   name: string;
@@ -22,8 +21,7 @@ export default function ProfileHeader({ name, avatarUri, onPickAvatar }: Profile
       className="pb-[52px] px-6"
       style={{ paddingTop: insets.top + 16 }}
     >
-      <View className="flex-row items-center gap-3 mb-6">
-        <ArrowBack />
+      <View className="flex-row items-center justify-center min-h-9 mb-6">
         <Text className="text-white text-xl font-bold">Meu Perfil</Text>
       </View>
 

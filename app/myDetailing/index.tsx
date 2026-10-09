@@ -1,14 +1,17 @@
 import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import SideBar from '../components/sidebar';
+import AddTransactionFab from '../components/AddTransactionFab';
 import ScreenHeader from '../components/ui/ScreenHeader';
+import ScreenScroll from '../components/ui/ScreenScroll';
 import TransactionList from '../components/ui/TransactionList';
 import ExpenseChart from './components/ExpenseChart';
 import MonthlyProgress from './components/MonthlyProgress';
 import { useCategoryTotals, useProfile, useTransactions } from '@/db/hooks';
 import { formatShortDate } from '@/utils/format';
+import { EMPTY_TRANSACTIONS_MESSAGE } from './myDetailing-type';
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -42,45 +45,41 @@ export default function MyDetailing() {
       amount: t.amount,
       category: t.categoryName,
       categoryIcon: t.categoryIcon,
+      categoryColor: t.categoryColor,
       type: t.type,
     }));
 
   return (
     <View className="flex-1 bg-[#F7F9FC]">
-      <ScreenHeader
-        title="Meu Detalhamento"
-        gradientColors={['#254E8F', '#3161B2', '#4A74BB']}
-      />
+      {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
+          cut the content off at its edge while scrolling. */}
+      <ScreenScroll>
+        <ScreenHeader
+          title="Meu Detalhamento"
+          gradientColors={['#254E8F', '#3161B2', '#4A74BB']}
+        />
 
-      <ScrollView
-        className="flex-1 -mt-7"
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {pieData.length > 0 ? (
+        <View className="-mt-7">
           <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
-        ) : (
-          <View className="bg-white mx-4 rounded-3xl p-5 mb-4 shadow-lg shadow-[#3161B2]/10 elevation-4">
-            <Text className="text-sm text-[#A0AEC0] text-center">Nenhum gasto registrado neste mês.</Text>
-          </View>
-        )}
 
-        <MonthlyProgress
-          totalGastos={totalGastos}
-          progress={progress}
-          percentage={percentage}
-          hasBudget={hasBudget}
-        />
+          <MonthlyProgress
+            totalGastos={totalGastos}
+            progress={progress}
+            percentage={percentage}
+            hasBudget={hasBudget}
+          />
 
-        <TransactionList
-          title="Seus Gastos"
-          actionLabel="Ver todos"
-          transactions={displayTransactions}
-          onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-        />
-      </ScrollView>
+          <TransactionList
+            title="Seus Gastos"
+            emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
+            transactions={displayTransactions}
+            onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+          />
+        </View>
+      </ScreenScroll>
 
       <SideBar />
+      <AddTransactionFab />
     </View>
   );
 }
