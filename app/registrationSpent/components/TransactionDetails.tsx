@@ -21,16 +21,16 @@ export default function TransactionDetails({
   const [showPicker, setShowPicker] = useState(false);
 
   return (
-    <View className="bg-white rounded-[24px] p-5 mb-6 shadow-lg shadow-black/5 elevation-4">
-      <Text className="text-[13px] font-bold text-[#1A2B4A] mb-3.5">Detalhes</Text>
+    <View>
+      <Text className="text-[13.5px] font-semibold text-ink mb-3">Detalhes</Text>
 
       {/* Nome */}
-      <View className="mb-3.5">
-        <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-1.5">Nome</Text>
-        <View className={`flex-row items-center bg-[#F7F9FC] rounded-[14px] border-[1.5px] px-3.5 h-[50px] ${focused === 'nome' ? 'border-[#3161B2]' : 'border-[#E8EEF5]'}`}>
-          <Icon name="edit" size={16} color={focused === 'nome' ? primaryColor : '#A0AEC0'} />
+      <View className="mb-3">
+        <Text className="text-xs text-muted mb-1">Nome</Text>
+        <View className={`flex-row items-center bg-canvas rounded-xl border px-3.5 h-[46px] ${focused === 'nome' ? 'border-primary' : 'border-transparent'}`}>
+          <Icon name="edit" size={15} color={focused === 'nome' ? primaryColor : '#A0AEC0'} />
           <TextInput
-            className="flex-1 ml-2.5 text-[14px] text-[#1A2B4A]"
+            className="flex-1 ml-2.5 text-[14px] text-ink"
             placeholder="Ex: Almoço no restaurante"
             placeholderTextColor="#C0CCDA"
             value={nome}
@@ -43,11 +43,11 @@ export default function TransactionDetails({
       </View>
 
       {/* Descrição */}
-      <View className="mb-3.5">
-        <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-1.5">Descrição (opcional)</Text>
-        <View className={`bg-[#F7F9FC] rounded-[14px] border-[1.5px] px-3.5 py-3 ${focused === 'desc' ? 'border-[#3161B2]' : 'border-[#E8EEF5]'}`}>
+      <View className="mb-3">
+        <Text className="text-xs text-muted mb-1">Descrição (opcional)</Text>
+        <View className={`bg-canvas rounded-xl border px-3.5 py-3 ${focused === 'desc' ? 'border-primary' : 'border-transparent'}`}>
           <TextInput
-            className="text-[14px] text-[#1A2B4A] min-h-[60px]"
+            className="text-[14px] text-ink min-h-[56px]"
             style={{ textAlignVertical: 'top' }}
             placeholder="Adicione uma observação..."
             placeholderTextColor="#C0CCDA"
@@ -63,16 +63,16 @@ export default function TransactionDetails({
 
       {/* Data */}
       <View>
-        <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-1.5">Data</Text>
+        <Text className="text-xs text-muted mb-1">Data</Text>
         <TouchableOpacity
-          className="flex-row items-center bg-[#F7F9FC] rounded-[14px] border-[1.5px] border-[#E8EEF5] px-3.5 h-[50px]"
+          className="flex-row items-center bg-canvas rounded-xl border border-transparent px-3.5 h-[46px]"
           onPress={() => setShowPicker(true)}
         >
-          <Icon name="calendar-today" size={16} color="#A0AEC0" />
-          <Text className="ml-2.5 text-[14px] text-[#718096]">
+          <Icon name="calendar-today" size={15} color="#A0AEC0" />
+          <Text className="ml-2.5 text-[14px] text-ink">
             {date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </Text>
-          <Icon name="chevron-right" size={18} color="#C0CCDA" className="ml-auto" />
+          <Icon name="chevron-right" size={18} color="#C0CCDA" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
         {showPicker && (
           <DateTimePicker

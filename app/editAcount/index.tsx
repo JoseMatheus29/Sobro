@@ -79,7 +79,7 @@ export default function EditAcount() {
       <ProfileHeader name={nome} avatarUri={avatarUri} onPickAvatar={handlePickAvatar} />
 
       <ScrollView
-        className="flex-1 -mt-6"
+        className="flex-1 -mt-7"
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

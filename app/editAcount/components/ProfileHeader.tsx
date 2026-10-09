@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import ArrowBack from '../../components/arrowBack';
 
@@ -11,12 +12,15 @@ interface ProfileHeaderProps {
 }
 
 export default function ProfileHeader({ name, avatarUri, onPickAvatar }: ProfileHeaderProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <LinearGradient
       colors={['#1E3F7A', '#3161B2', '#4A74BB']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="pt-14 pb-[52px] px-6"
+      className="pb-[52px] px-6"
+      style={{ paddingTop: insets.top + 16 }}
     >
       <View className="flex-row items-center gap-3 mb-6">
         <ArrowBack />

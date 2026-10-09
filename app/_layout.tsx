@@ -23,6 +23,7 @@ export default function Layout() {
           <Stack.Screen name="myDetailing" />
           <Stack.Screen name="editAcount" />
           <Stack.Screen name="registrationSpent" />
+          <Stack.Screen name="detailsSpend/[id]" />
         </Stack>
       </SQLiteProvider>
     </Suspense>

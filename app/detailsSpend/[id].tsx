@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -13,6 +14,7 @@ import { formatShortDate } from '@/utils/format';
 export default function DetailsSpend() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const db = useSQLiteContext();
   const [transaction, setTransaction] = useState<TransactionRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +50,7 @@ export default function DetailsSpend() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
+      <View className="flex-1 items-center justify-center bg-canvas">
         <ActivityIndicator size="large" color="#3161B2" />
       </View>
     );
@@ -56,8 +58,8 @@ export default function DetailsSpend() {
 
   if (!transaction) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#F7F9FC] px-6">
-        <Text className="text-base text-[#718096] text-center">Transação não encontrada.</Text>
+      <View className="flex-1 items-center justify-center bg-canvas px-6">
+        <Text className="text-base text-muted text-center">Transação não encontrada.</Text>
       </View>
     );
   }
@@ -66,80 +68,72 @@ export default function DetailsSpend() {
   const amountColor = isIncome ? '#36A83A' : '#A83636';
   const prefix = isIncome ? '+' : '-';
 
+  const rows: { label: string; value: string; color?: string }[] = [
+    { label: 'Tipo', value: isIncome ? 'Receita' : 'Despesa', color: amountColor },
+    { label: 'Categoria', value: transaction.categoryName },
+    { label: 'Descrição', value: transaction.description || '—' },
+    { label: 'Banco', value: transaction.cardName },
+    { label: 'Data', value: formatShortDate(transaction.occurredAt) },
+  ];
+
   return (
-    <View className="flex-1 bg-[#F7F9FC]">
+    <View className="flex-1 bg-canvas">
       <LinearGradient
         colors={['#1E3F7A', '#3161B2', '#4A74BB']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        className="pt-14 pb-[52px] px-6"
+        className="pb-9 px-6"
+        style={{ paddingTop: insets.top + 16 }}
       >
         <View className="flex-row items-center justify-between mb-6">
           <View className="flex-row items-center gap-3">
             <ArrowBack />
-            <Text className="text-white text-xl font-bold">Detalhes Transação</Text>
+            <Text className="text-white text-[14px] font-semibold">Detalhes</Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push(`/registrationSpent?id=${transaction.id}`)}
-            className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center"
+            className="w-[30px] h-[30px] rounded-[10px] bg-white/[.18] items-center justify-center"
           >
-            <Icon name="edit" size={18} color="#fff" />
+            <Icon name="edit" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
 
-        <View className="items-center">
-          <View className="w-[72px] h-[72px] rounded-full bg-white/20 items-center justify-center mb-3">
-            <Icon name={transaction.categoryIcon} size={32} color="#fff" />
+        <View className="flex-row items-center gap-2 mb-1.5">
+          <View className="w-[22px] h-[22px] rounded-[7px] bg-white/[.22] items-center justify-center">
+            <Icon name={transaction.categoryIcon} size={13} color="#fff" />
           </View>
-          <Text className="text-white/80 text-sm font-semibold uppercase tracking-widest mb-1">
-            {transaction.name}
-          </Text>
-          <Text className="text-white text-[32px] font-extrabold tracking-tight">
-            {prefix} R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </Text>
+          <Text className="text-white/80 text-xs">{transaction.name}</Text>
         </View>
+        <Text className="text-white text-[30px] font-bold tracking-tight">
+          {prefix} R$ {Math.abs(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        </Text>
       </LinearGradient>
 
       <ScrollView
-        className="flex-1 -mt-6"
+        className="flex-1 -mt-5"
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="bg-white rounded-[24px] p-6 shadow-lg shadow-[#3161B2]/10 elevation-4 mb-4">
-          <View className="flex-row justify-between items-center py-4 border-b border-[#EBF1F6]">
-            <Text className="text-sm font-bold text-[#A0AEC0]">Tipo</Text>
-            <Text className="text-base font-bold" style={{ color: amountColor }}>
-              {isIncome ? 'Receita' : 'Despesa'}
-            </Text>
-          </View>
-
-          <View className="flex-row justify-between items-center py-4 border-b border-[#EBF1F6]">
-            <Text className="text-sm font-bold text-[#A0AEC0]">Categoria</Text>
-            <Text className="text-base font-bold text-[#1A2B4A]">{transaction.categoryName}</Text>
-          </View>
-
-          <View className="flex-row justify-between items-center py-4 border-b border-[#EBF1F6]">
-            <Text className="text-sm font-bold text-[#A0AEC0]">Descrição</Text>
-            <Text className="text-base font-bold text-[#1A2B4A]">{transaction.description || '—'}</Text>
-          </View>
-
-          <View className="flex-row justify-between items-center py-4 border-b border-[#EBF1F6]">
-            <Text className="text-sm font-bold text-[#A0AEC0]">Banco</Text>
-            <Text className="text-base font-bold text-[#1A2B4A]">{transaction.cardName}</Text>
-          </View>
-
-          <View className="flex-row justify-between items-center py-4">
-            <Text className="text-sm font-bold text-[#A0AEC0]">Data</Text>
-            <Text className="text-base font-bold text-[#1A2B4A]">{formatShortDate(transaction.occurredAt)}</Text>
-          </View>
+        <View className="bg-white rounded-t-[20px] px-5 pt-1 shadow-sm shadow-black/5 elevation-2 mb-2">
+          {rows.map((row, i) => (
+            <View
+              key={row.label}
+              className={`flex-row justify-between items-center py-3.5 ${i < rows.length - 1 ? 'border-b border-line' : ''}`}
+            >
+              <Text className="text-xs text-muted">{row.label}</Text>
+              <Text className="text-[13px] font-semibold" style={{ color: row.color ?? '#1A2B4A' }}>
+                {row.value}
+              </Text>
+            </View>
+          ))}
         </View>
 
         <TouchableOpacity
           onPress={handleDelete}
-          className="flex-row items-center justify-center gap-1.5 bg-white rounded-2xl py-3.5 border border-[#EBF1F6]"
+          className="flex-row items-center justify-center gap-1.5 py-3"
         >
-          <Icon name="delete-outline" size={18} color="#A83636" />
-          <Text className="text-[#A83636] font-semibold text-sm">Excluir transação</Text>
+          <Icon name="delete-outline" size={15} color="#A83636" />
+          <Text className="text-expense font-medium text-xs">Excluir transação</Text>
         </TouchableOpacity>
       </ScrollView>
 

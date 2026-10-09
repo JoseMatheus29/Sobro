@@ -32,7 +32,7 @@ export default function DashboardScreen() {
       <DashboardHeader onProfilePress={() => router.push('/editAcount')} />
 
       <ScrollView
-        className="flex-1 -mt-5"
+        className="flex-1 -mt-7"
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 0, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >

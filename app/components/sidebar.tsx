@@ -1,11 +1,9 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const { width } = Dimensions.get('window');
 
 const NAV_ITEMS = [
   { id: 'dashboard', icon: 'home', label: 'Início', route: '/dashboard' },
@@ -18,6 +16,7 @@ const NAV_ITEMS = [
 export default function SideBar() {
   const router = useRouter();
   const segments = useSegments();
+  const insets = useSafeAreaInsets();
   const currentRoute = segments[segments.length - 1] || 'index';
 
   const handlePress = (route: string, isFab?: boolean) => {
@@ -26,7 +25,10 @@ export default function SideBar() {
   };
 
   return (
-    <View className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-[0_-8px_20px_rgba(49,97,178,0.06)] elevation-20 pt-3 pb-8 px-4 flex-row items-end justify-between">
+    <View
+      className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-[0_-8px_20px_rgba(49,97,178,0.06)] elevation-20 pt-3 px-4 flex-row items-end justify-between"
+      style={{ paddingBottom: insets.bottom + 20 }}
+    >
       {NAV_ITEMS.map((item, index) => {
         if (item.isFab) {
           return (

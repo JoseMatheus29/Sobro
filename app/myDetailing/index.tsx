@@ -53,7 +53,7 @@ export default function MyDetailing() {
       />
 
       <ScrollView
-        className="flex-1 -mt-4"
+        className="flex-1 -mt-7"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >

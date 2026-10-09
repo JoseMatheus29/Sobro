@@ -111,7 +111,7 @@ export default function RegistrationSpent() {
 
   if (loadingExisting) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
+      <View className="flex-1 items-center justify-center bg-canvas">
         <ActivityIndicator size="large" color="#3161B2" />
       </View>
     );
@@ -119,11 +119,11 @@ export default function RegistrationSpent() {
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#F7F9FC]"
+      className="flex-1 bg-canvas"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <DynamicHeader
-        title={editingId ? 'Editar Transação' : 'Nova Transação'}
+        title={editingId ? 'Editar transação' : 'Nova transação'}
         type={type} setType={setType}
         amount={amount} setAmount={setAmount}
         gradientColors={gradientColors}
@@ -131,34 +131,42 @@ export default function RegistrationSpent() {
       />
 
       <ScrollView
-        className="flex-1 -mt-5"
+        className="flex-1 -mt-6"
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <CategorySelector
-          categories={categories}
-          selectedCat={selectedCat}
-          setSelectedCat={setSelectedCat}
-          onCategoryCreated={refetchCategories}
-        />
+        {/* Uma única superfície pras 3 seções do formulário, com divisórias
+            finas entre elas, em vez de três cartões brancos empilhados. */}
+        <View className="bg-white rounded-t-[20px] px-4 pt-[18px] pb-1 shadow-sm shadow-black/5 elevation-2 mb-6">
+          <CategorySelector
+            categories={categories}
+            selectedCat={selectedCat}
+            setSelectedCat={setSelectedCat}
+            onCategoryCreated={refetchCategories}
+          />
 
-        <CardSelector
-          cards={cards}
-          selectedCardId={selectedCardId}
-          setSelectedCardId={setSelectedCardId}
-        />
+          <View className="h-px bg-line -mx-4 my-4" />
 
-        <TransactionDetails
-          nome={nome} setNome={setNome}
-          descricao={descricao} setDescricao={setDescricao}
-          focused={focused} setFocused={setFocused}
-          primaryColor={primaryColor}
-          date={date} setDate={setDate}
-        />
+          <CardSelector
+            cards={cards}
+            selectedCardId={selectedCardId}
+            setSelectedCardId={setSelectedCardId}
+          />
+
+          <View className="h-px bg-line -mx-4 my-4" />
+
+          <TransactionDetails
+            nome={nome} setNome={setNome}
+            descricao={descricao} setDescricao={setDescricao}
+            focused={focused} setFocused={setFocused}
+            primaryColor={primaryColor}
+            date={date} setDate={setDate}
+          />
+        </View>
 
         <GradientButton
-          title={editingId ? 'Salvar Alterações' : `Registrar ${isExpense ? 'Saída' : 'Entrada'}`}
+          title={editingId ? 'Salvar alterações' : `Registrar ${isExpense ? 'saída' : 'entrada'}`}
           onPress={handleSalvar}
           colors={gradientColors.slice(0, 2) as [string, string]}
           shadowColor={primaryColor}

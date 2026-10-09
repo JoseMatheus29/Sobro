@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 interface DashboardHeaderProps {
@@ -8,12 +9,15 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ onProfilePress }: DashboardHeaderProps) {
+  const insets = useSafeAreaInsets();
+
   return (
     <LinearGradient
       colors={['#1E3F7A', '#3161B2', '#4A74BB']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="pt-14 pb-10 px-6"
+      className="pb-10 px-6"
+      style={{ paddingTop: insets.top + 16 }}
     >
       <View className="flex-row justify-between items-center">
         <View>

@@ -58,11 +58,11 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
-        <View className="bg-white rounded-[24px] p-5 w-full">
-          <Text className="text-[15px] font-bold text-[#1A2B4A] mb-4">Nova categoria</Text>
+        <View className="bg-white rounded-[20px] p-5 w-full">
+          <Text className="text-[15px] font-semibold text-ink mb-4">Nova categoria</Text>
 
           <TextInput
-            className="bg-[#F7F9FC] rounded-[14px] border-[1.5px] border-[#E8EEF5] px-3.5 h-[50px] text-[14px] text-[#1A2B4A] mb-4"
+            className="bg-canvas rounded-xl border border-transparent px-3.5 h-[46px] text-[14px] text-ink mb-4"
             placeholder="Nome da categoria"
             placeholderTextColor="#C0CCDA"
             value={name}
@@ -70,7 +70,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
             autoCapitalize="sentences"
           />
 
-          <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-2">Ícone</Text>
+          <Text className="text-xs text-muted mb-2">Ícone</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
             <View className="flex-row gap-2">
               {ICON_OPTIONS.map((opt) => {
@@ -79,11 +79,8 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
                   <TouchableOpacity
                     key={opt}
                     onPress={() => setIcon(opt)}
-                    className="w-11 h-11 rounded-xl items-center justify-center border-[1.5px]"
-                    style={{
-                      backgroundColor: active ? hexToRgba(color, 0.12) : '#F7F9FC',
-                      borderColor: active ? color : 'transparent',
-                    }}
+                    className="w-11 h-11 rounded-xl items-center justify-center"
+                    style={{ backgroundColor: active ? hexToRgba(color, 0.12) : '#EBF1F6' }}
                   >
                     <Icon name={opt} size={20} color={active ? color : '#A0AEC0'} />
                   </TouchableOpacity>
@@ -92,7 +89,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
             </View>
           </ScrollView>
 
-          <Text className="text-[11px] font-bold text-[#7998CD] tracking-[0.8px] uppercase mb-2">Cor</Text>
+          <Text className="text-xs text-muted mb-2">Cor</Text>
           <View className="flex-row flex-wrap gap-2 mb-5">
             {COLOR_OPTIONS.map((opt) => {
               const active = color === opt;
@@ -110,14 +107,14 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
           <View className="flex-row gap-3">
             <TouchableOpacity
               onPress={handleClose}
-              className="flex-1 h-12 rounded-[14px] items-center justify-center bg-[#F7F9FC]"
+              className="flex-1 h-12 rounded-xl items-center justify-center bg-canvas"
             >
-              <Text className="text-[#718096] font-semibold text-sm">Cancelar</Text>
+              <Text className="text-muted font-semibold text-sm">Cancelar</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCreate}
               disabled={!name.trim() || saving}
-              className="flex-1 h-12 rounded-[14px] items-center justify-center"
+              className="flex-1 h-12 rounded-xl items-center justify-center"
               style={{ backgroundColor: !name.trim() || saving ? '#C0CCDA' : '#3161B2' }}
             >
               <Text className="text-white font-semibold text-sm">{saving ? 'Salvando...' : 'Criar'}</Text>

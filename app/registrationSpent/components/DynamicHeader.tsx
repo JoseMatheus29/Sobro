@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { TxType } from '../registrationSpent-type';
@@ -19,6 +20,7 @@ export default function DynamicHeader({
   title, type, setType, amount, setAmount, gradientColors, formatAmount
 }: DynamicHeaderProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleAmountChange = (text: string) => {
     const raw = text.replace(/\D/g, '');
@@ -30,34 +32,35 @@ export default function DynamicHeader({
       colors={gradientColors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="pt-14 pb-[52px] px-6"
+      className="pb-10 px-6"
+      style={{ paddingTop: insets.top + 16 }}
     >
-      <View className="flex-row items-center justify-between mb-7">
+      <View className="flex-row items-center justify-between mb-6">
         <TouchableOpacity
           onPress={() => router.back()}
-          className="w-9 h-9 rounded-xl bg-white/20 items-center justify-center"
+          className="w-[30px] h-[30px] rounded-[10px] bg-white/20 items-center justify-center"
         >
-          <Icon name="close" size={20} color="#fff" />
+          <Icon name="close" size={18} color="#fff" />
         </TouchableOpacity>
-        <Text className="text-white text-[17px] font-bold">{title}</Text>
-        <View className="w-9" />
+        <Text className="text-white text-[14px] font-semibold">{title}</Text>
+        <View className="w-[30px]" />
       </View>
 
-      <View className="flex-row bg-white/15 rounded-[14px] p-1 mb-7">
+      <View className="flex-row bg-white/[.14] rounded-[11px] p-[3px] mb-5">
         {(['expense', 'income'] as TxType[]).map((t) => {
           const active = type === t;
           return (
             <TouchableOpacity
               key={t}
               onPress={() => setType(t)}
-              className={`flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-[11px] ${active ? 'bg-white/25' : 'bg-transparent'}`}
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-2 rounded-[8px] ${active ? 'bg-white/[.22]' : 'bg-transparent'}`}
             >
               <Icon
                 name={t === 'expense' ? 'arrow-upward' : 'arrow-downward'}
-                size={16}
+                size={14}
                 color="#fff"
               />
-              <Text className={`text-white text-sm ${active ? 'font-bold' : 'font-normal'}`}>
+              <Text className={`text-white text-xs ${active ? 'font-semibold' : 'font-normal'}`}>
                 {t === 'expense' ? 'Saída' : 'Entrada'}
               </Text>
             </TouchableOpacity>
@@ -66,11 +69,11 @@ export default function DynamicHeader({
       </View>
 
       <View className="items-center">
-        <Text className="text-white/70 text-[13px] font-medium mb-1.5">Valor</Text>
-        <View className="flex-row items-center">
-          <Text className="text-white/80 text-[28px] font-bold mr-1">R$</Text>
+        <Text className="text-white/65 text-[11px] mb-1">Valor</Text>
+        <View className="flex-row items-baseline">
+          <Text className="text-white/80 text-[22px] font-semibold mr-1">R$</Text>
           <TextInput
-            className="text-white text-[42px] font-extrabold min-w-[100px] text-center"
+            className="text-white text-[34px] font-bold min-w-[100px] text-center tracking-tight"
             placeholder="0,00"
             placeholderTextColor="rgba(255,255,255,0.4)"
             keyboardType="numeric"
@@ -78,7 +81,6 @@ export default function DynamicHeader({
             onChangeText={handleAmountChange}
           />
         </View>
-        <View className="h-0.5 w-[140px] bg-white/35 mt-1 rounded-[1px]" />
       </View>
     </LinearGradient>
   );
