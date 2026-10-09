@@ -17,6 +17,7 @@ export const Card: React.FC<CardValues> = ({
   style,
   isSelected,
 }) => {
+  const lastDigits = cardNumber.replace(/\*/g, '');
   const baseColor = backgroundColor ?? '#3161B2';
   const lighterColor = lightColor ?? '#4A74BB';
 
@@ -40,19 +41,19 @@ export const Card: React.FC<CardValues> = ({
           <Text className="text-white text-base font-bold tracking-wide">
             {cardName}
           </Text>
-          <Icon name="credit-card" size={22} color="rgba(255,255,255,0.7)" />
+          <Icon name="account-balance-wallet" size={22} color="rgba(255,255,255,0.7)" />
         </View>
 
-        {/* Número */}
-        <Text className="text-white/60 text-[15px] tracking-[3px] font-medium mt-7">
-          •••• •••• {cardNumber.replace(/\*/g, '')}
+        {/* Final do cartão, quando a conta tem um */}
+        <Text className="text-white/60 text-[15px] tracking-[3px] font-medium mt-7 h-[22px]">
+          {lastDigits ? `•••• •••• ${lastDigits}` : ''}
         </Text>
 
         {/* Rodapé */}
         <View className="flex-row justify-between items-end mt-3">
           <View>
             <Text className="text-white/60 text-[10px] font-medium mb-0.5 uppercase tracking-wide">
-              Despesas
+              Saldo
             </Text>
             <Text className="text-white text-xl font-extrabold">
               R$ {formatCurrency(expensesAmount)}

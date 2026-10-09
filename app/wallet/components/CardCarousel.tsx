@@ -35,7 +35,7 @@ export default function CardCarousel({
           <View style={{ width: cardWidth }}>
             <Card
               cardName={item.name}
-              cardNumber={`****${item.number}`}
+              cardNumber={item.number ? `****${item.number}` : ''}
               expensesAmount={item.balance}
               backgroundColor={item.color}
               lightColor={item.lightColor}

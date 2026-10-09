@@ -5,7 +5,6 @@ import {
   ActivityIndicator,
   View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import SideBar from '../components/sidebar';
@@ -15,54 +14,62 @@ import ScreenScroll from '../components/ui/ScreenScroll';
 import ProfileHeader from './components/ProfileHeader';
 import BasicInfoForm from './components/BasicInfoForm';
 import PreferencesForm from './components/PreferencesForm';
+import BackupCard from './components/BackupCard';
 import { useFeedback } from '../components/feedback/FeedbackProvider';
-import { PHOTO_PERMISSION_TOAST, PROFILE_SAVED_TOAST } from './editAcount-type';
-import { useProfile } from '@/db/hooks';
+import { PROFILE_SAVED_TOAST, REMINDERS_DENIED_TOAST } from './editAcount-type';
+import { useBudgetEntries, useProfile } from '@/db/hooks';
+import { setBudgetFrom } from '@/db/budgets';
+import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
 import { updateProfile } from '@/db/profile';
+import { budgetForMonth } from '@/utils/budget';
+import { monthKey } from '@/utils/month';
 
 export default function EditAcount() {
   const db = useSQLiteContext();
   const { showToast } = useFeedback();
   const { profile, loading, refetch } = useProfile();
+  const { entries: budgetEntries, refetch: refetchBudgets } = useBudgetEntries();
+  // The budget is kept per month: this form edits the one that applies from the current month on.
+  const currentBudget = budgetForMonth(budgetEntries, monthKey(new Date()));
 
   const [nome, setNome] = useState('');
   const [currency, setCurrency] = useState('BRL');
   const [monthlyBudget, setMonthlyBudget] = useState('');
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [remindersEnabled, setRemindersEnabled] = useState(true);
 
   useEffect(() => {
     if (!profile) return;
     setNome(profile.name);
     setCurrency(profile.currency);
-    setMonthlyBudget(profile.monthlyBudget != null ? String(profile.monthlyBudget) : '');
-    setAvatarUri(profile.avatarUri);
+    setRemindersEnabled(profile.remindersEnabled);
   }, [profile]);
 
-  const handlePickAvatar = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showToast(PHOTO_PERMISSION_TOAST);
+  useEffect(() => {
+    setMonthlyBudget(currentBudget !== null ? String(currentBudget) : '');
+  }, [currentBudget]);
+
+  // Turning the reminders on asks for the permission to notify; without it they stay off.
+  const handleToggleReminders = async (next: boolean) => {
+    if (next && !(await ensureReminderPermission())) {
+      setRemindersEnabled(false);
+      showToast(REMINDERS_DENIED_TOAST);
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.6,
-    });
-    if (!result.canceled) {
-      setAvatarUri(result.assets[0].uri);
-    }
+    setRemindersEnabled(next);
   };
 
   const handleSalvar = async () => {
     await updateProfile(db, {
       name: nome.trim(),
       currency,
-      avatarUri,
-      monthlyBudget: monthlyBudget ? Number(monthlyBudget.replace(',', '.')) : null,
+      remindersEnabled,
     });
-    await refetch();
+    const typed = monthlyBudget ? Number(monthlyBudget.replace(',', '.')) : null;
+    const nextBudget = typed !== null && Number.isFinite(typed) && typed > 0 ? typed : null;
+    // Only a real change starts a new budget; saving the name again must not.
+    if (nextBudget !== currentBudget) await setBudgetFrom(db, monthKey(new Date()), nextBudget);
+    await Promise.all([refetch(), refetchBudgets()]);
+    await refreshReminders(db);
     showToast(PROFILE_SAVED_TOAST);
   };
 
@@ -82,7 +89,7 @@ export default function EditAcount() {
       {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
           cut the content off at its edge while scrolling. */}
       <ScreenScroll bottomPadding={SCROLL_PADDING_WITH_SIDEBAR} keyboardShouldPersistTaps="handled">
-        <ProfileHeader name={nome} avatarUri={avatarUri} onPickAvatar={handlePickAvatar} />
+        <ProfileHeader name={nome} />
 
         <View className="px-5 -mt-7">
           <BasicInfoForm nome={nome} setNome={setNome} />
@@ -90,7 +97,10 @@ export default function EditAcount() {
           <PreferencesForm
             currency={currency} setCurrency={setCurrency}
             monthlyBudget={monthlyBudget} setMonthlyBudget={setMonthlyBudget}
+            remindersEnabled={remindersEnabled} setRemindersEnabled={handleToggleReminders}
           />
+
+          <BackupCard />
 
           <GradientButton title="Salvar Alterações" onPress={handleSalvar} />
         </View>

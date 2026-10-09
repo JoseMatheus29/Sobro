@@ -16,6 +16,8 @@ export interface InsightInput {
   /** Transactions of the month before it. */
   previous: TransactionRecord[];
   now: Date;
+  /** The spending limit of each category in force this month, by category id (see utils/categoryBudget.ts). */
+  limits?: Record<string, number>;
 }
 
 interface InsightCopy {
@@ -39,6 +41,8 @@ export const BIG_EXPENSE_SHARE = 0.3;
 export const MIN_EXPENSES_FOR_BREAKDOWN = 3;
 // The projection for the month needs a few days of data behind it.
 export const PACE_MIN_DAY = 3;
+// A category is flagged from this share of its own limit on.
+export const LIMIT_WARN_AT = 0.8;
 
 // Tips for the default categories (by id). Categories the user creates get the generic one.
 export const CATEGORY_TIPS: Record<string, string> = {
@@ -98,6 +102,15 @@ export const INSIGHT_COPY = {
   bigExpense: (name: string, percent: number, amount: string): InsightCopy => ({
     title: `${name} concentra ${percent}% dos seus gastos`,
     tip: `Uma única despesa de ${amount} pesa bastante no mês. Vale conferir se ela estava planejada.`,
+  }),
+
+  limitPassed: (category: string, limit: string, spent: string, over: string): InsightCopy => ({
+    title: `${category} passou do limite de ${limit}`,
+    tip: `Você gastou ${spent}, ${over} acima. Segurar essa categoria nos próximos dias evita que o mês estoure.`,
+  }),
+  limitNear: (category: string, percent: number, left: string): InsightCopy => ({
+    title: `${category} chegou a ${percent}% do limite`,
+    tip: `Restam ${left} até o fim do mês nessa categoria.`,
   }),
 
   paceNeutral: (month: string, projected: string, perDay: string): InsightCopy => ({

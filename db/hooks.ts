@@ -2,14 +2,24 @@ import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
+import { type BudgetEntry } from '@/utils/budget';
+import { limitsForMonth, type CategoryBudgetEntry } from '@/utils/categoryBudget';
+import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
-import { monthKey, previousMonthKey } from '@/utils/month';
+import { addMonths, monthKey } from '@/utils/month';
+import { futureMonths, plannedTransactions } from '@/utils/recurrence';
+import { type RecurrenceRecord } from '@/utils/recurrence-type';
 
+import { getBudgetEntries } from './budgets';
 import { getCards, type CardRecord } from './cards';
+import { getCategoryBudgetEntries } from './categoryBudgets';
 import { getCategories, type CategoryRecord } from './categories';
+import { useRefetchOnDataChange } from './events';
 import { getProfile, type ProfileRecord } from './profile';
+import { getRecurrences } from './recurrences';
 import {
   getCategoryTotals,
+  getMonthlyTotals,
   getTransactions,
   type CategoryTotal,
   type TransactionFilters,
@@ -19,7 +29,9 @@ import {
 // Screens under a Stack navigator stay mounted when you navigate away and back
 // (e.g. registrationSpent -> wallet), so a plain useEffect-on-mount would miss
 // data written elsewhere. Refetching on focus keeps every screen showing
-// what's actually in the database.
+// what's actually in the database. Data that changes without a screen doing it (the recurring
+// expenses that fell due while the app was in the background) calls `notifyDataChanged`, and
+// `useRefetchOnDataChange` makes each hook below read again.
 
 export function useCards() {
   const db = useSQLiteContext();
@@ -37,44 +49,175 @@ export function useCards() {
       refetch();
     }, [refetch])
   );
+  useRefetchOnDataChange(refetch);
 
   return { cards, loading, refetch };
 }
 
-export function useTransactions(filters: TransactionFilters = {}) {
+// The recurring expenses, with their category and account. Only read when asked to: most screens do not need them.
+export function useRecurrences(enabled = true) {
   const db = useSQLiteContext();
-  const { cardId, month, limit } = filters;
-  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [recurrences, setRecurrences] = useState<RecurrenceRecord[]>([]);
+  const [loading, setLoading] = useState(enabled);
 
   const refetch = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
-    setTransactions(await getTransactions(db, { cardId, month, limit }));
+    setRecurrences(await getRecurrences(db));
     setLoading(false);
-  }, [db, cardId, month, limit]);
+  }, [db, enabled]);
 
   useFocusEffect(
     useCallback(() => {
       refetch();
     }, [refetch])
   );
+  useRefetchOnDataChange(refetch);
 
-  return { transactions, loading, refetch };
+  return { recurrences, loading, refetch };
+}
+
+// A month that has not started has no transactions yet: what shows in it is what the recurring
+// expenses plan for it, as rows marked `planned` (see utils/recurrence.ts).
+export function useTransactions(filters: TransactionFilters = {}) {
+  const db = useSQLiteContext();
+  const { cardId, month, limit } = filters;
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const future = month !== undefined && month > monthKey(new Date());
+  const { recurrences } = useRecurrences(future);
+  const planned = useMemo(
+    () => (future && month ? plannedTransactions(recurrences, month, new Date(), { cardId }) : []),
+    [future, month, recurrences, cardId]
+  );
+
+  const refetch = useCallback(async () => {
+    if (future) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setTransactions(await getTransactions(db, { cardId, month, limit }));
+    setLoading(false);
+  }, [db, cardId, month, limit, future]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  const shown = future ? (limit !== undefined ? planned.slice(0, limit) : planned) : transactions;
+  return { transactions: shown, loading, refetch };
+}
+
+// A month's transactions and the month before it: what the Dashboard and the insights compare.
+export function useMonthTransactions(month: string) {
+  const { transactions: current } = useTransactions({ month });
+  const { transactions: previous } = useTransactions({ month: addMonths(month, -1) });
+  return { current, previous };
 }
 
 // Tips and insights for the current month, drawn from this and the previous month's transactions.
 // It also hands back the two months it read, so a screen that needs them does not fetch them twice.
 export function useInsights() {
   const now = new Date();
-  const { transactions: current } = useTransactions({ month: monthKey(now) });
-  const { transactions: previous } = useTransactions({ month: previousMonthKey(now) });
+  const { current, previous } = useMonthTransactions(monthKey(now));
+  const { entries: limitEntries } = useCategoryBudgets();
 
   const insights = useMemo(
-    () => generateInsights({ current, previous, now: new Date() }),
-    [current, previous]
+    () =>
+      generateInsights({
+        current,
+        previous,
+        now: new Date(),
+        limits: limitsForMonth(limitEntries, monthKey(new Date())),
+      }),
+    [current, previous, limitEntries]
   );
 
   return { insights, current, previous };
+}
+
+// The spending limit of each category, kept per month like the monthly budget (utils/categoryBudget.ts).
+export function useCategoryBudgets() {
+  const db = useSQLiteContext();
+  const [entries, setEntries] = useState<CategoryBudgetEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setEntries(await getCategoryBudgetEntries(db));
+    setLoading(false);
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  return { entries, loading, refetch };
+}
+
+// The monthly budget is kept per month: see utils/budget.ts for how a month's amount is picked.
+export function useBudgetEntries() {
+  const db = useSQLiteContext();
+  const [entries, setEntries] = useState<BudgetEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setEntries(await getBudgetEntries(db));
+    setLoading(false);
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  return { entries, loading, refetch };
+}
+
+// Every month with transactions (and the current one), newest first, for the history.
+export function useMonthlyHistory() {
+  const db = useSQLiteContext();
+  const { entries: budgets } = useBudgetEntries();
+  const [totals, setTotals] = useState<Awaited<ReturnType<typeof getMonthlyTotals>>>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setTotals(await getMonthlyTotals(db));
+    setLoading(false);
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  const history = useMemo(
+    () => buildHistory({ totals, budgets, currentMonth: monthKey(new Date()) }),
+    [totals, budgets]
+  );
+
+  return { history, loading };
+}
+
+// The months ahead that have something planned in them, for the history.
+export function useFutureMonths() {
+  const { recurrences } = useRecurrences();
+  const { entries: budgets } = useBudgetEntries();
+  return useMemo(() => futureMonths(recurrences, budgets, new Date()), [recurrences, budgets]);
 }
 
 export function useCategoryTotals(filters: { month?: string } = {}) {
@@ -83,19 +226,44 @@ export function useCategoryTotals(filters: { month?: string } = {}) {
   const [totals, setTotals] = useState<CategoryTotal[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const future = month !== undefined && month > monthKey(new Date());
+  const { recurrences } = useRecurrences(future);
+  const planned = useMemo(() => {
+    if (!future || !month) return [];
+    const byCategory = new Map<string, CategoryTotal>();
+    for (const t of plannedTransactions(recurrences, month, new Date())) {
+      const entry = byCategory.get(t.categoryId) ?? {
+        categoryId: t.categoryId,
+        categoryName: t.categoryName,
+        icon: t.categoryIcon,
+        color: t.categoryColor,
+        bg: `${t.categoryColor}1F`,
+        total: 0,
+      };
+      entry.total += Math.abs(t.amount);
+      byCategory.set(t.categoryId, entry);
+    }
+    return [...byCategory.values()].sort((x, y) => y.total - x.total);
+  }, [future, month, recurrences]);
+
   const refetch = useCallback(async () => {
+    if (future) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setTotals(await getCategoryTotals(db, { month }));
     setLoading(false);
-  }, [db, month]);
+  }, [db, month, future]);
 
   useFocusEffect(
     useCallback(() => {
       refetch();
     }, [refetch])
   );
+  useRefetchOnDataChange(refetch);
 
-  return { totals, loading, refetch };
+  return { totals: future ? planned : totals, loading, refetch };
 }
 
 export function useCategories() {
@@ -114,6 +282,7 @@ export function useCategories() {
       refetch();
     }, [refetch])
   );
+  useRefetchOnDataChange(refetch);
 
   return { categories, loading, refetch };
 }
@@ -134,6 +303,7 @@ export function useProfile() {
       refetch();
     }, [refetch])
   );
+  useRefetchOnDataChange(refetch);
 
   return { profile, loading, refetch };
 }

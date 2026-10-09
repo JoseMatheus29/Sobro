@@ -6,6 +6,7 @@ import {
   DEFAULT_CATEGORY_TIP,
   GOOD_SAVINGS_RATE,
   INSIGHT_COPY,
+  LIMIT_WARN_AT,
   MIN_EXPENSES_FOR_BREAKDOWN,
   PACE_MIN_DAY,
   SPIKE_MIN_INCREASE,
@@ -17,6 +18,7 @@ import {
   type InsightTone,
 } from './insightRules-type';
 import { daysInMonth, MONTH_NAMES } from './month';
+import { withoutTransfers } from './transfer';
 
 interface CategorySum {
   id: string;
@@ -46,7 +48,10 @@ function sumByCategory(expenses: TransactionRecord[]): Map<string, CategorySum> 
 // Insights and tips drawn from what the user registered: this month against the same stretch of
 // the last one, where the money goes, and where the month is heading. Rule-based and on-device,
 // like the rest of the app. Most relevant first.
-export function generateInsights({ current, previous, now }: InsightInput): Insight[] {
+export function generateInsights({ current: allCurrent, previous: allPrevious, now, limits }: InsightInput): Insight[] {
+  // Moving money between accounts says nothing about how the person spends.
+  const current = withoutTransfers(allCurrent);
+  const previous = withoutTransfers(allPrevious);
   const month = MONTH_NAMES[now.getUTCMonth()];
   const previousMonth = MONTH_NAMES[(now.getUTCMonth() + 11) % 12];
   const day = now.getUTCDate();
@@ -137,6 +142,28 @@ export function generateInsights({ current, previous, now }: InsightInput): Insi
         'warning',
         spike.category.icon,
         INSIGHT_COPY.categorySpike(spike.category.name, percent(spike.ratio), previousMonth, formatMoney(spike.increase))
+      );
+    }
+  }
+
+  // A category close to, or past, the limit set for it: the one furthest along.
+  if (limits) {
+    let worst: { category: CategorySum; limit: number; use: number } | null = null;
+    for (const category of sumByCategory(expenses).values()) {
+      const limit = limits[category.id];
+      if (!limit) continue;
+      const use = category.total / limit;
+      if (use >= LIMIT_WARN_AT && (!worst || use > worst.use)) worst = { category, limit, use };
+    }
+    if (worst) {
+      const { category, limit, use } = worst;
+      add(
+        'category-limit',
+        'warning',
+        category.icon,
+        use >= 1
+          ? INSIGHT_COPY.limitPassed(category.name, formatMoney(limit), formatMoney(category.total), formatMoney(category.total - limit))
+          : INSIGHT_COPY.limitNear(category.name, percent(use), formatMoney(limit - category.total))
       );
     }
   }

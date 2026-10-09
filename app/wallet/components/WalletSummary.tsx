@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { palette } from '@/constants/palette';
-import { WalletSummaryProps } from '../wallet-type';
+import { withoutTransfers } from '@/utils/transfer';
+import { EDIT_ACCOUNT_ACTION, TRANSFER_ACTION, WalletSummaryProps } from '../wallet-type';
 
-export default function WalletSummary({ activeCard, transactions, onEditCard }: WalletSummaryProps) {
-  const income = transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expense = transactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+export default function WalletSummary({ activeCard, transactions, onEditCard, onTransfer }: WalletSummaryProps) {
+  // Receitas and despesas leave out what only moved between accounts; the saldo is the account's own.
+  const real = withoutTransfers(transactions);
+  const income = real.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+  const expense = real.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
   const formatCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
 
@@ -28,10 +31,18 @@ export default function WalletSummary({ activeCard, transactions, onEditCard }: 
         ))}
       </View>
 
-      <TouchableOpacity onPress={onEditCard} className="flex-row items-center justify-center gap-1.5 mt-5 pt-4 border-t border-surface">
-        <Icon name="edit" size={14} color="#3161B2" />
-        <Text className="text-[12px] font-semibold text-[#3161B2]">Editar conta</Text>
-      </TouchableOpacity>
+      <View className="flex-row items-center justify-center gap-6 mt-5 pt-4 border-t border-surface">
+        <TouchableOpacity onPress={onEditCard} className="flex-row items-center gap-1.5">
+          <Icon name="edit" size={14} color={palette.primary.DEFAULT} />
+          <Text className="text-[12px] font-semibold text-primary">{EDIT_ACCOUNT_ACTION}</Text>
+        </TouchableOpacity>
+        {onTransfer && (
+          <TouchableOpacity onPress={onTransfer} className="flex-row items-center gap-1.5">
+            <Icon name="swap-horiz" size={16} color={palette.primary.DEFAULT} />
+            <Text className="text-[12px] font-semibold text-primary">{TRANSFER_ACTION}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }

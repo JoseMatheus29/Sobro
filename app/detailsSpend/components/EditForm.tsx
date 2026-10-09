@@ -96,7 +96,7 @@ export default function EditForm({
         </Text>
       </DetailRow>
 
-      <DetailRow icon="credit-card" color={palette.primary.DEFAULT} label={FIELD_LABELS.card} onPress={onPickCard}>
+      <DetailRow icon="account-balance-wallet" color={palette.primary.DEFAULT} label={FIELD_LABELS.card} onPress={onPickCard}>
         <Text className={INPUT_CLASS}>{card?.name ?? SELECT_LABEL}</Text>
       </DetailRow>
 

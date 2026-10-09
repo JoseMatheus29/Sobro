@@ -2,6 +2,7 @@ import { type ViewStyle } from 'react-native';
 
 import { palette } from '@/constants/palette';
 import { type CardRecord } from '@/db/cards';
+import { type RepeatMode } from '@/utils/recurrence-type';
 
 export type TxType = 'expense' | 'income';
 export type FlowStep = 1 | 2 | 3;
@@ -63,6 +64,27 @@ export interface DetailsStepProps {
   setDate: (d: Date) => void;
   onEditAmount: () => void;
   onEditCategory: () => void;
+  /** Only an expense can repeat. */
+  type: TxType;
+  /** The amount in reais, for the summary of the repetition. */
+  amountValue: number;
+  repeat: RepeatMode;
+  setRepeat: (mode: RepeatMode) => void;
+  installments: number;
+  setInstallments: (n: number) => void;
+  currentInstallment: number;
+  setCurrentInstallment: (n: number) => void;
+}
+
+export interface RepeatSectionProps {
+  amountValue: number;
+  date: Date;
+  repeat: RepeatMode;
+  setRepeat: (mode: RepeatMode) => void;
+  installments: number;
+  setInstallments: (n: number) => void;
+  currentInstallment: number;
+  setCurrentInstallment: (n: number) => void;
 }
 
 export const TYPE_COLORS: Record<TxType, string> = {
@@ -117,8 +139,8 @@ export const MAX_AMOUNT_DIGITS = 9;
 // Default categories that only make sense for one direction. Everything else
 // (including categories the user creates, and "Outros") shows for both.
 export const CATEGORY_IDS_HIDDEN_FOR: Record<TxType, string[]> = {
-  expense: ['salary', 'invest'],
-  income: ['food', 'transport', 'leisure', 'health', 'shopping'],
+  expense: ['salary', 'invest', 'transfer'],
+  income: ['food', 'transport', 'leisure', 'health', 'shopping', 'transfer'],
 };
 
 // The screen is a sheet over the screen it was opened from.
@@ -135,4 +157,24 @@ export const VALIDATION_MESSAGES = {
 export const SAVED_TITLES: Record<TxType, string> = {
   expense: 'Saída registrada',
   income: 'Entrada registrada',
+};
+
+// Repeating an expense: every month, or in installments.
+export const REPEAT_TITLE = 'Repetir';
+export const REPEAT_OPTIONS: { mode: RepeatMode; label: string }[] = [
+  { mode: 'none', label: 'Não repete' },
+  { mode: 'monthly', label: 'Todo mês' },
+  { mode: 'installments', label: 'Parcelado' },
+];
+export const INSTALLMENTS_LABEL = 'Parcelas';
+export const CURRENT_INSTALLMENT_LABEL = 'Estou na parcela';
+export const MONTHLY_SUMMARY_TITLE = (day: number) => `Todo mês, no dia ${day}`;
+export const MONTHLY_SUMMARY_TEXT = 'Sem data para acabar. Você pode encerrar quando quiser, nos detalhes da transação.';
+export const INSTALLMENT_SUMMARY_TITLE = (remaining: number, amount: string) =>
+  remaining === 1 ? `1 parcela restante de ${amount}` : `${remaining} parcelas restantes de ${amount}`;
+export const INSTALLMENT_SUMMARY_TEXT = (total: string, lastMonth: string) =>
+  `Total a pagar ${total} · a última em ${lastMonth}. As próximas aparecem nos meses seguintes como previstas.`;
+export const REPEATING_TOAST_SUFFIX = {
+  monthly: 'repete todo mês',
+  installments: 'parcelado',
 };

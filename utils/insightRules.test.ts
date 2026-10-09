@@ -188,6 +188,47 @@ describe('generateInsights', () => {
     });
   });
 
+  describe('category limits', () => {
+    const dining = (amount: number) => expense(amount);
+    const bus = (amount: number) =>
+      expense(amount, { categoryId: 'transport', categoryName: 'Transporte', categoryIcon: 'directions-car' });
+
+    it('warns when a category passed its limit', () => {
+      const result = generateInsights({ current: [dining(700), dining(500)], previous: [], now: NOW, limits: { food: 1000 } });
+      const limit = find(result, 'category-limit');
+      expect(limit?.tone).toBe('warning');
+      expect(limit?.title).toBe('Alimentação passou do limite de R$ 1.000,00');
+      expect(limit?.tip).toContain('R$ 200,00 acima');
+    });
+
+    it('warns when a category is close to its limit', () => {
+      const result = generateInsights({ current: [dining(850)], previous: [], now: NOW, limits: { food: 1000 } });
+      const limit = find(result, 'category-limit');
+      expect(limit?.title).toBe('Alimentação chegou a 85% do limite');
+      expect(limit?.tip).toContain('R$ 150,00');
+    });
+
+    it('says nothing while a category is well under its limit', () => {
+      const result = generateInsights({ current: [dining(300)], previous: [], now: NOW, limits: { food: 1000 } });
+      expect(find(result, 'category-limit')).toBeUndefined();
+    });
+
+    it('picks the category that is furthest along', () => {
+      const result = generateInsights({
+        current: [dining(900), bus(300)],
+        previous: [],
+        now: NOW,
+        limits: { food: 1000, transport: 300 },
+      });
+      expect(find(result, 'category-limit')?.title).toContain('Transporte');
+    });
+
+    it('ignores categories with no limit, and everything when none was given', () => {
+      expect(find(generateInsights({ current: [dining(5000)], previous: [], now: NOW, limits: {} }), 'category-limit')).toBeUndefined();
+      expect(find(generateInsights({ current: [dining(5000)], previous: [], now: NOW }), 'category-limit')).toBeUndefined();
+    });
+  });
+
   describe('pace of the month', () => {
     it('projects the month from the daily average', () => {
       const result = generateInsights({ current: [expense(90)], previous: [], now: NOW });

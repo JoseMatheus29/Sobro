@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Switch } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { palette } from '@/constants/palette';
+import { BUDGET_HINT, REMINDERS_HINT, REMINDERS_LABEL } from '../editAcount-type';
 
 const CURRENCIES = ['BRL', 'USD', 'EUR'];
 
@@ -11,10 +12,12 @@ interface PreferencesFormProps {
   setCurrency: (v: string) => void;
   monthlyBudget: string;
   setMonthlyBudget: (v: string) => void;
+  remindersEnabled: boolean;
+  setRemindersEnabled: (v: boolean) => void;
 }
 
 export default function PreferencesForm({
-  currency, setCurrency, monthlyBudget, setMonthlyBudget
+  currency, setCurrency, monthlyBudget, setMonthlyBudget, remindersEnabled, setRemindersEnabled
 }: PreferencesFormProps) {
   return (
     <View className="bg-white rounded-[24px] p-5 mb-4 shadow-lg shadow-[#3161B2]/10 elevation-4">
@@ -55,6 +58,21 @@ export default function PreferencesForm({
           value={monthlyBudget}
           onChangeText={setMonthlyBudget}
           keyboardType="numeric"
+        />
+      </View>
+      <Text className="text-xs text-muted mt-2">{BUDGET_HINT}</Text>
+
+      <View className="flex-row items-center gap-3 mt-5 pt-4 border-t border-line">
+        <View className="flex-1">
+          <Text className="text-[15px] font-semibold text-ink">{REMINDERS_LABEL}</Text>
+          <Text className="text-xs text-muted mt-0.5">{REMINDERS_HINT}</Text>
+        </View>
+        <Switch
+          value={remindersEnabled}
+          onValueChange={setRemindersEnabled}
+          trackColor={{ false: palette.surface.dark, true: palette.primary.light }}
+          thumbColor={remindersEnabled ? palette.primary.DEFAULT : '#FFFFFF'}
+          accessibilityLabel={REMINDERS_LABEL}
         />
       </View>
     </View>

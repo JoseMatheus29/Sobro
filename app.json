@@ -1,21 +1,26 @@
 {
   "expo": {
     "name": "Sobrô?",
-    "slug": "JM-Finance",
+    "slug": "sobro",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "sobro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "package": "com.jm.finance",
+      "package": "com.josematheus.sobro",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#2e6caf"
+        "backgroundColor": "#24498c"
       }
     },
     "web": {
@@ -28,19 +33,20 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 140,
+          "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
       ],
       "expo-sqlite",
-      "@react-native-community/datetimepicker",
       [
-        "expo-image-picker",
+        "expo-notifications",
         {
-          "photosPermission": "O app usa suas fotos para definir a imagem do seu perfil."
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#3161B2"
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

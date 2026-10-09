@@ -35,6 +35,8 @@ export interface InsightHighlightProps {
 }
 
 export interface RecentTransactionsProps {
+  /** Heading of the list: it names the month when that is not the current one. */
+  title: string;
   transactions: TransactionRecord[];
   onSeeAll: () => void;
   onPressItem: (id: number) => void;
@@ -55,8 +57,10 @@ export const FLOW_BAR_MIN_PERCENT = 3;
 export const INSIGHT_COUNT_LABEL =(count: number) =>
   count === 1 ? '1 dica para você' : `${count} dicas para você`;
 
-export const RECENT_TITLE ='Últimas transações';
+export const RECENT_TITLE = 'Últimas transações';
+export const RECENT_MONTH_TITLE = (monthName: string) => `Transações de ${monthName}`;
 export const RECENT_ACTION_LABEL = 'Ver todas';
+export const PLANNED_TITLE = (monthName: string) => `Previstos para ${monthName}`;
 export const EMPTY_RECENT_MESSAGE = 'Suas transações aparecem aqui';
 
 // How far the summary card is pulled up over the blue header.

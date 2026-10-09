@@ -82,8 +82,28 @@ export async function updateCard(
   await db.runAsync(`UPDATE cards SET ${fields.join(', ')} WHERE id = ?`, values);
 }
 
+// The transactions of an account, and the other leg of every transfer it took part in: a transfer
+// whose other half is gone would leave the other account's balance wrong.
+const OF_ACCOUNT = `(card_id = ? OR transfer_id IN (SELECT transfer_id FROM transactions WHERE card_id = ? AND transfer_id IS NOT NULL))`;
+
+// What deleting an account would take with it, to tell the person before it happens.
+export async function getCardUsage(
+  db: SQLiteDatabase,
+  id: number
+): Promise<{ transactions: number; recurrences: number }> {
+  const row = await db.getFirstAsync<{ transactions: number; recurrences: number }>(
+    `SELECT (SELECT COUNT(*) FROM transactions WHERE ${OF_ACCOUNT}) as transactions,
+            (SELECT COUNT(*) FROM recurrences WHERE card_id = ?) as recurrences`,
+    id,
+    id,
+    id
+  );
+  return row ?? { transactions: 0, recurrences: 0 };
+}
+
 export async function deleteCard(db: SQLiteDatabase, id: number): Promise<void> {
-  // no FK cascade in SQLite by default: drop this card's transactions first to avoid orphans
-  await db.runAsync('DELETE FROM transactions WHERE card_id = ?', id);
+  // no FK cascade in SQLite by default: drop what points at this card first to avoid orphans
+  await db.runAsync('DELETE FROM recurrences WHERE card_id = ?', id);
+  await db.runAsync(`DELETE FROM transactions WHERE ${OF_ACCOUNT}`, id, id);
   await db.runAsync('DELETE FROM cards WHERE id = ?', id);
 }

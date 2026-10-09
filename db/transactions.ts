@@ -1,6 +1,17 @@
 import { type SQLiteDatabase } from 'expo-sqlite';
 
+import { type MonthTotals } from '@/utils/history-type';
+
 export type TransactionType = 'income' | 'expense';
+
+// Set on the transactions that come from a recurring expense (see utils/recurrence.ts).
+export interface TransactionRecurrence {
+  id: number;
+  /** Number of this payment in its plan; null for a plain monthly one. */
+  installment: number | null;
+  /** Payments in the plan; null for a plain monthly one. */
+  total: number | null;
+}
 
 export interface TransactionRecord {
   id: number;
@@ -16,6 +27,11 @@ export interface TransactionRecord {
   type: TransactionType;
   occurredAt: string; // ISO 8601
   createdAt: string;
+  recurrence?: TransactionRecurrence | null;
+  /** True for a calculated row of a month that has not started: it is not in the database. */
+  planned?: boolean;
+  /** Shared by the two legs of a transfer between accounts; null for an ordinary transaction. */
+  transferId?: number | null;
 }
 
 interface TransactionRow {
@@ -32,6 +48,10 @@ interface TransactionRow {
   type: TransactionType;
   occurred_at: string;
   created_at: string;
+  recurrence_id: number | null;
+  installment: number | null;
+  recurrence_total: number | null;
+  transfer_id: number | null;
 }
 
 export interface TransactionFilters {
@@ -46,10 +66,12 @@ const SELECT_TRANSACTIONS = `
   SELECT
     t.id, t.card_id, c.name as card_name,
     t.category_id, cat.name as category_name, cat.icon as category_icon, cat.color as category_color,
-    t.name, t.description, t.amount, t.type, t.occurred_at, t.created_at
+    t.name, t.description, t.amount, t.type, t.occurred_at, t.created_at,
+    t.recurrence_id, t.installment, rec.total as recurrence_total, t.transfer_id
   FROM transactions t
   JOIN cards c ON c.id = t.card_id
   JOIN categories cat ON cat.id = t.category_id
+  LEFT JOIN recurrences rec ON rec.id = t.recurrence_id
 `;
 
 function mapRow(row: TransactionRow): TransactionRecord {
@@ -67,6 +89,11 @@ function mapRow(row: TransactionRow): TransactionRecord {
     type: row.type,
     occurredAt: row.occurred_at,
     createdAt: row.created_at,
+    recurrence:
+      row.recurrence_id !== null
+        ? { id: row.recurrence_id, installment: row.installment, total: row.recurrence_total }
+        : null,
+    transferId: row.transfer_id,
   };
 }
 
@@ -109,19 +136,24 @@ export async function createTransaction(
     amount: number; // unsigned magnitude; sign is derived from `type` here
     type: TransactionType;
     occurredAt: string;
+    /** Set when this is the first occurrence of a recurring expense. */
+    recurrenceId?: number;
+    installment?: number;
   }
 ): Promise<number> {
   const signedAmount = input.type === 'expense' ? -Math.abs(input.amount) : Math.abs(input.amount);
   const result = await db.runAsync(
-    `INSERT INTO transactions (card_id, category_id, name, description, amount, type, occurred_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO transactions (card_id, category_id, name, description, amount, type, occurred_at, recurrence_id, installment)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     input.cardId,
     input.categoryId,
     input.name,
     input.description ?? null,
     signedAmount,
     input.type,
-    input.occurredAt
+    input.occurredAt,
+    input.recurrenceId ?? null,
+    input.installment ?? null
   );
   return result.lastInsertRowId;
 }
@@ -171,6 +203,80 @@ export async function deleteTransaction(db: SQLiteDatabase, id: number): Promise
   await db.runAsync('DELETE FROM transactions WHERE id = ?', id);
 }
 
+export const TRANSFER_CATEGORY_ID = 'transfer';
+
+// Moves money from one account to another: an expense in the first and an income in the second, tied
+// by `transfer_id`. Both change the balances, but neither counts as the month's income or expense.
+export async function createTransfer(
+  db: SQLiteDatabase,
+  input: {
+    fromCardId: number;
+    fromName: string;
+    toCardId: number;
+    toName: string;
+    amount: number; // unsigned magnitude
+    description?: string;
+    occurredAt: string;
+  }
+): Promise<void> {
+  const amount = Math.abs(input.amount);
+  await db.withTransactionAsync(async () => {
+    const out = await db.runAsync(
+      `INSERT INTO transactions (card_id, category_id, name, description, amount, type, occurred_at)
+       VALUES (?, ?, ?, ?, ?, 'expense', ?)`,
+      input.fromCardId,
+      TRANSFER_CATEGORY_ID,
+      `Para ${input.toName}`,
+      input.description ?? null,
+      -amount,
+      input.occurredAt
+    );
+    // The first leg's id names the transfer.
+    const transferId = out.lastInsertRowId;
+    await db.runAsync('UPDATE transactions SET transfer_id = ? WHERE id = ?', transferId, transferId);
+    await db.runAsync(
+      `INSERT INTO transactions (card_id, category_id, name, description, amount, type, occurred_at, transfer_id)
+       VALUES (?, ?, ?, ?, ?, 'income', ?, ?)`,
+      input.toCardId,
+      TRANSFER_CATEGORY_ID,
+      `De ${input.fromName}`,
+      input.description ?? null,
+      amount,
+      input.occurredAt,
+      transferId
+    );
+  });
+}
+
+// Both legs of a transfer, the one that left first.
+export async function getTransferLegs(db: SQLiteDatabase, transferId: number): Promise<TransactionRecord[]> {
+  const rows = await db.getAllAsync<TransactionRow>(
+    `${SELECT_TRANSACTIONS} WHERE t.transfer_id = ? ORDER BY t.type DESC, t.id ASC`,
+    transferId
+  );
+  return rows.map(mapRow);
+}
+
+// Deleting a transfer takes away both legs, or the balances would be left wrong.
+export async function deleteTransfer(db: SQLiteDatabase, transferId: number): Promise<void> {
+  await db.runAsync('DELETE FROM transactions WHERE transfer_id = ?', transferId);
+}
+
+// What each month with transactions took in and put out, for the history. Transfers between
+// accounts are neither.
+export async function getMonthlyTotals(db: SQLiteDatabase): Promise<MonthTotals[]> {
+  const rows = await db.getAllAsync<{ month: string; income: number; expense: number }>(
+    `SELECT substr(occurred_at, 1, 7) AS month,
+            SUM(CASE WHEN type = 'income' THEN ABS(amount) ELSE 0 END) AS income,
+            SUM(CASE WHEN type = 'expense' THEN ABS(amount) ELSE 0 END) AS expense
+     FROM transactions
+     WHERE transfer_id IS NULL
+     GROUP BY month
+     ORDER BY month DESC`
+  );
+  return rows;
+}
+
 export interface CategoryTotal {
   categoryId: string;
   categoryName: string;
@@ -184,7 +290,7 @@ export async function getCategoryTotals(
   db: SQLiteDatabase,
   filters: { month?: string } = {}
 ): Promise<CategoryTotal[]> {
-  const conditions = ["t.type = 'expense'"];
+  const conditions = ["t.type = 'expense'", 't.transfer_id IS NULL'];
   const params: string[] = [];
   if (filters.month) {
     conditions.push('t.occurred_at LIKE ?');

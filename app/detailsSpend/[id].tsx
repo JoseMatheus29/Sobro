@@ -14,7 +14,10 @@ import PickerSheet from '../components/ui/PickerSheet';
 import ScreenHeader from '../components/ui/ScreenHeader';
 import ScreenScroll from '../components/ui/ScreenScroll';
 import EditForm from './components/EditForm';
+import RecurrenceCard from './components/RecurrenceCard';
+import TransferDetails from './components/TransferDetails';
 import {
+  APPLY_CONFIRM,
   CARD_SHEET_TITLE,
   CATEGORY_SHEET_TITLE,
   DELETE_BUTTON_BG,
@@ -22,17 +25,25 @@ import {
   DELETE_LABEL,
   DELETED_TOAST,
   DETAILS_TITLE,
+  END_CONFIRM,
+  ENDED_TOAST,
   FALLBACK_CATEGORY_ID,
   FIELD_LABELS,
   MISSING_HINT,
   NOT_FOUND_MESSAGE,
+  RECURRENCE_ENDED_BY_TYPE,
   SAVE_LABEL,
   UPDATED_TITLE,
 } from './detailsSpend-type';
 import { DISABLED_GRADIENT, TYPE_COLORS, type TxType } from '../registrationSpent/registrationSpent-type';
 import { categoriesForType, formatCents } from '../registrationSpent/utils';
 import { palette } from '@/constants/palette';
+import { notifyDataChanged } from '@/db/events';
 import { useCards, useCategories } from '@/db/hooks';
+import { endRecurrence, getRecurrenceById, updateRecurrence } from '@/db/recurrences';
+import { refreshReminders } from '@/db/reminders';
+import { nextOccurrence } from '@/utils/recurrence';
+import { type RecurrenceRecord } from '@/utils/recurrence-type';
 import { deleteTransaction, getTransactionById, updateTransaction, type TransactionRecord } from '@/db/transactions';
 
 const toCents = (amount: number) => Math.round(Math.abs(amount) * 100).toString();
@@ -46,6 +57,7 @@ export default function DetailsSpend() {
   const { cards } = useCards();
 
   const [transaction, setTransaction] = useState<TransactionRecord | null>(null);
+  const [recurrence, setRecurrence] = useState<RecurrenceRecord | null>(null);
   const [loading, setLoading] = useState(true);
 
   // The form. It starts as a copy of the stored transaction and is compared with it to know what changed.
@@ -86,6 +98,19 @@ export default function DetailsSpend() {
     setDate(new Date(transaction.occurredAt));
   }, [transaction]);
 
+  // The recurring expense this transaction belongs to, if any.
+  const recurrenceId = transaction?.recurrence?.id;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const found = recurrenceId !== undefined ? await getRecurrenceById(db, recurrenceId) : null;
+      if (!cancelled) setRecurrence(found);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [recurrenceId, db]);
+
   // The tab bar would float above the keyboard and cover the form.
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -111,6 +136,9 @@ export default function DetailsSpend() {
       </View>
     );
   }
+
+  // The two legs of a transfer cannot be edited one by one: they are looked at, or undone together.
+  if (transaction.transferId != null) return <TransferDetails transaction={transaction} />;
 
   const cents = parseInt(amount || '0', 10) || 0;
   const typeColor = TYPE_COLORS[type];
@@ -146,6 +174,19 @@ export default function DetailsSpend() {
 
   const handleSave = async () => {
     if (!canSave || !categoryId || !cardId) return;
+
+    // A change to a recurring expense can also be applied to the occurrences still to come.
+    const active = recurrence !== null && nextOccurrence(recurrence) !== null;
+    const turnedIntoIncome = active && type === 'income';
+    const changedForNext =
+      active &&
+      !turnedIntoIncome &&
+      (cents !== Math.round(Math.abs(transaction.amount) * 100) ||
+        name.trim() !== transaction.name ||
+        categoryId !== transaction.categoryId ||
+        cardId !== transaction.cardId);
+    const applyToNext = changedForNext ? await confirm(APPLY_CONFIRM) : false;
+
     await updateTransaction(db, transaction.id, {
       cardId,
       categoryId,
@@ -155,14 +196,34 @@ export default function DetailsSpend() {
       type,
       occurredAt: date.toISOString(),
     });
+    if (recurrence && applyToNext) {
+      await updateRecurrence(db, recurrence.id, { cardId, categoryId, name: name.trim(), amount: cents / 100 });
+    }
+    if (recurrence && turnedIntoIncome) await endRecurrence(db, recurrence.id);
+    if (recurrence && (applyToNext || turnedIntoIncome)) {
+      setRecurrence(await getRecurrenceById(db, recurrence.id));
+      notifyDataChanged();
+      await refreshReminders(db);
+    }
     setTransaction(await getTransactionById(db, transaction.id));
     Keyboard.dismiss();
     showToast({
       type: 'success',
       title: UPDATED_TITLE,
-      message: `R$ ${formatCents(cents)} em ${category?.name ?? ''}`.trim(),
+      message: turnedIntoIncome
+        ? RECURRENCE_ENDED_BY_TYPE
+        : `R$ ${formatCents(cents)} em ${category?.name ?? ''}`.trim(),
       icon: category?.icon,
     });
+  };
+
+  const handleEndRecurrence = async () => {
+    if (!recurrence || !(await confirm(END_CONFIRM))) return;
+    await endRecurrence(db, recurrence.id);
+    setRecurrence(await getRecurrenceById(db, recurrence.id));
+    notifyDataChanged();
+    await refreshReminders(db);
+    showToast(ENDED_TOAST);
   };
 
   const handleDelete = async () => {
@@ -209,7 +270,15 @@ export default function DetailsSpend() {
             onPickDate={() => setShowDatePicker(true)}
           />
 
-          <View pointerEvents={canSave ? 'auto' : 'none'}>
+          {recurrence && transaction.recurrence && (
+          <RecurrenceCard
+            recurrence={recurrence}
+            installment={transaction.recurrence.installment}
+            onEnd={handleEndRecurrence}
+          />
+        )}
+
+        <View pointerEvents={canSave ? 'auto' : 'none'}>
             <GradientButton
               title={SAVE_LABEL}
               onPress={handleSave}
@@ -271,8 +340,8 @@ export default function DetailsSpend() {
         options={cards.map((c) => ({
           id: c.id,
           name: c.name,
-          sub: `•••• ${c.number}`,
-          icon: 'credit-card',
+          sub: c.number ? `•••• ${c.number}` : undefined,
+          icon: 'account-balance-wallet',
           color: c.color,
         }))}
         selectedId={cardId}

@@ -48,11 +48,14 @@ export async function updateCategory(
 /** Throws if the category still has transactions, instead of silently deleting expense history. */
 export async function deleteCategory(db: SQLiteDatabase, id: string): Promise<void> {
   const usage = await db.getFirstAsync<{ count: number }>(
-    'SELECT COUNT(*) as count FROM transactions WHERE category_id = ?',
+    `SELECT (SELECT COUNT(*) FROM transactions WHERE category_id = ?)
+          + (SELECT COUNT(*) FROM recurrences WHERE category_id = ?) as count`,
+    id,
     id
   );
   if (usage && usage.count > 0) {
     throw new Error('Não é possível excluir uma categoria com transações registradas.');
   }
+  await db.runAsync('DELETE FROM category_budgets WHERE category_id = ?', id);
   await db.runAsync('DELETE FROM categories WHERE id = ?', id);
 }

@@ -1,4 +1,4 @@
-# 💰 JM-Finance (Front-end)
+# 💰 Sobrô? (Front-end)
 🚀 Aplicativo mobile para gerenciamento financeiro pessoal, permitindo o cadastro de receitas, despesas e visualização de saldo por categorias.
 
 ## 📌 Tecnologias Utilizadas
@@ -11,10 +11,10 @@
 - **AsyncStorage** (Persistência local)
 
 ## 🎨 Design no Figma
-Estou desenvolvendo o design do aplicativo **JM-Finance** no **Figma**.  
+Estou desenvolvendo o design do aplicativo **Sobrô?** no **Figma**.  
 Você pode visualizar e acompanhar o protótipo pelo link abaixo:  
 
-🔗 [Figma - JM-Finance](https://www.figma.com/design/r33YHjHEGAaer8lXrO4k3b/JM-Finance?node-id=0-1&t=4jzZL5ecgusb36qF-1)  
+🔗 [Figma - Sobrô?](https://www.figma.com/design/r33YHjHEGAaer8lXrO4k3b/JM-Finance?node-id=0-1&t=4jzZL5ecgusb36qF-1)  
 
 Esse design orienta o desenvolvimento do app e garante uma interface intuitiva e agradável para os usuários.  
 

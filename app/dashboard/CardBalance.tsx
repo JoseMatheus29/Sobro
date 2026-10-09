@@ -17,6 +17,7 @@ import {
   BUDGET_WARN_AT,
   COMPARED_LABEL,
   NO_BUDGET_LABEL,
+  NO_BUDGET_PAST_LABEL,
   TRANSACTION_COUNT_LABEL,
 } from './cardBalance-type';
 
@@ -88,12 +89,17 @@ export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPre
             </Text>
           </View>
         </View>
-      ) : (
+      ) : onPressBudget ? (
         <TouchableOpacity onPress={onPressBudget} activeOpacity={0.8} className="flex-row items-center gap-2">
           <Icon name="flag" size={16} color={palette.primary.DEFAULT} />
           <Text className="flex-1 text-[13px] font-medium text-muted">{NO_BUDGET_LABEL}</Text>
           <Icon name="chevron-right" size={18} color={palette.subtle} />
         </TouchableOpacity>
+      ) : (
+        <View className="flex-row items-center gap-2">
+          <Icon name="flag" size={16} color={palette.subtle} />
+          <Text className="flex-1 text-[13px] font-medium text-muted">{NO_BUDGET_PAST_LABEL}</Text>
+        </View>
       )}
     </View>
   );

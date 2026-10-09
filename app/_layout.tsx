@@ -7,6 +7,8 @@ import { SQLiteProvider } from 'expo-sqlite';
 import { palette } from '@/constants/palette';
 import { migrateDbIfNeeded } from '@/db/schema';
 import { FeedbackProvider } from './components/feedback/FeedbackProvider';
+import { MonthProvider } from './components/month/MonthProvider';
+import RecurrenceSync from './components/RecurrenceSync';
 
 export default function Layout() {
   return (
@@ -17,34 +19,61 @@ export default function Layout() {
         </View>
       }
     >
-      <SQLiteProvider databaseName="jm-finance.db" onInit={migrateDbIfNeeded} useSuspense>
+      <SQLiteProvider databaseName="sobro.db" onInit={migrateDbIfNeeded} useSuspense>
         <FeedbackProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="dashboard/index" />
-            <Stack.Screen name="wallet/index" />
-            <Stack.Screen name="myDetailing/index" />
-            <Stack.Screen name="editAcount/index" />
-            {/* Folha sobre a tela de origem: o fundo da rota é transparente e a tela desenha o escurecimento. */}
-            <Stack.Screen
-              name="registrationSpent/index"
-              options={{
-                presentation: 'transparentModal',
-                animation: 'slide_from_bottom',
-                contentStyle: { backgroundColor: 'transparent' },
-              }}
-            />
-            <Stack.Screen name="detailsSpend/[id]" />
-            {/* Também uma folha, como a de nova transação. */}
-            <Stack.Screen
-              name="insights/index"
-              options={{
-                presentation: 'transparentModal',
-                animation: 'slide_from_bottom',
-                contentStyle: { backgroundColor: 'transparent' },
-              }}
-            />
-          </Stack>
+          <RecurrenceSync />
+          <MonthProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="dashboard/index" />
+              <Stack.Screen name="wallet/index" />
+              <Stack.Screen name="myDetailing/index" />
+              <Stack.Screen name="editAcount/index" />
+              {/* Folha sobre a tela de origem: o fundo da rota é transparente e a tela desenha o escurecimento. */}
+              <Stack.Screen
+                name="registrationSpent/index"
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+              <Stack.Screen name="detailsSpend/[id]" />
+              {/* Também folhas, como a de nova transação. */}
+              <Stack.Screen
+                name="history/index"
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+              <Stack.Screen
+                name="transfer/index"
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+              <Stack.Screen
+                name="search/index"
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+              <Stack.Screen
+                name="insights/index"
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'slide_from_bottom',
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+              />
+            </Stack>
+          </MonthProvider>
         </FeedbackProvider>
       </SQLiteProvider>
     </Suspense>

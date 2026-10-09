@@ -1,11 +1,13 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import MonthPill from '../../components/month/MonthPill';
 import { DashboardHeaderProps, GREETING } from '../dashboard-type';
 
-// Only the greeting; the summary card overlaps its lower edge.
+// The greeting on the left and the month on the right, on one line; the summary card overlaps
+// the lower edge.
 export default function DashboardHeader({ userName }: DashboardHeaderProps) {
   const firstName = userName?.trim().split(/\s+/)[0];
   const insets = useSafeAreaInsets();
@@ -18,9 +20,12 @@ export default function DashboardHeader({ userName }: DashboardHeaderProps) {
       className="pb-16 px-6"
       style={{ paddingTop: insets.top + 16 }}
     >
-      <Text className="text-white text-2xl font-extrabold tracking-tight">
-        {firstName ? `${GREETING}, ${firstName}` : GREETING}
-      </Text>
+      <View className="flex-row items-center justify-between gap-3">
+        <Text numberOfLines={1} className="flex-1 text-white text-2xl font-extrabold tracking-tight">
+          {firstName ? `${GREETING}, ${firstName}` : GREETING}
+        </Text>
+        <MonthPill />
+      </View>
     </LinearGradient>
   );
 }

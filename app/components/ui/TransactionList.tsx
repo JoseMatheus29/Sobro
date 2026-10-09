@@ -13,6 +13,12 @@ export interface Transaction {
   categoryIcon: string;
   categoryColor?: string;
   type: 'income' | 'expense';
+  /** "4/10" or "Todo mês", when it comes from a recurring expense. */
+  badge?: string;
+  /** Planned for a month that has not started. */
+  planned?: boolean;
+  /** A transfer between accounts. */
+  transfer?: boolean;
 }
 
 interface TransactionListProps {
@@ -54,6 +60,9 @@ export default function TransactionList({
             icon={t.categoryIcon}
             iconColor={t.categoryColor}
             type={t.type}
+            badge={t.badge}
+            planned={t.planned}
+            transfer={t.transfer}
             onPress={() => onPressItem?.(t.id)}
           />
         ))

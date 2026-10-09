@@ -5,10 +5,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { palette } from '@/constants/palette';
 import { CHANGE_LABEL, DetailsStepProps } from '../registrationSpent-type';
+import RepeatSection from './RepeatSection';
 
 export default function DetailsStep({
   typeColor, amountText, category, nome, setNome, descricao, setDescricao,
   cards, selectedCardId, setSelectedCardId, date, setDate, onEditAmount, onEditCategory,
+  type, amountValue, repeat, setRepeat, installments, setInstallments, currentInstallment, setCurrentInstallment,
 }: DetailsStepProps) {
   const [showPicker, setShowPicker] = useState(false);
 
@@ -83,11 +85,11 @@ export default function DetailsStep({
               style={{ backgroundColor: active ? `${typeColor}0F` : '#fff' }}
             >
               <View className="w-10 h-10 rounded-[14px] items-center justify-center" style={{ backgroundColor: `${card.color}1F` }}>
-                <Icon name="credit-card" size={20} color={card.color} />
+                <Icon name="account-balance-wallet" size={20} color={card.color} />
               </View>
               <View className="flex-1">
                 <Text className={`text-[15px] text-ink ${active ? 'font-bold' : 'font-medium'}`}>{card.name}</Text>
-                <Text className="text-xs text-muted">•••• {card.number}</Text>
+                {card.number ? <Text className="text-xs text-muted">•••• {card.number}</Text> : null}
               </View>
               <Icon
                 name={active ? 'radio-button-checked' : 'radio-button-unchecked'}
@@ -115,6 +117,18 @@ export default function DetailsStep({
         </View>
         <Text className="text-[13px] font-bold text-primary">{CHANGE_LABEL}</Text>
       </TouchableOpacity>
+      {type === 'expense' && (
+        <RepeatSection
+          amountValue={amountValue}
+          date={date}
+          repeat={repeat}
+          setRepeat={setRepeat}
+          installments={installments}
+          setInstallments={setInstallments}
+          currentInstallment={currentInstallment}
+          setCurrentInstallment={setCurrentInstallment}
+        />
+      )}
       {showPicker && (
         <DateTimePicker
           value={date}
