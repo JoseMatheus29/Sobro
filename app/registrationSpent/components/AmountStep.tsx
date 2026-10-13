@@ -2,20 +2,21 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import {
   AmountStepProps,
   CONTINUE_LABEL,
   KEYPAD_KEYS,
   MAX_AMOUNT_DIGITS,
-  TOGGLE_THUMB_STYLE,
+  toggleThumbStyle,
   TX_TYPE_OPTIONS,
-  TYPE_COLORS,
-} from '../registrationSpent-type';
-import { formatCents } from '../utils';
-import FlowButton from './FlowButton';
+  typeColors,
+} from '@/types/registrationSpent/registrationSpent-type';
+import { formatCents } from '@/utils/transactionForm';
+import FlowButton from '@/app/registrationSpent/components/FlowButton';
 
 export default function AmountStep({ type, setType, amount, setAmount, typeColor, onNext }: AmountStepProps) {
+  const colors = useColors();
   const cents = parseInt(amount || '0', 10) || 0;
 
   const press = (key: string) => {
@@ -32,7 +33,7 @@ export default function AmountStep({ type, setType, amount, setAmount, typeColor
       <View className="mx-5 mt-3.5 p-1 rounded-2xl bg-surface flex-row gap-1">
         {TX_TYPE_OPTIONS.map((option) => {
           const active = type === option.type;
-          const color = active ? TYPE_COLORS[option.type] : palette.muted;
+          const color = active ? typeColors(colors)[option.type] : colors.muted;
           return (
             <TouchableOpacity
               key={option.type}
@@ -40,7 +41,7 @@ export default function AmountStep({ type, setType, amount, setAmount, typeColor
               activeOpacity={0.85}
               accessibilityState={{ selected: active }}
               className="flex-1 h-11 rounded-xl flex-row items-center justify-center gap-1.5"
-              style={active ? TOGGLE_THUMB_STYLE : undefined}
+              style={active ? toggleThumbStyle(colors) : undefined}
             >
               <Icon name={option.icon} size={16} color={color} />
               <Text className="text-sm font-bold" style={{ color }}>{option.label}</Text>
@@ -56,7 +57,7 @@ export default function AmountStep({ type, setType, amount, setAmount, typeColor
             fontSize: 64,
             fontWeight: '900',
             letterSpacing: -2,
-            color: cents > 0 ? typeColor : '#B8C2D0',
+            color: cents > 0 ? typeColor : colors.placeholder,
           }}
         >
           {formatCents(cents)}
@@ -74,7 +75,7 @@ export default function AmountStep({ type, setType, amount, setAmount, typeColor
             className="w-1/3 h-16 items-center justify-center rounded-2xl"
           >
             {key === 'back' ? (
-              <Icon name="backspace" size={26} color={palette.ink} />
+              <Icon name="backspace" size={26} color={colors.ink} />
             ) : (
               <Text className="text-[28px] font-medium text-ink">{key}</Text>
             )}

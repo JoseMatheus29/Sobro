@@ -15,15 +15,15 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { useCards } from '@/db/hooks';
 import { createTransfer } from '@/db/transactions';
 import { formatMoney } from '@/utils/format';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import EmptyState from '../components/ui/EmptyState';
-import GradientButton from '../components/ui/GradientButton';
-import PickerSheet from '../components/ui/PickerSheet';
-import { CLOSE_LABEL, DISABLED_GRADIENT, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '../registrationSpent/registrationSpent-type';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import EmptyState from '@/app/components/ui/EmptyState';
+import GradientButton from '@/app/components/ui/GradientButton';
+import PickerSheet from '@/app/components/ui/PickerSheet';
+import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
 import {
   AMOUNT_LABEL,
   AMOUNT_PLACEHOLDER,
@@ -43,11 +43,12 @@ import {
   TO_SHEET_TITLE,
   TRANSFER_TITLE,
   TRANSFERRED_TOAST,
-} from './transfer-type';
+} from '@/types/transfer/transfer-type';
 
 // A sheet to move money from one account to another. It is not an income or an expense: it only
 // changes the balance of the two accounts.
 export default function TransferSheet() {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const db = useSQLiteContext();
@@ -101,17 +102,17 @@ export default function TransferSheet() {
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
-      className="h-[68px] bg-white rounded-[20px] px-4 flex-row items-center gap-3"
+      className="h-[68px] bg-card rounded-[20px] px-4 flex-row items-center gap-3"
     >
-      <View className="w-10 h-10 rounded-[14px] items-center justify-center" style={{ backgroundColor: `${card?.color ?? palette.subtle}1F` }}>
-        <Icon name="account-balance-wallet" size={20} color={card?.color ?? palette.subtle} />
+      <View className="w-10 h-10 rounded-[14px] items-center justify-center" style={{ backgroundColor: `${card?.color ?? colors.subtle}1F` }}>
+        <Icon name="account-balance-wallet" size={20} color={card?.color ?? colors.subtle} />
       </View>
       <View className="flex-1">
         <Text className="text-xs text-muted">{label}</Text>
         <Text className="text-base font-medium text-ink">{card?.name ?? SELECT_LABEL}</Text>
       </View>
       {card && <Text className="text-xs text-muted">{formatMoney(card.balance)}</Text>}
-      <Icon name="expand-more" size={20} color={palette.subtle} />
+      <Icon name="expand-more" size={20} color={colors.subtle} />
     </TouchableOpacity>
   );
 
@@ -131,7 +132,7 @@ export default function TransferSheet() {
             accessibilityLabel={CLOSE_LABEL}
             className="absolute left-3 w-11 h-11 rounded-[14px] bg-surface items-center justify-center"
           >
-            <Icon name="close" size={22} color={palette.primary.DEFAULT} />
+            <Icon name="close" size={22} color={colors.primary.DEFAULT} />
           </TouchableOpacity>
           <Text className="text-[17px] font-bold text-ink">{TRANSFER_TITLE}</Text>
         </View>
@@ -147,14 +148,14 @@ export default function TransferSheet() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View className="bg-white rounded-[20px] px-4 py-3">
+            <View className="bg-card rounded-[20px] px-4 py-3">
               <Text className="text-xs text-muted">{AMOUNT_LABEL}</Text>
               <View className="flex-row items-center">
                 <Text className="text-[28px] font-extrabold text-ink mr-2">R$</Text>
                 <TextInput
                   className="flex-1 text-[28px] font-extrabold text-ink py-1"
                   placeholder={AMOUNT_PLACEHOLDER}
-                  placeholderTextColor={palette.subtle}
+                  placeholderTextColor={colors.subtle}
                   value={amount}
                   onChangeText={setAmount}
                   keyboardType="numeric"
@@ -173,7 +174,7 @@ export default function TransferSheet() {
                 accessibilityLabel={SWAP_LABEL}
                 className="w-10 h-10 rounded-full bg-surface items-center justify-center"
               >
-                <Icon name="swap-vert" size={22} color={palette.primary.DEFAULT} />
+                <Icon name="swap-vert" size={22} color={colors.primary.DEFAULT} />
               </TouchableOpacity>
             </View>
             {account(toCard, TO_LABEL, () => setSheet('to'))}
@@ -181,10 +182,10 @@ export default function TransferSheet() {
             <TouchableOpacity
               onPress={() => setShowPicker(true)}
               activeOpacity={0.8}
-              className="h-16 bg-white rounded-[20px] px-4 flex-row items-center gap-3"
+              className="h-16 bg-card rounded-[20px] px-4 flex-row items-center gap-3"
             >
               <View className="w-10 h-10 rounded-[14px] bg-surface items-center justify-center">
-                <Icon name="event" size={20} color={palette.primary.DEFAULT} />
+                <Icon name="event" size={20} color={colors.primary.DEFAULT} />
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-muted">{DATE_LABEL}</Text>
@@ -194,12 +195,12 @@ export default function TransferSheet() {
               </View>
             </TouchableOpacity>
 
-            <View className="bg-white rounded-[20px] px-4 py-3">
+            <View className="bg-card rounded-[20px] px-4 py-3">
               <Text className="text-xs text-muted">{DESCRIPTION_LABEL}</Text>
               <TextInput
                 className="text-base font-medium text-ink pt-1 pb-0"
                 placeholder={DESCRIPTION_PLACEHOLDER}
-                placeholderTextColor={palette.subtle}
+                placeholderTextColor={colors.subtle}
                 value={description}
                 onChangeText={setDescription}
               />
@@ -211,8 +212,8 @@ export default function TransferSheet() {
               <GradientButton
                 title={SUBMIT_LABEL(valid ? formatMoney(value).replace('R$ ', '') : '')}
                 onPress={handleSubmit}
-                colors={canSubmit ? undefined : DISABLED_GRADIENT}
-                shadowColor={canSubmit ? undefined : DISABLED_GRADIENT[0]}
+                colors={canSubmit ? undefined : colors.disabledGradient}
+                shadowColor={canSubmit ? undefined : colors.disabledGradient[0]}
               />
             </View>
           </ScrollView>

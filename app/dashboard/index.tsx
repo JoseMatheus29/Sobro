@@ -2,17 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import SideBar from '../components/sidebar';
-import AddTransactionFab from '../components/AddTransactionFab';
-import { SCROLL_PADDING_WITH_FAB } from '../components/sidebar-type';
-import { useSelectedMonth } from '../components/month/MonthProvider';
-import ScreenScroll from '../components/ui/ScreenScroll';
-import CardBalance from './CardBalance';
-import DashboardHeader from './components/DashboardHeader';
-import FlowSection from './components/FlowSection';
-import InsightHighlight from './components/InsightHighlight';
-import PlannedCard from './components/PlannedCard';
-import RecentTransactions from './components/RecentTransactions';
+import SideBar from '@/app/components/sidebar';
+import AddTransactionFab from '@/app/components/AddTransactionFab';
+import { SCROLL_PADDING_WITH_FAB } from '@/types/components/sidebar-type';
+import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import CardBalance from '@/app/dashboard/components/CardBalance';
+import DashboardHeader from '@/app/dashboard/components/DashboardHeader';
+import FlowSection from '@/app/dashboard/components/FlowSection';
+import InsightHighlight from '@/app/dashboard/components/InsightHighlight';
+import PlannedCard from '@/app/dashboard/components/PlannedCard';
+import RecentTransactions from '@/app/dashboard/components/RecentTransactions';
 import {
   PLANNED_TITLE,
   RECENT_LIST_BORDER,
@@ -24,7 +24,7 @@ import {
   RECENT_TITLE_HEIGHT,
   SECTION_GAP,
   SUMMARY_OVERLAP,
-} from './dashboard-type';
+} from '@/types/dashboard/dashboard-type';
 import { useBudgetEntries, useCategoryBudgets, useMonthTransactions, useProfile, useTransactions } from '@/db/hooks';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
@@ -70,7 +70,7 @@ export default function DashboardScreen() {
   const recentCount = Math.min(RECENT_MAX, Math.max(RECENT_MIN, fitCount));
 
   return (
-    <View className="flex-1 bg-[#F7F9FC]">
+    <View className="flex-1 bg-canvas">
       {/* The header scrolls with the content. A fixed header with a scroll view pulled up over it
           let the content slide across the strip of blue it overlaps. */}
       <ScreenScroll onLayout={(e: LayoutChangeEvent) => setViewportHeight(e.nativeEvent.layout.height)}>

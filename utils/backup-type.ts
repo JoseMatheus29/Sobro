@@ -8,7 +8,9 @@ export type BackupTableName =
   | 'transactions'
   | 'profile'
   | 'monthly_budgets'
-  | 'category_budgets';
+  | 'category_budgets'
+  | 'goals'
+  | 'goal_entries';
 
 export type BackupValue = string | number | null;
 export type BackupRow = Record<string, BackupValue>;
@@ -111,10 +113,23 @@ export const BACKUP_TABLES: TableSpec[] = [
       text('avatar_uri', { required: false, nullable: true, fallback: null }),
       number('monthly_budget', { required: false, nullable: true, fallback: null }),
       integer('reminders_enabled', { required: false, fallback: 1 }),
+      text('theme', { required: false, fallback: 'system' }),
     ],
   },
   { name: 'monthly_budgets', columns: [text('month'), number('amount', { nullable: true })] },
   { name: 'category_budgets', columns: [text('category_id'), text('month'), number('amount', { nullable: true })] },
+  {
+    name: 'goals',
+    columns: [
+      integer('id'),
+      text('name'),
+      number('target_amount'),
+      text('target_month', { required: false, nullable: true, fallback: null }),
+      text('color'),
+      text('icon'),
+    ],
+  },
+  { name: 'goal_entries', columns: [integer('id'), integer('goal_id'), number('amount'), text('occurred_at')] },
 ];
 
 export const BACKUP_FILE_PREFIX = 'sobro-backup';

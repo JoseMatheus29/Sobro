@@ -31,6 +31,11 @@ const tables = (): Record<string, BackupRow[]> => ({
   ],
   monthly_budgets: [{ month: '0000-00', amount: 2500 }],
   category_budgets: [{ category_id: 'food', month: '2026-10', amount: 1000 }],
+  goals: [{ id: 1, name: 'Viagem', target_amount: 3000, target_month: '2026-12', color: '#3161B2', icon: 'flight' }],
+  goal_entries: [
+    { id: 1, goal_id: 1, amount: 500, occurred_at: '2026-09-21T12:00:00.000Z' },
+    { id: 2, goal_id: 1, amount: -100, occurred_at: '2026-10-02T12:00:00.000Z' },
+  ],
 });
 
 const file = () => JSON.parse(JSON.stringify(buildBackup(tables(), SCHEMA, NOW)));
@@ -142,6 +147,40 @@ describe('validateBackup', () => {
     const limit = file();
     limit.data.category_budgets[0].category_id = 'ghost';
     expect(validateBackup(limit, SCHEMA).ok).toBe(false);
+  });
+
+  it('keeps the caixinhas and what was put in them', () => {
+    const result = validateBackup(file(), SCHEMA);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.backup.data.goals).toHaveLength(1);
+      expect(result.backup.data.goal_entries.map((e) => e.amount)).toEqual([500, -100]);
+    }
+  });
+
+  it('fills in a backup from before the caixinhas and the light/dark choice', () => {
+    const old = file();
+    delete old.data.goals;
+    delete old.data.goal_entries;
+    for (const p of old.data.profile) delete p.theme;
+    old.schemaVersion = 4;
+    const result = validateBackup(old, SCHEMA);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.backup.data.goals).toEqual([]);
+      expect(result.backup.data.goal_entries).toEqual([]);
+      expect(result.backup.data.profile[0].theme).toBe('system');
+    }
+  });
+
+  it('refuses an entry for a caixinha that is not there, or with an impossible date', () => {
+    const orphan = file();
+    orphan.data.goal_entries[0].goal_id = 42;
+    expect(validateBackup(orphan, SCHEMA).ok).toBe(false);
+
+    const date = file();
+    date.data.goal_entries[1].occurred_at = 'ontem';
+    expect(validateBackup(date, SCHEMA).ok).toBe(false);
   });
 
   it('refuses a transaction with an unknown type or an impossible date', () => {

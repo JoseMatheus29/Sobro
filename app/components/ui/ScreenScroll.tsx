@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, View, type LayoutChangeEvent, type ScrollViewProps } from 'react-native';
 
-import { SCROLL_PADDING_WITH_FAB } from '../sidebar-type';
+import { SCROLL_PADDING_WITH_FAB } from '@/types/components/sidebar-type';
 
 interface ScreenScrollProps extends Omit<ScrollViewProps, 'children'> {
   /** What the bottom of the screen takes up (tab bar, floating button) and the content has to clear. */

@@ -45,6 +45,13 @@ export function monthEnd(key: string): Date {
   return new Date(Date.UTC(year, month + 1, 0, 12));
 }
 
+// How many months from `from` to `to` (both 'YYYY-MM'): positive when `to` is later.
+export function monthsBetween(from: string, to: string): number {
+  const a = parseKey(from);
+  const b = parseKey(to);
+  return (b.year - a.year) * 12 + (b.month - a.month);
+}
+
 export function addMonths(key: string, delta: number): string {
   const { year, month } = parseKey(key);
   return monthKey(new Date(Date.UTC(year, month + delta, 1, 12)));

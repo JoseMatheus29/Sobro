@@ -1,4 +1,4 @@
-import { budgetForMonth } from './budget';
+import { budgetColor, budgetForMonth, budgetLevel } from './budget';
 
 describe('budgetForMonth', () => {
   const entries = [
@@ -32,5 +32,40 @@ describe('budgetForMonth', () => {
     expect(budgetForMonth(removed, '2026-10')).toBe(2500);
     expect(budgetForMonth(removed, '2026-11')).toBeNull();
     expect(budgetForMonth(removed, '2026-12')).toBeNull();
+  });
+});
+
+describe('budgetLevel', () => {
+  it('is fine while more than 20% of the budget is left', () => {
+    expect(budgetLevel(0)).toBe('ok');
+    expect(budgetLevel(0.5)).toBe('ok');
+    expect(budgetLevel(0.79)).toBe('ok');
+  });
+
+  it('is a caution from 80% spent (20% left) up to just under 90%', () => {
+    expect(budgetLevel(0.8)).toBe('caution');
+    expect(budgetLevel(0.85)).toBe('caution');
+    expect(budgetLevel(0.89)).toBe('caution');
+  });
+
+  it('is in danger from 90% spent (10% left) and past the ceiling', () => {
+    expect(budgetLevel(0.9)).toBe('danger');
+    expect(budgetLevel(1)).toBe('danger');
+    expect(budgetLevel(1.4)).toBe('danger');
+  });
+
+  it('has nothing to warn about without a budget', () => {
+    expect(budgetLevel(null)).toBe('ok');
+  });
+});
+
+describe('budgetColor', () => {
+  const colors = { income: 'green', warning: 'yellow', expense: 'red' };
+
+  it('is green, yellow or red by level', () => {
+    expect(budgetColor(0.3, colors)).toBe('green');
+    expect(budgetColor(0.85, colors)).toBe('yellow');
+    expect(budgetColor(0.95, colors)).toBe('red');
+    expect(budgetColor(null, colors)).toBe('green');
   });
 });

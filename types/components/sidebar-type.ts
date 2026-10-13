@@ -1,6 +1,6 @@
 import { type ViewStyle } from 'react-native';
 
-import { palette } from '@/constants/palette';
+import { type Palette } from '@/constants/palette';
 
 export interface NavItem {
   id: string;
@@ -32,11 +32,15 @@ export const SCROLL_PADDING_WITH_FAB = 180;
 // Same for screens that only have the bar.
 export const SCROLL_PADDING_WITH_SIDEBAR = 100;
 
-export const FAB_STYLE: ViewStyle = {
-  backgroundColor: palette.primary.DEFAULT,
-  shadowColor: palette.primary.DEFAULT,
-  shadowOpacity: 0.4,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 6 },
-  elevation: 8,
-};
+// A blue glow under the button on the light theme; on the dark one a glow only reads as neon, so it is flat.
+export const fabStyle = (colors: Palette): ViewStyle =>
+  colors.scheme === 'dark'
+    ? { backgroundColor: colors.buttonGradient[0] }
+    : {
+        backgroundColor: colors.primary.DEFAULT,
+        shadowColor: colors.primary.DEFAULT,
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        elevation: 8,
+      };

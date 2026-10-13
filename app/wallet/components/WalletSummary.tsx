@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { withoutTransfers } from '@/utils/transfer';
-import { EDIT_ACCOUNT_ACTION, TRANSFER_ACTION, WalletSummaryProps } from '../wallet-type';
+import { EDIT_ACCOUNT_ACTION, TRANSFER_ACTION, WalletSummaryProps } from '@/types/wallet/wallet-type';
+import { tint } from '@/utils/color';
 
 export default function WalletSummary({ activeCard, transactions, onEditCard, onTransfer }: WalletSummaryProps) {
+  const colors = useColors();
   // Receitas and despesas leave out what only moved between accounts; the saldo is the account's own.
   const real = withoutTransfers(transactions);
   const income = real.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -14,12 +16,12 @@ export default function WalletSummary({ activeCard, transactions, onEditCard, on
   const formatCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
 
   return (
-    <View className="mx-4 bg-white rounded-[20px] p-5 mb-7 border border-surface">
+    <View className="mx-4 bg-card rounded-[20px] p-5 mb-7 border border-surface">
       <View className="flex-row justify-around">
         {[
-          { label: 'Receitas', value: formatCurrency(income), icon: 'arrow-downward', color: palette.income, valueColor: palette.income, bg: 'rgba(39,127,43,0.1)' },
-          { label: 'Despesas', value: formatCurrency(expense), icon: 'arrow-upward', color: palette.expense, valueColor: palette.expense, bg: 'rgba(168,54,54,0.1)' },
-          { label: 'Saldo', value: formatCurrency(activeCard.balance), icon: 'account-balance', color: palette.primary.DEFAULT, valueColor: palette.ink, bg: 'rgba(49,97,178,0.1)' },
+          { label: 'Receitas', value: formatCurrency(income), icon: 'arrow-downward', color: colors.income, valueColor: colors.income, bg: tint(colors.income) },
+          { label: 'Despesas', value: formatCurrency(expense), icon: 'arrow-upward', color: colors.expense, valueColor: colors.expense, bg: tint(colors.expense) },
+          { label: 'Saldo', value: formatCurrency(activeCard.balance), icon: 'account-balance', color: colors.primary.DEFAULT, valueColor: colors.ink, bg: tint(colors.primary.DEFAULT) },
         ].map((stat, i) => (
           <View key={i} className="items-center">
             <View className="w-9 h-9 rounded-xl items-center justify-center mb-2" style={{ backgroundColor: stat.bg }}>
@@ -33,12 +35,12 @@ export default function WalletSummary({ activeCard, transactions, onEditCard, on
 
       <View className="flex-row items-center justify-center gap-6 mt-5 pt-4 border-t border-surface">
         <TouchableOpacity onPress={onEditCard} className="flex-row items-center gap-1.5">
-          <Icon name="edit" size={14} color={palette.primary.DEFAULT} />
+          <Icon name="edit" size={14} color={colors.primary.DEFAULT} />
           <Text className="text-[12px] font-semibold text-primary">{EDIT_ACCOUNT_ACTION}</Text>
         </TouchableOpacity>
         {onTransfer && (
           <TouchableOpacity onPress={onTransfer} className="flex-row items-center gap-1.5">
-            <Icon name="swap-horiz" size={16} color={palette.primary.DEFAULT} />
+            <Icon name="swap-horiz" size={16} color={colors.primary.DEFAULT} />
             <Text className="text-[12px] font-semibold text-primary">{TRANSFER_ACTION}</Text>
           </TouchableOpacity>
         )}

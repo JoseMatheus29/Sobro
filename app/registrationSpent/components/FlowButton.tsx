@@ -2,10 +2,12 @@ import React from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import GradientButton from '../../components/ui/GradientButton';
-import { DISABLED_GRADIENT, FlowButtonProps, TYPE_COLORS, TYPE_GRADIENTS } from '../registrationSpent-type';
+import GradientButton from '@/app/components/ui/GradientButton';
+import { FlowButtonProps, TYPE_GRADIENTS } from '@/types/registrationSpent/registrationSpent-type';
+import { useColors } from '@/hooks/useColors';
 
 export default function FlowButton({ label, type, onPress, disabled, compact }: FlowButtonProps) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
 
   return (
@@ -14,8 +16,8 @@ export default function FlowButton({ label, type, onPress, disabled, compact }: 
         <GradientButton
           title={label}
           onPress={onPress}
-          colors={disabled ? DISABLED_GRADIENT : TYPE_GRADIENTS[type]}
-          shadowColor={disabled ? DISABLED_GRADIENT[0] : TYPE_COLORS[type]}
+          colors={disabled ? colors.disabledGradient : TYPE_GRADIENTS[type]}
+          shadowColor={disabled ? colors.disabledGradient[0] : TYPE_GRADIENTS[type][0]}
         />
       </View>
     </View>

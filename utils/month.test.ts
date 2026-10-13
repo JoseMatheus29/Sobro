@@ -6,6 +6,7 @@ import {
   monthKeyToDate,
   monthKeyWithYear,
   monthNameOf,
+  monthsBetween,
   monthTitle,
   previousMonthKey,
 } from './month';
@@ -44,5 +45,18 @@ describe('month helpers', () => {
     expect(monthNameOf('2026-03')).toBe('março');
     expect(monthKeyWithYear('2026-10')).toBe('outubro 2026');
     expect(monthTitle('2026-10')).toBe('Outubro 2026');
+  });
+});
+
+describe('monthsBetween', () => {
+  it('counts the months from one key to another', () => {
+    expect(monthsBetween('2026-10', '2026-12')).toBe(2);
+    expect(monthsBetween('2026-10', '2026-10')).toBe(0);
+    expect(monthsBetween('2026-10', '2027-02')).toBe(4);
+  });
+
+  it('is negative when the second is earlier', () => {
+    expect(monthsBetween('2026-10', '2026-08')).toBe(-2);
+    expect(monthsBetween('2027-01', '2026-12')).toBe(-1);
   });
 });

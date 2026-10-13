@@ -1,4 +1,4 @@
-import { palette } from '@/constants/palette';
+import { type Palette } from '@/constants/palette';
 import { type Insight, type InsightTone } from '@/utils/insightRules-type';
 
 export interface InsightItemProps {
@@ -13,8 +13,8 @@ export const EMPTY_INSIGHTS_MESSAGE = 'Registre algumas transações para recebe
 export const SHEET_MAX_HEIGHT = '85%';
 
 // Green for what is going well, red for what deserves attention, blue for the rest.
-export const INSIGHT_TONE_COLOR: Record<InsightTone, string> = {
-  positive: palette.income,
-  warning: palette.expense,
-  neutral: palette.primary.DEFAULT,
-};
+export const insightToneColors = (colors: Palette): Record<InsightTone, string> => ({
+  positive: colors.income,
+  warning: colors.expense,
+  neutral: colors.primary.DEFAULT,
+});

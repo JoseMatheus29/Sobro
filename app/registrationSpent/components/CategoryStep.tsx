@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import { ScrollView, View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import {
   CATEGORY_HEADINGS,
   CategoryStepProps,
   NEW_CATEGORY_LABEL,
-} from '../registrationSpent-type';
-import NewCategoryModal from './NewCategoryModal';
+} from '@/types/registrationSpent/registrationSpent-type';
+import NewCategoryModal from '@/app/registrationSpent/components/NewCategoryModal';
 
 export default function CategoryStep({
   type, categories, selectedCat, amountText, typeColor, onPick, onCategoryCreated,
 }: CategoryStepProps) {
+  const colors = useColors();
   const [modalVisible, setModalVisible] = useState(false);
 
   return (
@@ -36,7 +37,7 @@ export default function CategoryStep({
                 accessibilityState={{ selected: active }}
                 className="h-28 rounded-[20px] border-2 items-center justify-center gap-2.5 px-1 shadow-sm shadow-black/5 elevation-1"
                 style={{
-                  backgroundColor: active ? `${cat.color}0F` : '#fff',
+                  backgroundColor: active ? `${cat.color}0F` : colors.card,
                   borderColor: active ? cat.color : 'transparent',
                 }}
               >
@@ -64,7 +65,7 @@ export default function CategoryStep({
         activeOpacity={0.7}
         className="h-14 mt-4 rounded-2xl border-[1.5px] border-dashed border-subtle flex-row items-center justify-center gap-1.5"
       >
-        <Icon name="add" size={20} color={palette.primary.DEFAULT} />
+        <Icon name="add" size={20} color={colors.primary.DEFAULT} />
         <Text className="text-[15px] font-bold text-primary">{NEW_CATEGORY_LABEL}</Text>
       </TouchableOpacity>
 

@@ -96,6 +96,30 @@ const MIGRATIONS: string[] = [
   SELECT 'transfer', 'Transferência', 'swap-horiz', '#718096', 'rgba(113,128,150,0.12)'
   WHERE EXISTS (SELECT 1 FROM categories) AND NOT EXISTS (SELECT 1 FROM categories WHERE id = 'transfer');
   `,
+  // v7: how the app is drawn: 'system' follows the phone, or 'light' / 'dark' to force one.
+  `
+  ALTER TABLE profile ADD COLUMN theme TEXT NOT NULL DEFAULT 'system';
+  `,
+  // v8: caixinhas (savings goals). The money stays in the accounts: an entry only says how much of it is
+  // set aside for the goal (positive: put in, negative: taken out), so no balance and no month's total moves.
+  `
+  CREATE TABLE goals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    target_amount REAL NOT NULL,
+    target_month TEXT,
+    color TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE goal_entries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal_id INTEGER NOT NULL REFERENCES goals(id),
+    amount REAL NOT NULL,
+    occurred_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  `,
 ];
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {

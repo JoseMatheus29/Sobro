@@ -3,20 +3,20 @@ import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import SideBar from '../components/sidebar';
-import AddTransactionFab from '../components/AddTransactionFab';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import MonthPill from '../components/month/MonthPill';
-import { useSelectedMonth } from '../components/month/MonthProvider';
-import PickerSheet from '../components/ui/PickerSheet';
-import ScreenHeader from '../components/ui/ScreenHeader';
-import ScreenScroll from '../components/ui/ScreenScroll';
-import TransactionList from '../components/ui/TransactionList';
-import { categoriesForType } from '../registrationSpent/utils';
-import CategoryLimits from './components/CategoryLimits';
-import ExpenseChart from './components/ExpenseChart';
-import LimitSheet from './components/LimitSheet';
-import MonthlyProgress from './components/MonthlyProgress';
+import SideBar from '@/app/components/sidebar';
+import AddTransactionFab from '@/app/components/AddTransactionFab';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import MonthPill from '@/app/components/month/MonthPill';
+import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import PickerSheet from '@/app/components/ui/PickerSheet';
+import ScreenHeader from '@/app/components/ui/ScreenHeader';
+import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import TransactionList from '@/app/components/ui/TransactionList';
+import { categoriesForType } from '@/utils/transactionForm';
+import CategoryLimits from '@/app/myDetailing/components/CategoryLimits';
+import ExpenseChart from '@/app/myDetailing/components/ExpenseChart';
+import LimitSheet from '@/app/myDetailing/components/LimitSheet';
+import MonthlyProgress from '@/app/myDetailing/components/MonthlyProgress';
 import { setCategoryBudgetFrom } from '@/db/categoryBudgets';
 import { useBudgetEntries, useCategories, useCategoryBudgets, useCategoryTotals, useTransactions } from '@/db/hooks';
 import { budgetForMonth } from '@/utils/budget';
@@ -32,7 +32,7 @@ import {
   LIMIT_REMOVED_TOAST,
   LIMIT_SAVED_TOAST,
   type LimitRow,
-} from './myDetailing-type';
+} from '@/types/myDetailing/myDetailing-type';
 
 export default function MyDetailing() {
   const router = useRouter();
@@ -114,13 +114,12 @@ export default function MyDetailing() {
     }));
 
   return (
-    <View className="flex-1 bg-[#F7F9FC]">
+    <View className="flex-1 bg-canvas">
       {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
           cut the content off at its edge while scrolling. */}
       <ScreenScroll>
         <ScreenHeader
           title="Meu Detalhamento"
-          gradientColors={['#254E8F', '#3161B2', '#4A74BB']}
         >
           <View className="items-center">
             <MonthPill />

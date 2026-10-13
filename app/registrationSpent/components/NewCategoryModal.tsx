@@ -3,7 +3,7 @@ import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from 'reac
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { createCategory } from '@/db/categories';
 
 const ICON_OPTIONS = [
@@ -30,6 +30,7 @@ interface NewCategoryModalProps {
 }
 
 export default function NewCategoryModal({ visible, onClose, onCreated }: NewCategoryModalProps) {
+  const colors = useColors();
   const db = useSQLiteContext();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
@@ -59,13 +60,13 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
-        <View className="bg-white rounded-[20px] p-5 w-full">
+        <View className="bg-card rounded-[20px] p-5 w-full">
           <Text className="text-[15px] font-semibold text-ink mb-4">Nova categoria</Text>
 
           <TextInput
             className="bg-canvas rounded-xl border border-transparent px-3.5 h-[46px] text-[14px] text-ink mb-4"
             placeholder="Nome da categoria"
-            placeholderTextColor="#C0CCDA"
+            placeholderTextColor={colors.placeholder}
             value={name}
             onChangeText={setName}
             autoCapitalize="sentences"
@@ -81,9 +82,9 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
                     key={opt}
                     onPress={() => setIcon(opt)}
                     className="w-11 h-11 rounded-xl items-center justify-center"
-                    style={{ backgroundColor: active ? hexToRgba(color, 0.12) : '#EBF1F6' }}
+                    style={{ backgroundColor: active ? hexToRgba(color, 0.12) : colors.surface.DEFAULT }}
                   >
-                    <Icon name={opt} size={20} color={active ? color : palette.subtle} />
+                    <Icon name={opt} size={20} color={active ? color : colors.subtle} />
                   </TouchableOpacity>
                 );
               })}
@@ -99,7 +100,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
                   key={opt}
                   onPress={() => setColor(opt)}
                   className="w-9 h-9 rounded-full items-center justify-center"
-                  style={{ backgroundColor: opt, borderWidth: active ? 2 : 0, borderColor: palette.ink }}
+                  style={{ backgroundColor: opt, borderWidth: active ? 2 : 0, borderColor: colors.ink }}
                 />
               );
             })}
@@ -116,7 +117,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
               onPress={handleCreate}
               disabled={!name.trim() || saving}
               className="flex-1 h-12 rounded-xl items-center justify-center"
-              style={{ backgroundColor: !name.trim() || saving ? '#C0CCDA' : '#3161B2' }}
+              style={{ backgroundColor: !name.trim() || saving ? colors.disabledGradient[0] : colors.buttonGradient[0] }}
             >
               <Text className="text-white font-semibold text-sm">{saving ? 'Salvando...' : 'Criar'}</Text>
             </TouchableOpacity>

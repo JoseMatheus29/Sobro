@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
-import { FlowHeaderProps, STEP_COUNT, STEP_NAMES } from '../registrationSpent-type';
+import { useColors } from '@/hooks/useColors';
+import { FlowHeaderProps, STEP_COUNT, STEP_NAMES } from '@/types/registrationSpent/registrationSpent-type';
 
 // Light header; the brand blue shows up in the button icon, the progress and the step name.
 export default function FlowHeader({ title, step, onBack }: FlowHeaderProps) {
+  const colors = useColors();
   return (
     <View>
       {/* Drag handle: marks the screen as a sheet */}
@@ -20,7 +21,7 @@ export default function FlowHeader({ title, step, onBack }: FlowHeaderProps) {
           accessibilityLabel={step === 1 ? 'Fechar' : 'Voltar'}
           className="absolute left-3 w-11 h-11 rounded-[14px] bg-surface items-center justify-center"
         >
-          <Icon name={step === 1 ? 'close' : 'arrow-back'} size={22} color={palette.primary.DEFAULT} />
+          <Icon name={step === 1 ? 'close' : 'arrow-back'} size={22} color={colors.primary.DEFAULT} />
         </TouchableOpacity>
         <Text className="text-[17px] font-bold text-ink">{title}</Text>
       </View>
@@ -30,7 +31,7 @@ export default function FlowHeader({ title, step, onBack }: FlowHeaderProps) {
           <View
             key={name}
             className="flex-1 h-1 rounded-full"
-            style={{ backgroundColor: i < step ? palette.primary.DEFAULT : palette.surface.dark }}
+            style={{ backgroundColor: i < step ? colors.primary.DEFAULT : colors.surface.dark }}
           />
         ))}
       </View>

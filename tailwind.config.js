@@ -1,4 +1,4 @@
-const { palette } = require('./constants/palette');
+const { tailwindColors } = require('./constants/palette');
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -9,9 +9,9 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
-      colors: palette,
+      // Every token is a CSS variable: ThemeProvider sets its value for the light or the dark scheme.
+      colors: tailwindColors(),
     },
   },
   plugins: [],
 };
-

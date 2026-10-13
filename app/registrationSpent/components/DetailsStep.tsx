@@ -3,15 +3,16 @@ import { ScrollView, View, Text, TextInput, TouchableOpacity } from 'react-nativ
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-import { palette } from '@/constants/palette';
-import { CHANGE_LABEL, DetailsStepProps } from '../registrationSpent-type';
-import RepeatSection from './RepeatSection';
+import { useColors } from '@/hooks/useColors';
+import { CHANGE_LABEL, DetailsStepProps } from '@/types/registrationSpent/registrationSpent-type';
+import RepeatSection from '@/app/registrationSpent/components/RepeatSection';
 
 export default function DetailsStep({
   typeColor, amountText, category, nome, setNome, descricao, setDescricao,
   cards, selectedCardId, setSelectedCardId, date, setDate, onEditAmount, onEditCategory,
   type, amountValue, repeat, setRepeat, installments, setInstallments, currentInstallment, setCurrentInstallment,
 }: DetailsStepProps) {
+  const colors = useColors();
   const [showPicker, setShowPicker] = useState(false);
 
   return (
@@ -22,7 +23,7 @@ export default function DetailsStep({
       keyboardShouldPersistTaps="handled"
     >
       {/* Resumo dos passos anteriores, cada linha leva de volta ao seu passo. */}
-      <View className="bg-white rounded-[20px] overflow-hidden">
+      <View className="bg-card rounded-[20px] overflow-hidden">
         <TouchableOpacity onPress={onEditAmount} activeOpacity={0.7} className="h-16 px-4 flex-row items-center">
           <View className="flex-1">
             <Text className="text-xs text-muted">Valor</Text>
@@ -34,9 +35,9 @@ export default function DetailsStep({
         <TouchableOpacity onPress={onEditCategory} activeOpacity={0.7} className="h-16 px-4 flex-row items-center gap-3">
           <View
             className="w-10 h-10 rounded-[14px] items-center justify-center"
-            style={{ backgroundColor: category ? `${category.color}1F` : palette.surface.DEFAULT }}
+            style={{ backgroundColor: category ? `${category.color}1F` : colors.surface.DEFAULT }}
           >
-            <Icon name={category?.icon ?? 'category'} size={20} color={category?.color ?? palette.muted} />
+            <Icon name={category?.icon ?? 'category'} size={20} color={category?.color ?? colors.muted} />
           </View>
           <View className="flex-1">
             <Text className="text-xs text-muted">Categoria</Text>
@@ -46,13 +47,13 @@ export default function DetailsStep({
         </TouchableOpacity>
       </View>
 
-      <View className="bg-white rounded-[20px] px-4 py-1">
+      <View className="bg-card rounded-[20px] px-4 py-1">
         <View className="py-3 border-b border-line">
           <Text className="text-xs text-muted">Nome</Text>
           <TextInput
             className="text-base font-medium text-ink pt-1 pb-0"
             placeholder="Ex: Almoço no restaurante"
-            placeholderTextColor="#8391A5"
+            placeholderTextColor={colors.placeholder}
             value={nome}
             onChangeText={setNome}
             autoCapitalize="sentences"
@@ -63,7 +64,7 @@ export default function DetailsStep({
           <TextInput
             className="text-base font-medium text-ink pt-1 pb-0"
             placeholder="Adicione uma observação"
-            placeholderTextColor="#8391A5"
+            placeholderTextColor={colors.placeholder}
             value={descricao}
             onChangeText={setDescricao}
             multiline
@@ -72,7 +73,7 @@ export default function DetailsStep({
       </View>
 
       <Text className="text-[13px] font-bold text-muted mt-1 ml-1">Conta</Text>
-      <View className="bg-white rounded-[20px] overflow-hidden">
+      <View className="bg-card rounded-[20px] overflow-hidden">
         {cards.map((card, i) => {
           const active = selectedCardId === card.id;
           return (
@@ -82,7 +83,7 @@ export default function DetailsStep({
               activeOpacity={0.8}
               accessibilityState={{ selected: active }}
               className={`h-[60px] px-4 flex-row items-center gap-3 ${i > 0 ? 'border-t border-line' : ''}`}
-              style={{ backgroundColor: active ? `${typeColor}0F` : '#fff' }}
+              style={{ backgroundColor: active ? `${typeColor}0F` : colors.card }}
             >
               <View className="w-10 h-10 rounded-[14px] items-center justify-center" style={{ backgroundColor: `${card.color}1F` }}>
                 <Icon name="account-balance-wallet" size={20} color={card.color} />
@@ -94,7 +95,7 @@ export default function DetailsStep({
               <Icon
                 name={active ? 'radio-button-checked' : 'radio-button-unchecked'}
                 size={22}
-                color={active ? typeColor : '#C0CCDA'}
+                color={active ? typeColor : colors.placeholder}
               />
             </TouchableOpacity>
           );
@@ -104,10 +105,10 @@ export default function DetailsStep({
       <TouchableOpacity
         onPress={() => setShowPicker(true)}
         activeOpacity={0.8}
-        className="h-16 bg-white rounded-[20px] px-4 flex-row items-center gap-3"
+        className="h-16 bg-card rounded-[20px] px-4 flex-row items-center gap-3"
       >
         <View className="w-10 h-10 rounded-[14px] bg-surface items-center justify-center">
-          <Icon name="event" size={20} color={palette.primary.DEFAULT} />
+          <Icon name="event" size={20} color={colors.primary.DEFAULT} />
         </View>
         <View className="flex-1">
           <Text className="text-xs text-muted">Data</Text>

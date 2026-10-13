@@ -4,22 +4,23 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { useInsights } from '@/db/hooks';
 import { MONTH_NAMES } from '@/utils/month';
-import EmptyState from '../components/ui/EmptyState';
-import { CLOSE_LABEL, SHEET_DIM_COLOR } from '../registrationSpent/registrationSpent-type';
-import InsightItem from './components/InsightItem';
+import EmptyState from '@/app/components/ui/EmptyState';
+import { CLOSE_LABEL, SHEET_DIM_COLOR } from '@/types/registrationSpent/registrationSpent-type';
+import InsightItem from '@/app/insights/components/InsightItem';
 import {
   EMPTY_INSIGHTS_MESSAGE,
   INSIGHTS_SUBTITLE,
   INSIGHTS_TITLE,
   SHEET_MAX_HEIGHT,
-} from './insights-type';
+} from '@/types/insights/insights-type';
 
 // A sheet over the Dashboard, like the new-transaction one: dimmed backdrop (tap to close)
 // and a surface as tall as its content.
 export default function InsightsSheet() {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { insights } = useInsights();
@@ -41,7 +42,7 @@ export default function InsightsSheet() {
             accessibilityLabel={CLOSE_LABEL}
             className="absolute left-3 w-11 h-11 rounded-[14px] bg-surface items-center justify-center"
           >
-            <Icon name="close" size={22} color={palette.primary.DEFAULT} />
+            <Icon name="close" size={22} color={colors.primary.DEFAULT} />
           </TouchableOpacity>
           <Text className="text-[17px] font-bold text-ink">{INSIGHTS_TITLE}</Text>
         </View>

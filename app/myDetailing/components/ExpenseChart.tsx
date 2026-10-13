@@ -5,15 +5,17 @@ import { PieChart } from 'react-native-gifted-charts';
 import {
   EMPTY_CHART_HINT,
   EMPTY_CHART_TITLE,
-  EMPTY_PIE_DATA,
+  emptyPieData,
   ExpenseChartProps,
-} from '../myDetailing-type';
+} from '@/types/myDetailing/myDetailing-type';
+import { useColors } from '@/hooks/useColors';
 
 export default function ExpenseChart({ pieData, totalGastos }: ExpenseChartProps) {
+  const colors = useColors();
   const isEmpty = pieData.length === 0;
 
   return (
-    <View className="bg-white mx-4 rounded-3xl p-5 mb-4 shadow-lg shadow-primary/10 elevation-4">
+    <View className="bg-card mx-4 rounded-3xl p-5 mb-4 shadow-lg shadow-primary/10 elevation-4">
       <Text className="text-sm font-bold text-ink mb-4">
         Distribuição de Gastos
       </Text>
@@ -22,7 +24,9 @@ export default function ExpenseChart({ pieData, totalGastos }: ExpenseChartProps
         {/* Chart */}
         <View className="items-center justify-center">
           <PieChart
-            data={isEmpty ? EMPTY_PIE_DATA : pieData}
+            data={isEmpty ? emptyPieData(colors) : pieData}
+            backgroundColor={colors.card}
+            innerCircleColor={colors.card}
             radius={80}
             innerRadius={50}
             centerLabelComponent={() => (

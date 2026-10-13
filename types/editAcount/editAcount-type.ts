@@ -1,5 +1,6 @@
-import { type ConfirmOptions, type ToastOptions } from '../components/feedback/feedback-type';
+import { type ConfirmOptions, type ToastOptions } from '@/types/components/feedback/feedback-type';
 import { type BackupSummary } from '@/utils/backup-type';
+import { type ThemePreference } from '@/utils/theme-type';
 
 export interface FieldProps {
   label: string;
@@ -61,6 +62,15 @@ export const IMPORT_CONFIRM = (summary: BackupSummary, date: string): ConfirmOpt
   confirmLabel: 'Substituir',
   destructive: true,
 });
+
+// Light / dark: applies as soon as it is tapped, without waiting for the save button.
+export const THEME_LABEL = 'Aparência';
+export const THEME_HINT = 'Automático segue o modo claro ou escuro do celular.';
+export const THEME_OPTIONS: { value: ThemePreference; label: string; icon: string }[] = [
+  { value: 'system', label: 'Automático', icon: 'brightness-auto' },
+  { value: 'light', label: 'Claro', icon: 'light-mode' },
+  { value: 'dark', label: 'Escuro', icon: 'dark-mode' },
+];
 
 // Reminders of what is about to fall due (recurring expenses).
 export const REMINDERS_LABEL = 'Lembretes de vencimento';

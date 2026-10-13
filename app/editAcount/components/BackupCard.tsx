@@ -3,16 +3,18 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { exportBackup, getSchemaVersion, restoreBackup } from '@/db/backup';
 import { pickBackupText, shareBackup } from '@/db/backupFile';
 import { notifyDataChanged } from '@/db/events';
+import { getProfile } from '@/db/profile';
 import { materializeDueRecurrences } from '@/db/recurrences';
 import { refreshReminders } from '@/db/reminders';
 import { summarizeBackup, validateBackup } from '@/utils/backup';
 import { BACKUP_REASONS } from '@/utils/backup-type';
 import { formatShortDate } from '@/utils/format';
-import { useFeedback } from '../../components/feedback/FeedbackProvider';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import { applyTheme } from '@/utils/applyTheme';
 import {
   BACKUP_TEXT,
   BACKUP_TITLE,
@@ -24,11 +26,12 @@ import {
   IMPORT_FAILED_TOAST,
   IMPORT_LABEL,
   IMPORT_REFUSED_TITLE,
-} from '../editAcount-type';
+} from '@/types/editAcount/editAcount-type';
 
 // Save everything to a file, or bring it back from one. Restoring replaces all the data, so the file
 // is checked first and the person confirms with what is in it.
 export default function BackupCard() {
+  const colors = useColors();
   const db = useSQLiteContext();
   const { showToast, confirm } = useFeedback();
   const [busy, setBusy] = useState<'export' | 'import' | null>(null);
@@ -72,6 +75,8 @@ export default function BackupCard() {
       await restoreBackup(db, result.backup);
       // What fell due since the backup was made becomes transactions now.
       await materializeDueRecurrences(db);
+      // The backup brings its own light/dark choice.
+      applyTheme((await getProfile(db)).theme);
       notifyDataChanged();
       await refreshReminders(db);
       showToast(IMPORT_DONE_TOAST);
@@ -88,10 +93,10 @@ export default function BackupCard() {
   ];
 
   return (
-    <View className="bg-white rounded-[24px] p-5 mb-4 shadow-lg shadow-primary/10 elevation-4">
+    <View className="bg-card rounded-[24px] p-5 mb-4 shadow-lg shadow-primary/10 elevation-4">
       <View className="flex-row items-center gap-2 mb-3">
         <View className="w-8 h-8 rounded-xl bg-primary/10 items-center justify-center">
-          <Icon name="backup" size={16} color={palette.primary.DEFAULT} />
+          <Icon name="backup" size={16} color={colors.primary.DEFAULT} />
         </View>
         <Text className="text-[15px] font-bold text-ink">{BACKUP_TITLE}</Text>
       </View>
@@ -108,12 +113,12 @@ export default function BackupCard() {
             className="flex-1 h-12 rounded-2xl flex-row items-center justify-center gap-1.5 border-[1.5px]"
             style={{
               opacity: busy !== null && busy !== option.kind ? 0.5 : 1,
-              backgroundColor: option.filled ? palette.primary.DEFAULT : palette.canvas,
-              borderColor: option.filled ? palette.primary.DEFAULT : palette.surface.dark,
+              backgroundColor: option.filled ? colors.buttonGradient[0] : colors.canvas,
+              borderColor: option.filled ? colors.buttonGradient[0] : colors.surface.dark,
             }}
           >
-            <Icon name={option.icon} size={18} color={option.filled ? '#FFFFFF' : palette.primary.DEFAULT} />
-            <Text className="text-[14px] font-bold" style={{ color: option.filled ? '#FFFFFF' : palette.primary.DEFAULT }}>
+            <Icon name={option.icon} size={18} color={option.filled ? '#FFFFFF' : colors.primary.DEFAULT} />
+            <Text className="text-[14px] font-bold" style={{ color: option.filled ? '#FFFFFF' : colors.primary.DEFAULT }}>
               {option.label}
             </Text>
           </TouchableOpacity>

@@ -1,8 +1,8 @@
 import React from 'react';
 
-import { type ConfirmOptions, type ToastOptions } from '../components/feedback/feedback-type';
+import { type ConfirmOptions, type ToastOptions } from '@/types/components/feedback/feedback-type';
 import { type CardRecord } from '@/db/cards';
-import { type Category, type TxType } from '../registrationSpent/registrationSpent-type';
+import { type Category, type TxType } from '@/types/registrationSpent/registrationSpent-type';
 
 export interface DetailRowProps {
   icon: string;
@@ -57,7 +57,6 @@ export const CATEGORY_SHEET_TITLE = 'Categoria';
 export const CARD_SHEET_TITLE = 'Conta';
 
 // Soft red behind the delete button, same tint the app uses for the expense icon squares.
-export const DELETE_BUTTON_BG = 'rgba(168,54,54,0.1)';
 
 export const UPDATED_TITLE = 'Transação atualizada';
 export const DELETE_CONFIRM: ConfirmOptions = {

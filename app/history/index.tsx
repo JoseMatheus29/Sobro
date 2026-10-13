@@ -4,18 +4,19 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { useFutureMonths, useMonthlyHistory } from '@/db/hooks';
 import { countKeptMonths } from '@/utils/history';
-import { useSelectedMonth } from '../components/month/MonthProvider';
-import { CLOSE_LABEL, SHEET_DIM_COLOR } from '../registrationSpent/registrationSpent-type';
-import FutureMonthRow from './components/FutureMonthRow';
-import MonthRow from './components/MonthRow';
-import { FUTURE_SECTION, HISTORY_SUBTITLE, HISTORY_TITLE, PAST_SECTION, SHEET_MAX_HEIGHT } from './history-type';
+import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import { CLOSE_LABEL, SHEET_DIM_COLOR } from '@/types/registrationSpent/registrationSpent-type';
+import FutureMonthRow from '@/app/history/components/FutureMonthRow';
+import MonthRow from '@/app/history/components/MonthRow';
+import { FUTURE_SECTION, HISTORY_SUBTITLE, HISTORY_TITLE, PAST_SECTION, SHEET_MAX_HEIGHT } from '@/types/history/history-type';
 
 // A sheet over the screen it was opened from, like the new-transaction one: the months so far,
 // newest first. Picking one makes every screen show it.
 export default function HistorySheet() {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { history } = useMonthlyHistory();
@@ -39,7 +40,7 @@ export default function HistorySheet() {
             accessibilityLabel={CLOSE_LABEL}
             className="absolute left-3 w-11 h-11 rounded-[14px] bg-surface items-center justify-center"
           >
-            <Icon name="close" size={22} color={palette.primary.DEFAULT} />
+            <Icon name="close" size={22} color={colors.primary.DEFAULT} />
           </TouchableOpacity>
           <Text className="text-[17px] font-bold text-ink">{HISTORY_TITLE}</Text>
         </View>

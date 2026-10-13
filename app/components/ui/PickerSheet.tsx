@@ -3,12 +3,13 @@ import { Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'reac
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
-import { DIALOG_DIM_COLOR } from '../feedback/feedback-type';
-import { PICKER_CLOSE_LABEL, PICKER_MAX_HEIGHT, PickerSheetProps } from './pickerSheet-type';
+import { useColors } from '@/hooks/useColors';
+import { DIALOG_DIM_COLOR } from '@/types/components/feedback/feedback-type';
+import { PICKER_CLOSE_LABEL, PICKER_MAX_HEIGHT, PickerSheetProps } from '@/types/components/ui/pickerSheet-type';
 
 // Bottom sheet with a list of choices (category, account...). Picking one closes it.
 export default function PickerSheet({ visible, title, options, selectedId, onSelect, onClose }: PickerSheetProps) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
 
   return (
@@ -16,7 +17,7 @@ export default function PickerSheet({ visible, title, options, selectedId, onSel
       <View className="flex-1 justify-end" style={{ backgroundColor: DIALOG_DIM_COLOR }}>
         <Pressable className="flex-1" onPress={onClose} accessibilityLabel={PICKER_CLOSE_LABEL} />
         <View
-          className="bg-white rounded-t-[28px] px-5 pt-2.5"
+          className="bg-card rounded-t-[28px] px-5 pt-2.5"
           style={{ paddingBottom: insets.bottom + 20, maxHeight: PICKER_MAX_HEIGHT }}
         >
           <View className="items-center">
@@ -44,7 +45,7 @@ export default function PickerSheet({ visible, title, options, selectedId, onSel
                     <Text className={`text-base text-ink ${active ? 'font-bold' : 'font-medium'}`}>{option.name}</Text>
                     {option.sub ? <Text className="text-xs text-muted mt-0.5">{option.sub}</Text> : null}
                   </View>
-                  {active && <Icon name="check" size={22} color={palette.primary.DEFAULT} />}
+                  {active && <Icon name="check" size={22} color={colors.primary.DEFAULT} />}
                 </TouchableOpacity>
               );
             })}

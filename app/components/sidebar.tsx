@@ -3,30 +3,29 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Haptics from 'expo-haptics';
 
-import { palette } from '@/constants/palette';
-import { NAV_ITEMS, SIDEBAR_ITEM_HEIGHT } from './sidebar-type';
+import { useColors } from '@/hooks/useColors';
+import { NAV_ITEMS, SIDEBAR_ITEM_HEIGHT } from '@/types/components/sidebar-type';
 
 export default function SideBar() {
+  const colors = useColors();
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
   const currentRoute = segments[segments.length - 1];
 
   const handlePress = (route: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(route as any);
   };
 
   return (
     <View
-      className="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-[0_-8px_20px_rgba(49,97,178,0.06)] elevation-20 pt-3 px-4 flex-row items-end justify-between"
-      style={{ paddingBottom: insets.bottom + 20 }}
+      className="absolute bottom-0 w-full bg-card rounded-t-3xl shadow-[0_-8px_20px_rgba(49,97,178,0.06)] elevation-20 pt-3 px-4 flex-row items-end justify-between"
+      style={{ paddingBottom: insets.bottom + 20, borderTopWidth: colors.scheme === 'dark' ? 1 : 0, borderTopColor: colors.surface.dark }}
     >
       {NAV_ITEMS.map((item) => {
         const isActive = currentRoute === item.id;
-        const color = isActive ? palette.primary.DEFAULT : palette.subtle;
+        const color = isActive ? colors.primary.DEFAULT : colors.subtle;
 
         return (
           <TouchableOpacity

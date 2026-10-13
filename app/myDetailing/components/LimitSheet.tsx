@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Keyboard, Modal, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
-import { DIALOG_DIM_COLOR } from '../../components/feedback/feedback-type';
+import { useColors } from '@/hooks/useColors';
+import { DIALOG_DIM_COLOR } from '@/types/components/feedback/feedback-type';
 import {
   LIMIT_PLACEHOLDER,
   LIMIT_REMOVE_LABEL,
@@ -11,7 +11,7 @@ import {
   LIMIT_SHEET_HINT,
   LIMIT_SHEET_TITLE,
   LimitSheetProps,
-} from '../myDetailing-type';
+} from '@/types/myDetailing/myDetailing-type';
 
 // Asks for the limit of one category. It is centered, and makes room for the keyboard when it opens
 // (a Modal does not resize with it on Android), so the field is never covered.
@@ -24,6 +24,7 @@ export default function LimitSheet({
   onRemove,
   onClose,
 }: LimitSheetProps) {
+  const colors = useColors();
   const [value, setValue] = useState(initialValue);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -49,15 +50,15 @@ export default function LimitSheet({
         style={{ backgroundColor: DIALOG_DIM_COLOR, paddingBottom: keyboardHeight }}
         onPress={onClose}
       >
-        <Pressable className="bg-white rounded-[24px] p-5" onPress={() => undefined}>
+        <Pressable className="bg-card rounded-[24px] p-5" onPress={() => undefined}>
           <Text className="text-lg font-bold text-ink">{LIMIT_SHEET_TITLE(categoryName)}</Text>
 
           <View className="flex-row items-center bg-canvas rounded-2xl border-[1.5px] border-line px-3.5 h-[52px] mt-4">
-            <Icon name="flag" size={18} color={palette.subtle} />
+            <Icon name="flag" size={18} color={colors.subtle} />
             <TextInput
               className="flex-1 ml-2.5 text-[15px] text-ink"
               placeholder={LIMIT_PLACEHOLDER}
-              placeholderTextColor={palette.subtle}
+              placeholderTextColor={colors.subtle}
               value={value}
               onChangeText={setValue}
               keyboardType="numeric"

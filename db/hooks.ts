@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
+import { useCategoryColor } from '@/hooks/useColors';
 import { type BudgetEntry } from '@/utils/budget';
+import { type GoalEntryRecord, type GoalRecord } from '@/utils/goals-type';
 import { limitsForMonth, type CategoryBudgetEntry } from '@/utils/categoryBudget';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
@@ -13,6 +15,7 @@ import { type RecurrenceRecord } from '@/utils/recurrence-type';
 import { getBudgetEntries } from './budgets';
 import { getCards, type CardRecord } from './cards';
 import { getCategoryBudgetEntries } from './categoryBudgets';
+import { getGoalById, getGoalEntries, getGoals } from './goals';
 import { getCategories, type CategoryRecord } from './categories';
 import { useRefetchOnDataChange } from './events';
 import { getProfile, type ProfileRecord } from './profile';
@@ -109,7 +112,12 @@ export function useTransactions(filters: TransactionFilters = {}) {
   );
   useRefetchOnDataChange(refetch);
 
-  const shown = future ? (limit !== undefined ? planned.slice(0, limit) : planned) : transactions;
+  // The category colors are drawn softened on the dark theme (see utils/color.ts), so every screen gets them that way.
+  const recolor = useCategoryColor();
+  const shown = useMemo(() => {
+    const rows = future ? (limit !== undefined ? planned.slice(0, limit) : planned) : transactions;
+    return rows.map((t) => ({ ...t, categoryColor: recolor(t.categoryColor) }));
+  }, [future, limit, planned, transactions, recolor]);
   return { transactions: shown, loading, refetch };
 }
 
@@ -161,6 +169,53 @@ export function useCategoryBudgets() {
   useRefetchOnDataChange(refetch);
 
   return { entries, loading, refetch };
+}
+
+// The caixinhas, each with what is in it.
+export function useGoals() {
+  const db = useSQLiteContext();
+  const [goals, setGoals] = useState<GoalRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    setGoals(await getGoals(db));
+    setLoading(false);
+  }, [db]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  return { goals, loading, refetch };
+}
+
+// One caixinha and what was put in and taken out of it; goal is null once it does not exist anymore.
+export function useGoal(id: number) {
+  const db = useSQLiteContext();
+  const [goal, setGoal] = useState<GoalRecord | null>(null);
+  const [entries, setEntries] = useState<GoalEntryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    const [found, foundEntries] = await Promise.all([getGoalById(db, id), getGoalEntries(db, id)]);
+    setGoal(found);
+    setEntries(foundEntries);
+    setLoading(false);
+  }, [db, id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+  useRefetchOnDataChange(refetch);
+
+  return { goal, entries, loading, refetch };
 }
 
 // The monthly budget is kept per month: see utils/budget.ts for how a month's amount is picked.
@@ -263,7 +318,16 @@ export function useCategoryTotals(filters: { month?: string } = {}) {
   );
   useRefetchOnDataChange(refetch);
 
-  return { totals: future ? planned : totals, loading, refetch };
+  const recolor = useCategoryColor();
+  const shown = useMemo(
+    () =>
+      (future ? planned : totals).map((t) => {
+        const color = recolor(t.color);
+        return { ...t, color, bg: color === t.color ? t.bg : `${color}1F` };
+      }),
+    [future, planned, totals, recolor]
+  );
+  return { totals: shown, loading, refetch };
 }
 
 export function useCategories() {
@@ -284,7 +348,16 @@ export function useCategories() {
   );
   useRefetchOnDataChange(refetch);
 
-  return { categories, loading, refetch };
+  const recolor = useCategoryColor();
+  const shown = useMemo(
+    () =>
+      categories.map((c) => {
+        const color = recolor(c.color);
+        return { ...c, color, bg: color === c.color ? c.bg : `${color}1F` };
+      }),
+    [categories, recolor]
+  );
+  return { categories: shown, loading, refetch };
 }
 
 export function useProfile() {

@@ -18,12 +18,12 @@ import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
 import { createTransaction } from '@/db/transactions';
 import { monthKey } from '@/utils/month';
 import { type RepeatMode } from '@/utils/recurrence-type';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import AmountStep from './components/AmountStep';
-import CategoryStep from './components/CategoryStep';
-import DetailsStep from './components/DetailsStep';
-import FlowButton from './components/FlowButton';
-import FlowHeader from './components/FlowHeader';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import AmountStep from '@/app/registrationSpent/components/AmountStep';
+import CategoryStep from '@/app/registrationSpent/components/CategoryStep';
+import DetailsStep from '@/app/registrationSpent/components/DetailsStep';
+import FlowButton from '@/app/registrationSpent/components/FlowButton';
+import FlowHeader from '@/app/registrationSpent/components/FlowHeader';
 import {
   CLOSE_LABEL,
   FlowStep,
@@ -33,11 +33,12 @@ import {
   SHEET_DIM_COLOR,
   SHEET_TOP_GAP,
   TITLES,
-  TYPE_COLORS,
+  typeColors,
   VALIDATION_MESSAGES,
   TxType,
-} from './registrationSpent-type';
-import { categoriesForType, formatCents } from './utils';
+} from '@/types/registrationSpent/registrationSpent-type';
+import { categoriesForType, formatCents } from '@/utils/transactionForm';
+import { useColors } from '@/hooks/useColors';
 
 export default function RegistrationSpent() {
   const router = useRouter();
@@ -89,7 +90,8 @@ export default function RegistrationSpent() {
     }
   }, [selectedCardId, cards]);
 
-  const typeColor = TYPE_COLORS[type];
+  const colors = useColors();
+  const typeColor = typeColors(colors)[type];
   const amountText = formatCents(parseInt(amount || '0', 10) || 0);
   const visibleCategories = categoriesForType(categories, type);
   const category = categories.find((c) => c.id === selectedCat) ?? null;

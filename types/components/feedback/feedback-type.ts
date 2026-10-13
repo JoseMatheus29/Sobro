@@ -1,6 +1,7 @@
 import { type Animated, type ViewStyle } from 'react-native';
 
-import { palette } from '@/constants/palette';
+import { palette, type Palette } from '@/constants/palette';
+import { tint } from '@/utils/color';
 
 export type FeedbackType = 'success' | 'error' | 'info';
 
@@ -39,11 +40,11 @@ export interface ConfirmDialogProps {
 }
 
 // `color` is the icon color and `tint` the soft square behind it, for toasts and dialogs.
-export const FEEDBACK_STYLES: Record<FeedbackType, { icon: string; color: string; tint: string }> = {
-  success: { icon: 'check', color: palette.income, tint: 'rgba(39,127,43,0.12)' },
-  error: { icon: 'error-outline', color: palette.expense, tint: 'rgba(168,54,54,0.12)' },
-  info: { icon: 'info-outline', color: palette.primary.DEFAULT, tint: 'rgba(49,97,178,0.12)' },
-};
+export const feedbackStyles = (colors: Palette): Record<FeedbackType, { icon: string; color: string; tint: string }> => ({
+  success: { icon: 'check', color: colors.income, tint: tint(colors.income) },
+  error: { icon: 'error-outline', color: colors.expense, tint: tint(colors.expense) },
+  info: { icon: 'info-outline', color: colors.primary.DEFAULT, tint: tint(colors.primary.DEFAULT) },
+});
 
 export const TOAST_DURATION_MS: Record<FeedbackType, number> = {
   success: 3500,

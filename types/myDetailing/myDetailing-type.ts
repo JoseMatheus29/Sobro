@@ -1,4 +1,4 @@
-import { palette } from '@/constants/palette';
+import { type Palette } from '@/constants/palette';
 
 export interface PieDataItem {
   value: number;
@@ -19,7 +19,7 @@ export interface MonthlyProgressProps {
 }
 
 // Single neutral slice so the donut keeps its shape when there is nothing to plot.
-export const EMPTY_PIE_DATA: PieDataItem[] = [{ value: 100, color: palette.line, label: '' }];
+export const emptyPieData = (colors: Palette): PieDataItem[] => [{ value: 100, color: colors.line, label: '' }];
 
 export const EMPTY_CHART_TITLE = 'Nenhum gasto neste mês';
 export const EMPTY_CHART_HINT = 'Toque em + para registrar seu primeiro gasto.';

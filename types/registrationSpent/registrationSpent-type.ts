@@ -1,6 +1,6 @@
 import { type ViewStyle } from 'react-native';
 
-import { palette } from '@/constants/palette';
+import { palette, type Palette } from '@/constants/palette';
 import { type CardRecord } from '@/db/cards';
 import { type RepeatMode } from '@/utils/recurrence-type';
 
@@ -87,29 +87,27 @@ export interface RepeatSectionProps {
   setCurrentInstallment: (n: number) => void;
 }
 
-export const TYPE_COLORS: Record<TxType, string> = {
-  expense: palette.expense,
-  income: palette.income,
-};
+// The color of each type as text and icons on the active theme.
+export const typeColors = (colors: Palette): Record<TxType, string> => ({
+  expense: colors.expense,
+  income: colors.income,
+});
 
-// Left-to-right gradient of the main button, darkest end first (like the blue default).
+// Left-to-right gradient of the main button (white text on top), darkest end first: fixed in both themes.
 export const TYPE_GRADIENTS: Record<TxType, [string, string]> = {
   expense: [palette.expense, '#C0514A'],
   income: [palette.income, '#2F9334'],
 };
 
-// Neutral instead of a faded type color, which read as pink and broken.
-export const DISABLED_GRADIENT: [string, string] = ['#B8C4D6', '#C9D3E1'];
-
-// White thumb of the saída/entrada toggle; only its text takes the type color.
-export const TOGGLE_THUMB_STYLE: ViewStyle = {
-  backgroundColor: '#fff',
-  shadowColor: palette.ink,
+// Thumb of the saída/entrada toggle; only its text takes the type color.
+export const toggleThumbStyle = (colors: Palette): ViewStyle => ({
+  backgroundColor: colors.thumb,
+  shadowColor: colors.ink,
   shadowOpacity: 0.14,
   shadowRadius: 3,
   shadowOffset: { width: 0, height: 1 },
   elevation: 2,
-};
+});
 
 export const TX_TYPE_OPTIONS: { type: TxType; label: string; icon: string }[] = [
   { type: 'expense', label: 'Saída', icon: 'arrow-upward' },

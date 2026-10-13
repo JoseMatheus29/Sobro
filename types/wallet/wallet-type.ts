@@ -56,6 +56,12 @@ export const SAVING_LABEL = 'Salvando...';
 
 export const DELETE_ACCOUNT_LABEL = 'Excluir conta';
 export const LAST_ACCOUNT_HINT = 'É preciso manter pelo menos uma conta.';
+// Shown in the account form before the delete button is even pressed, when the account has data.
+const countLabel = (transactions: number, recurrences: number) =>
+  `${transactions} ${transactions === 1 ? 'transação' : 'transações'}` +
+  (recurrences > 0 ? ` e ${recurrences} ${recurrences === 1 ? 'recorrência' : 'recorrências'}` : '');
+export const DELETE_ACCOUNT_WARNING = (transactions: number, recurrences: number) =>
+  `Esta conta tem ${countLabel(transactions, recurrences)}. Se você excluí-la, tudo isso será apagado e não dá para recuperar.`;
 export const DELETE_ACCOUNT_CONFIRM = (name: string, transactions: number, recurrences: number) => ({
   title: `Excluir a conta ${name}?`,
   message:

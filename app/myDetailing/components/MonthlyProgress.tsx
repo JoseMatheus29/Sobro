@@ -3,15 +3,16 @@ import { Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Progress from 'react-native-progress';
 
-import { palette } from '@/constants/palette';
-import { MonthlyProgressProps } from '../myDetailing-type';
+import { useColors } from '@/hooks/useColors';
+import { MonthlyProgressProps } from '@/types/myDetailing/myDetailing-type';
 
 export default function MonthlyProgress({ totalGastos, progress, percentage, hasBudget }: MonthlyProgressProps) {
+  const colors = useColors();
   return (
     // LinearGradient ignores borderRadius on Android; the wrapper does the clipping.
     <View className="mx-4 mb-5 rounded-3xl overflow-hidden">
       <LinearGradient
-        colors={[palette.primary.DEFAULT, palette.primary.light]}
+        colors={colors.buttonGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         className="p-5"

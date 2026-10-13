@@ -2,22 +2,23 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { formatDayMonth } from '@/utils/format';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { isTransfer } from '@/utils/transfer';
-import EmptyState from '../../components/ui/EmptyState';
-import { PLANNED_LABEL } from '../../components/cardHorizontal-type';
-import RecurrenceBadge from '../../components/ui/RecurrenceBadge';
+import EmptyState from '@/app/components/ui/EmptyState';
+import { PLANNED_LABEL } from '@/types/components/cardHorizontal-type';
+import RecurrenceBadge from '@/app/components/ui/RecurrenceBadge';
 import {
   EMPTY_RECENT_MESSAGE,
   RECENT_ACTION_LABEL,
   RecentTransactionsProps,
-} from '../dashboard-type';
+} from '@/types/dashboard/dashboard-type';
 
 // One block with thin dividers instead of a card per transaction: the category is told by the
 // icon and a short line under the name, not repeated on the right.
 export default function RecentTransactions({ title, transactions, onSeeAll, onPressItem }: RecentTransactionsProps) {
+  const colors = useColors();
   return (
     <View>
       <View className="flex-row justify-between items-center mb-3">
@@ -30,7 +31,7 @@ export default function RecentTransactions({ title, transactions, onSeeAll, onPr
       {transactions.length === 0 ? (
         <EmptyState icon="receipt-long" message={EMPTY_RECENT_MESSAGE} />
       ) : (
-        <View className="bg-white rounded-[20px] border border-surface px-4 shadow-sm shadow-black/5 elevation-2">
+        <View className="bg-card rounded-[20px] border border-surface px-4 shadow-sm shadow-black/5 elevation-2">
           {transactions.map((t, i) => {
             const isIncome = t.type === 'income';
             const planned = t.planned === true;
@@ -65,7 +66,7 @@ export default function RecentTransactions({ title, transactions, onSeeAll, onPr
                 <View className="items-end">
                   <Text
                     className="text-[15px] font-extrabold"
-                    style={{ color: planned || transfer ? palette.muted : isIncome ? palette.income : palette.expense }}
+                    style={{ color: planned || transfer ? colors.muted : isIncome ? colors.income : colors.expense }}
                   >
                     {isIncome ? '+' : '-'} R$ {Math.abs(t.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </Text>

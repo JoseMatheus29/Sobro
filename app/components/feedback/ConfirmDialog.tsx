@@ -2,23 +2,25 @@ import React from 'react';
 import { Modal, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import {
   ConfirmDialogProps,
   DEFAULT_CANCEL_LABEL,
   DEFAULT_CONFIRM_LABEL,
   DIALOG_DIM_COLOR,
-  FEEDBACK_STYLES,
-} from './feedback-type';
+  feedbackStyles,
+} from '@/types/components/feedback/feedback-type';
 
 export default function ConfirmDialog({ request, onAnswer }: ConfirmDialogProps) {
+  const colors = useColors();
   const destructive = !!request?.destructive;
-  const look = destructive ? FEEDBACK_STYLES.error : FEEDBACK_STYLES.info;
+  const styles = feedbackStyles(colors);
+  const look = destructive ? styles.error : styles.info;
 
   return (
     <Modal visible={!!request} transparent animationType="fade" onRequestClose={() => onAnswer(false)}>
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: DIALOG_DIM_COLOR }}>
-        <View className="w-full rounded-3xl bg-white p-6">
+        <View className="w-full rounded-3xl bg-card p-6">
           <View className="w-12 h-12 rounded-[14px] items-center justify-center mb-4" style={{ backgroundColor: look.tint }}>
             <Icon name={destructive ? 'delete-outline' : 'help-outline'} size={24} color={look.color} />
           </View>
@@ -37,7 +39,7 @@ export default function ConfirmDialog({ request, onAnswer }: ConfirmDialogProps)
               onPress={() => onAnswer(true)}
               activeOpacity={0.85}
               className="flex-1 h-12 rounded-2xl items-center justify-center"
-              style={{ backgroundColor: destructive ? palette.expense : palette.primary.DEFAULT }}
+              style={{ backgroundColor: destructive ? colors.expense : colors.primary.DEFAULT }}
             >
               <Text className="text-[15px] font-bold text-white">{request?.confirmLabel ?? DEFAULT_CONFIRM_LABEL}</Text>
             </TouchableOpacity>

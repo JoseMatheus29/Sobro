@@ -1,4 +1,4 @@
-import { type ToastOptions } from '../components/feedback/feedback-type';
+import { type ToastOptions } from '@/types/components/feedback/feedback-type';
 
 export const TRANSFER_TITLE = 'Transferir entre contas';
 export const AMOUNT_LABEL = 'Valor';

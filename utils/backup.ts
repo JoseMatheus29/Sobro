@@ -90,6 +90,7 @@ export function validateBackup(raw: unknown, currentSchemaVersion: number): Back
   const categories = new Set(data.categories.map((r) => r.id));
   const cards = new Set(data.cards.map((r) => r.id));
   const recurrences = new Set(data.recurrences.map((r) => r.id));
+  const goals = new Set(data.goals.map((r) => r.id));
 
   const pointers: [BackupTableName, string, Set<BackupValue>][] = [
     ['recurrences', 'card_id', cards],
@@ -97,6 +98,7 @@ export function validateBackup(raw: unknown, currentSchemaVersion: number): Back
     ['transactions', 'card_id', cards],
     ['transactions', 'category_id', categories],
     ['category_budgets', 'category_id', categories],
+    ['goal_entries', 'goal_id', goals],
   ];
   for (const [table, column, targets] of pointers) {
     const index = data[table].findIndex((row) => !targets.has(row[column]));
@@ -108,8 +110,10 @@ export function validateBackup(raw: unknown, currentSchemaVersion: number): Back
   const badType = data.transactions.findIndex((r) => r.type !== 'income' && r.type !== 'expense');
   if (badType >= 0) return { ok: false, reason: BACKUP_REASONS.badType(badType) };
 
-  const badDate = data.transactions.findIndex((r) => Number.isNaN(Date.parse(String(r.occurred_at))));
-  if (badDate >= 0) return { ok: false, reason: BACKUP_REASONS.badDate('transactions', badDate) };
+  for (const table of ['transactions', 'goal_entries'] as const) {
+    const badDate = data[table].findIndex((r) => Number.isNaN(Date.parse(String(r.occurred_at))));
+    if (badDate >= 0) return { ok: false, reason: BACKUP_REASONS.badDate(table, badDate) };
+  }
 
   const exportedAt = typeof raw.exportedAt === 'string' ? raw.exportedAt : '';
   const backup: ValidBackup = { schemaVersion: raw.schemaVersion, exportedAt, data };

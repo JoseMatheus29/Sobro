@@ -2,13 +2,15 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { INSIGHT_TONE_COLOR, InsightItemProps } from '../insights-type';
+import { insightToneColors, InsightItemProps } from '@/types/insights/insights-type';
+import { useColors } from '@/hooks/useColors';
 
 export default function InsightItem({ insight }: InsightItemProps) {
-  const color = INSIGHT_TONE_COLOR[insight.tone];
+  const colors = useColors();
+  const color = insightToneColors(colors)[insight.tone];
 
   return (
-    <View className="flex-row gap-3.5 bg-white rounded-[20px] border border-surface p-4 mb-3 shadow-sm shadow-black/5 elevation-2">
+    <View className="flex-row gap-3.5 bg-card rounded-[20px] border border-surface p-4 mb-3 shadow-sm shadow-black/5 elevation-2">
       <View
         className="w-11 h-11 rounded-[14px] items-center justify-center"
         style={{ backgroundColor: `${color}1F` }}

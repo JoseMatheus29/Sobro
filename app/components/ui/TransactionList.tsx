@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 
-import CardHorizontal from '../cardHorizontal';
-import EmptyState from './EmptyState';
+import CardHorizontal from '@/app/components/cardHorizontal';
+import EmptyState from '@/app/components/ui/EmptyState';
 
 export interface Transaction {
   id: number;

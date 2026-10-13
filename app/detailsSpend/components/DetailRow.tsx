@@ -2,11 +2,12 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
-import { DetailRowProps } from '../detailsSpend-type';
+import { useColors } from '@/hooks/useColors';
+import { DetailRowProps } from '@/types/detailsSpend/detailsSpend-type';
 
 // One field of the form: tinted icon square, small label and the control under it.
 export default function DetailRow({ icon, color, label, last, onPress, children }: DetailRowProps) {
+  const colors = useColors();
   const body = (
     <>
       <View
@@ -19,7 +20,7 @@ export default function DetailRow({ icon, color, label, last, onPress, children 
         <Text className="text-xs text-muted">{label}</Text>
         {children}
       </View>
-      {onPress && <Icon name="chevron-right" size={20} color={palette.subtle} />}
+      {onPress && <Icon name="chevron-right" size={20} color={colors.subtle} />}
     </>
   );
   const className = `flex-row items-center gap-3 py-3 ${last ? '' : 'border-b border-line'}`;

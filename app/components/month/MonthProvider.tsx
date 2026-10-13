@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { AppState } from 'react-native';
 
 import { monthKey } from '@/utils/month';
-import { MonthContextValue } from './month-type';
+import { MonthContextValue } from '@/types/components/month/month-type';
 
 const MonthContext = createContext<MonthContextValue | null>(null);
 
@@ -40,3 +40,6 @@ export function useSelectedMonth(): MonthContextValue {
   if (!value) throw new Error('useSelectedMonth must be used inside <MonthProvider>');
   return value;
 }
+
+// Everything under app/ is a route for Expo Router, which warns about a file with no default export.
+export default MonthProvider;

@@ -2,7 +2,7 @@ import {
   CATEGORY_IDS_HIDDEN_FOR,
   type Category,
   type TxType,
-} from './registrationSpent-type';
+} from '@/types/registrationSpent/registrationSpent-type';
 
 export function formatCents(cents: number): string {
   return (cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

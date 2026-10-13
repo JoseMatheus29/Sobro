@@ -2,8 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { Animated, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-import ConfirmDialog from './ConfirmDialog';
-import Toast from './Toast';
+import ConfirmDialog from '@/app/components/feedback/ConfirmDialog';
+import Toast from '@/app/components/feedback/Toast';
 import {
   ConfirmOptions,
   FEEDBACK_HOOK_ERROR,
@@ -12,7 +12,7 @@ import {
   TOAST_HIDE_MS,
   TOAST_SHOW_MS,
   ToastOptions,
-} from './feedback-type';
+} from '@/types/components/feedback/feedback-type';
 
 const FeedbackContext = createContext<FeedbackContextValue | null>(null);
 
@@ -85,3 +85,6 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
     </FeedbackContext.Provider>
   );
 }
+
+// Everything under app/ is a route for Expo Router, which warns about a file with no default export.
+export default FeedbackProvider;

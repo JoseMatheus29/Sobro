@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { tint } from '@/utils/color';
 import { formatMoney } from '@/utils/format';
 import { monthKey, monthKeyWithYear } from '@/utils/month';
@@ -18,8 +18,8 @@ import {
   REPEAT_OPTIONS,
   REPEAT_TITLE,
   RepeatSectionProps,
-  TOGGLE_THUMB_STYLE,
-} from '../registrationSpent-type';
+  toggleThumbStyle,
+} from '@/types/registrationSpent/registrationSpent-type';
 
 function Stepper({
   label,
@@ -34,8 +34,9 @@ function Stepper({
   max: number;
   onChange: (n: number) => void;
 }) {
+  const colors = useColors();
   return (
-    <View className="flex-1 bg-white rounded-2xl border-[1.5px] border-line px-2.5 py-2">
+    <View className="flex-1 bg-card rounded-2xl border-[1.5px] border-line px-2.5 py-2">
       <Text className="text-[11px] text-subtle mb-1">{label}</Text>
       <View className="flex-row items-center justify-between">
         <TouchableOpacity
@@ -43,7 +44,7 @@ function Stepper({
           accessibilityLabel={`Menos: ${label}`}
           className="w-9 h-9 rounded-xl bg-surface items-center justify-center"
         >
-          <Icon name="remove" size={20} color={palette.primary.DEFAULT} />
+          <Icon name="remove" size={20} color={colors.primary.DEFAULT} />
         </TouchableOpacity>
         <Text className="text-lg font-extrabold text-ink">{value}</Text>
         <TouchableOpacity
@@ -51,7 +52,7 @@ function Stepper({
           accessibilityLabel={`Mais: ${label}`}
           className="w-9 h-9 rounded-xl bg-surface items-center justify-center"
         >
-          <Icon name="add" size={20} color={palette.primary.DEFAULT} />
+          <Icon name="add" size={20} color={colors.primary.DEFAULT} />
         </TouchableOpacity>
       </View>
     </View>
@@ -69,6 +70,7 @@ export default function RepeatSection({
   currentInstallment,
   setCurrentInstallment,
 }: RepeatSectionProps) {
+  const colors = useColors();
   const summary =
     repeat === 'installments'
       ? installmentSummary({ total: installments, current: currentInstallment, amount: amountValue, startMonth: monthKey(date) })
@@ -88,11 +90,11 @@ export default function RepeatSection({
               activeOpacity={0.8}
               accessibilityState={{ selected: active }}
               className="flex-1 h-10 rounded-xl items-center justify-center"
-              style={active ? TOGGLE_THUMB_STYLE : undefined}
+              style={active ? toggleThumbStyle(colors) : undefined}
             >
               <Text
                 className="text-sm"
-                style={{ color: active ? palette.primary.DEFAULT : palette.muted, fontWeight: active ? '700' : '500' }}
+                style={{ color: active ? colors.primary.DEFAULT : colors.muted, fontWeight: active ? '700' : '500' }}
               >
                 {option.label}
               </Text>
@@ -126,10 +128,10 @@ export default function RepeatSection({
       {repeat !== 'none' && (
         <View
           className="flex-row items-center gap-3 mt-2.5 rounded-2xl p-3.5 border"
-          style={{ backgroundColor: tint(palette.primary.DEFAULT), borderColor: tint(palette.primary.DEFAULT) }}
+          style={{ backgroundColor: tint(colors.primary.DEFAULT), borderColor: tint(colors.primary.DEFAULT) }}
         >
-          <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: tint(palette.primary.DEFAULT) }}>
-            <Icon name="autorenew" size={20} color={palette.primary.DEFAULT} />
+          <View className="w-9 h-9 rounded-xl items-center justify-center" style={{ backgroundColor: tint(colors.primary.DEFAULT) }}>
+            <Icon name="autorenew" size={20} color={colors.primary.DEFAULT} />
           </View>
           <View className="flex-1">
             <Text className="text-sm font-bold text-ink">

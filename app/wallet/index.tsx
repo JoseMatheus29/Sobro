@@ -3,19 +3,21 @@ import { View, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import SideBar from '../components/sidebar';
-import AddTransactionFab from '../components/AddTransactionFab';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import MonthPill from '../components/month/MonthPill';
-import { useSelectedMonth } from '../components/month/MonthProvider';
-import ScreenHeader from '../components/ui/ScreenHeader';
-import ScreenScroll from '../components/ui/ScreenScroll';
-import TransactionList from '../components/ui/TransactionList';
-import CardCarousel from './components/CardCarousel';
-import WalletSummary from './components/WalletSummary';
-import CardFormModal from './components/CardFormModal';
-import { palette } from '@/constants/palette';
-import { useCards, useTransactions } from '@/db/hooks';
+import SideBar from '@/app/components/sidebar';
+import AddTransactionFab from '@/app/components/AddTransactionFab';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import MonthPill from '@/app/components/month/MonthPill';
+import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import ScreenHeader from '@/app/components/ui/ScreenHeader';
+import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import TransactionList from '@/app/components/ui/TransactionList';
+import CardCarousel from '@/app/wallet/components/CardCarousel';
+import WalletSummary from '@/app/wallet/components/WalletSummary';
+import CardFormModal from '@/app/wallet/components/CardFormModal';
+import GoalsSection from '@/app/wallet/components/GoalsSection';
+import GoalFormModal from '@/app/components/GoalFormModal';
+import { useColors } from '@/hooks/useColors';
+import { useCards, useGoals, useTransactions } from '@/db/hooks';
 import { deleteCard, getCardUsage, type CardRecord } from '@/db/cards';
 import { notifyDataChanged } from '@/db/events';
 import { refreshReminders } from '@/db/reminders';
@@ -31,22 +33,25 @@ import {
   DELETE_ACCOUNT_CONFIRM,
   EMPTY_TRANSACTIONS_MESSAGE,
   SEARCH_LABEL,
-} from './wallet-type';
+} from '@/types/wallet/wallet-type';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - CAROUSEL_SIDE_PADDING - CAROUSEL_PEEK - CAROUSEL_GAP;
 
 export default function WalletScreen() {
+  const colors = useColors();
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
+  const [goalFormVisible, setGoalFormVisible] = useState(false);
 
   const db = useSQLiteContext();
   const { confirm, showToast } = useFeedback();
   const { month } = useSelectedMonth();
   const { cards, loading: loadingCards, refetch: refetchCards } = useCards();
+  const { goals } = useGoals();
   // The carousel's last page is the "add card" tile; while it is focused the
   // summary and transactions keep showing the last card.
   const activeCard: CardRecord | undefined = cards[Math.min(activeIndex, cards.length - 1)];
@@ -69,7 +74,7 @@ export default function WalletScreen() {
   if (loadingCards && cards.length === 0) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas">
-        <ActivityIndicator size="large" color={palette.primary.DEFAULT} />
+        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
       </View>
     );
   }
@@ -95,7 +100,6 @@ export default function WalletScreen() {
       <ScreenScroll>
         <ScreenHeader
           title="Carteira"
-          gradientColors={[palette.primary.dark, palette.primary.DEFAULT, palette.primary.light]}
         >
           <View className="items-center">
             <MonthPill />
@@ -131,6 +135,13 @@ export default function WalletScreen() {
             />
           )}
 
+          <GoalsSection
+            goals={goals}
+            accountBalances={cards.map((c) => c.balance)}
+            onNew={() => setGoalFormVisible(true)}
+            onOpen={(id) => router.push({ pathname: '/goal/[id]', params: { id: String(id) } })}
+          />
+
           <TransactionList
             title={`Transações de ${monthNameOf(month)}`}
             actionLabel={SEARCH_LABEL}
@@ -154,6 +165,8 @@ export default function WalletScreen() {
           refetchTransactions();
         }}
       />
+
+      <GoalFormModal visible={goalFormVisible} onClose={() => setGoalFormVisible(false)} onSaved={() => setGoalFormVisible(false)} />
 
       <SideBar />
       <AddTransactionFab />

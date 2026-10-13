@@ -4,20 +4,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import {
-  FEEDBACK_STYLES,
+  feedbackStyles,
   TOAST_SHADOW,
   TOAST_SIDE_MARGIN,
   TOAST_SLIDE_DISTANCE,
   TOAST_TOP_GAP,
   ToastProps,
-} from './feedback-type';
+} from '@/types/components/feedback/feedback-type';
+import { useColors } from '@/hooks/useColors';
 
 // A white card like the ones on screen: the result color lives only in the icon square.
 export default function Toast({ toast, progress, onPress }: ToastProps) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   if (!toast) return null;
 
-  const look = FEEDBACK_STYLES[toast.type];
+  const look = feedbackStyles(colors)[toast.type];
 
   // Position and animation go in `style`: className is not applied to Animated components.
   return (
@@ -37,7 +39,7 @@ export default function Toast({ toast, progress, onPress }: ToastProps) {
       <Pressable
         onPress={onPress}
         accessibilityRole="alert"
-        className="flex-row items-center gap-3 bg-white rounded-[20px] border border-surface px-3.5 py-3"
+        className="flex-row items-center gap-3 bg-card rounded-[20px] border border-surface px-3.5 py-3"
         style={TOAST_SHADOW}
       >
         <View className="w-11 h-11 rounded-[14px] items-center justify-center" style={{ backgroundColor: look.tint }}>

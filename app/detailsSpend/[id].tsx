@@ -5,22 +5,21 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import ArrowBack from '../components/arrowBack';
-import SideBar from '../components/sidebar';
-import { SCROLL_PADDING_WITH_SIDEBAR } from '../components/sidebar-type';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import GradientButton from '../components/ui/GradientButton';
-import PickerSheet from '../components/ui/PickerSheet';
-import ScreenHeader from '../components/ui/ScreenHeader';
-import ScreenScroll from '../components/ui/ScreenScroll';
-import EditForm from './components/EditForm';
-import RecurrenceCard from './components/RecurrenceCard';
-import TransferDetails from './components/TransferDetails';
+import ArrowBack from '@/app/components/arrowBack';
+import SideBar from '@/app/components/sidebar';
+import { SCROLL_PADDING_WITH_SIDEBAR } from '@/types/components/sidebar-type';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import GradientButton from '@/app/components/ui/GradientButton';
+import PickerSheet from '@/app/components/ui/PickerSheet';
+import ScreenHeader from '@/app/components/ui/ScreenHeader';
+import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import EditForm from '@/app/detailsSpend/components/EditForm';
+import RecurrenceCard from '@/app/detailsSpend/components/RecurrenceCard';
+import TransferDetails from '@/app/detailsSpend/components/TransferDetails';
 import {
   APPLY_CONFIRM,
   CARD_SHEET_TITLE,
   CATEGORY_SHEET_TITLE,
-  DELETE_BUTTON_BG,
   DELETE_CONFIRM,
   DELETE_LABEL,
   DELETED_TOAST,
@@ -34,10 +33,10 @@ import {
   RECURRENCE_ENDED_BY_TYPE,
   SAVE_LABEL,
   UPDATED_TITLE,
-} from './detailsSpend-type';
-import { DISABLED_GRADIENT, TYPE_COLORS, type TxType } from '../registrationSpent/registrationSpent-type';
-import { categoriesForType, formatCents } from '../registrationSpent/utils';
-import { palette } from '@/constants/palette';
+} from '@/types/detailsSpend/detailsSpend-type';
+import { typeColors, type TxType } from '@/types/registrationSpent/registrationSpent-type';
+import { categoriesForType, formatCents } from '@/utils/transactionForm';
+import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
 import { useCards, useCategories } from '@/db/hooks';
 import { endRecurrence, getRecurrenceById, updateRecurrence } from '@/db/recurrences';
@@ -45,10 +44,12 @@ import { refreshReminders } from '@/db/reminders';
 import { nextOccurrence } from '@/utils/recurrence';
 import { type RecurrenceRecord } from '@/utils/recurrence-type';
 import { deleteTransaction, getTransactionById, updateTransaction, type TransactionRecord } from '@/db/transactions';
+import { tint } from '@/utils/color';
 
 const toCents = (amount: number) => Math.round(Math.abs(amount) * 100).toString();
 
 export default function DetailsSpend() {
+  const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const db = useSQLiteContext();
@@ -124,7 +125,7 @@ export default function DetailsSpend() {
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-canvas">
-        <ActivityIndicator size="large" color={palette.primary.DEFAULT} />
+        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
       </View>
     );
   }
@@ -141,7 +142,7 @@ export default function DetailsSpend() {
   if (transaction.transferId != null) return <TransferDetails transaction={transaction} />;
 
   const cents = parseInt(amount || '0', 10) || 0;
-  const typeColor = TYPE_COLORS[type];
+  const typeColor = typeColors(colors)[type];
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const card = cards.find((c) => c.id === cardId) ?? null;
 
@@ -241,11 +242,11 @@ export default function DetailsSpend() {
         <ScreenHeader title={DETAILS_TITLE} leftComponent={<ArrowBack />}>
           {/* Same composition as the Perfil hero, and it follows what is typed below. */}
           <View className="items-center">
-            <View className="w-14 h-14 rounded-[18px] bg-white/20 items-center justify-center">
-              <Icon name={category?.icon ?? 'category'} size={28} color="#fff" />
+            <View className="w-14 h-14 rounded-[18px] bg-headerInk/20 items-center justify-center">
+              <Icon name={category?.icon ?? 'category'} size={28} color={colors.headerInk} />
             </View>
-            <Text numberOfLines={1} className="text-base font-medium text-white/90 mt-3">{name.trim() || '—'}</Text>
-            <Text className="text-4xl font-extrabold text-white tracking-tight mt-1">
+            <Text numberOfLines={1} className="text-base font-medium text-headerInk/90 mt-3">{name.trim() || '—'}</Text>
+            <Text className="text-4xl font-extrabold text-headerInk tracking-tight mt-1">
               {type === 'income' ? '+' : '-'} R$ {formatCents(cents)}
             </Text>
           </View>
@@ -282,8 +283,8 @@ export default function DetailsSpend() {
             <GradientButton
               title={SAVE_LABEL}
               onPress={handleSave}
-              colors={canSave ? undefined : DISABLED_GRADIENT}
-              shadowColor={canSave ? undefined : DISABLED_GRADIENT[0]}
+              colors={canSave ? undefined : colors.disabledGradient}
+              shadowColor={canSave ? undefined : colors.disabledGradient[0]}
             />
           </View>
 
@@ -297,9 +298,9 @@ export default function DetailsSpend() {
             onPress={handleDelete}
             activeOpacity={0.8}
             className="h-[52px] mt-3 rounded-2xl flex-row items-center justify-center gap-2"
-            style={{ backgroundColor: DELETE_BUTTON_BG }}
+            style={{ backgroundColor: tint(colors.expense) }}
           >
-            <Icon name="delete-outline" size={20} color={palette.expense} />
+            <Icon name="delete-outline" size={20} color={colors.expense} />
             <Text className="text-[15px] font-bold text-expense">{DELETE_LABEL}</Text>
           </TouchableOpacity>
         </View>

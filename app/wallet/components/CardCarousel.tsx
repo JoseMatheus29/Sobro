@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, FlatList, TouchableOpacity, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Card } from '../../components/card';
-import AddCardTile from './AddCardTile';
-import { CAROUSEL_GAP, CAROUSEL_SIDE_PADDING, CardCarouselProps } from '../wallet-type';
+import { Card } from '@/app/components/card';
+import AddCardTile from '@/app/wallet/components/AddCardTile';
+import { CAROUSEL_GAP, CAROUSEL_SIDE_PADDING, CardCarouselProps } from '@/types/wallet/wallet-type';
 
 export default function CardCarousel({
   cards, activeIndex, setActiveIndex, flatListRef, cardWidth, onAddCard

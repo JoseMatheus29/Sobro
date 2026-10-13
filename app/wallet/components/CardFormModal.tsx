@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
-import { createCard, updateCard, type CardRecord } from '@/db/cards';
+import { useColors } from '@/hooks/useColors';
+import { createCard, getCardUsage, updateCard, type CardRecord } from '@/db/cards';
+import { tint } from '@/utils/color';
 import {
   CANCEL_LABEL,
   COLOR_LABEL,
   DELETE_ACCOUNT_LABEL,
+  DELETE_ACCOUNT_WARNING,
   EDIT_ACCOUNT_TITLE,
   LAST_ACCOUNT_HINT,
   NAME_LABEL,
@@ -19,7 +22,7 @@ import {
   SAVING_LABEL,
   STARTING_BALANCE_LABEL,
   STARTING_BALANCE_PLACEHOLDER,
-} from '../wallet-type';
+} from '@/types/wallet/wallet-type';
 
 const COLOR_OPTIONS: { color: string; lightColor: string }[] = [
   { color: '#3161B2', lightColor: '#4A74BB' },
@@ -42,6 +45,7 @@ interface CardFormModalProps {
 
 // Creates or edits an account: a place where the money is (a bank, a card, cash).
 export default function CardFormModal({ visible, initialCard, canDelete, onClose, onSaved, onDelete }: CardFormModalProps) {
+  const colors = useColors();
   const db = useSQLiteContext();
   const isEditing = !!initialCard;
 
@@ -50,6 +54,22 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
   const [startingBalance, setStartingBalance] = useState('');
   const [cardTheme, setCardTheme] = useState(COLOR_OPTIONS[0]);
   const [saving, setSaving] = useState(false);
+  // What deleting this account would take with it, to warn before the delete button is pressed.
+  const [usage, setUsage] = useState<{ transactions: number; recurrences: number } | null>(null);
+
+  useEffect(() => {
+    if (!visible || !initialCard) {
+      setUsage(null);
+      return;
+    }
+    let cancelled = false;
+    getCardUsage(db, initialCard.id).then((found) => {
+      if (!cancelled) setUsage(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible, initialCard, db]);
 
   useEffect(() => {
     if (!visible) return;
@@ -98,7 +118,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
-        <View className="bg-white rounded-[24px] p-5 w-full">
+        <View className="bg-card rounded-[24px] p-5 w-full">
           <Text className="text-[15px] font-bold text-ink mb-4">
             {isEditing ? EDIT_ACCOUNT_TITLE : NEW_ACCOUNT_TITLE}
           </Text>
@@ -107,7 +127,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
           <TextInput
             className="bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5 h-[50px] text-[14px] text-ink mb-3.5"
             placeholder={NAME_PLACEHOLDER}
-            placeholderTextColor={palette.subtle}
+            placeholderTextColor={colors.subtle}
             value={name}
             onChangeText={setName}
           />
@@ -118,7 +138,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
           <TextInput
             className="bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5 h-[50px] text-[14px] text-ink mb-3.5"
             placeholder={NUMBER_PLACEHOLDER}
-            placeholderTextColor={palette.subtle}
+            placeholderTextColor={colors.subtle}
             value={number}
             onChangeText={setNumber}
             keyboardType="number-pad"
@@ -133,7 +153,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
               <TextInput
                 className="bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5 h-[50px] text-[14px] text-ink mb-3.5"
                 placeholder={STARTING_BALANCE_PLACEHOLDER}
-                placeholderTextColor={palette.subtle}
+                placeholderTextColor={colors.subtle}
                 value={startingBalance}
                 onChangeText={setStartingBalance}
                 keyboardType="numeric"
@@ -150,7 +170,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
                   key={opt.color}
                   onPress={() => setCardTheme(opt)}
                   className="w-9 h-9 rounded-full items-center justify-center"
-                  style={{ backgroundColor: opt.color, borderWidth: active ? 2 : 0, borderColor: palette.ink }}
+                  style={{ backgroundColor: opt.color, borderWidth: active ? 2 : 0, borderColor: colors.ink }}
                 />
               );
             })}
@@ -164,11 +184,20 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
               onPress={handleSave}
               disabled={!canSave}
               className="flex-1 h-12 rounded-[14px] items-center justify-center"
-              style={{ backgroundColor: canSave ? palette.primary.DEFAULT : palette.surface.dark }}
+              style={{ backgroundColor: canSave ? colors.buttonGradient[0] : colors.disabledGradient[0] }}
             >
               <Text className="text-white font-semibold text-sm">{saving ? SAVING_LABEL : SAVE_LABEL}</Text>
             </TouchableOpacity>
           </View>
+
+          {isEditing && initialCard && canDelete && usage && (usage.transactions > 0 || usage.recurrences > 0) && (
+            <View className="flex-row items-start gap-2.5 mt-4 rounded-[14px] p-3" style={{ backgroundColor: tint(colors.expense) }}>
+              <Icon name="warning-amber" size={18} color={colors.expense} />
+              <Text className="flex-1 text-[12px] leading-[17px] text-ink">
+                {DELETE_ACCOUNT_WARNING(usage.transactions, usage.recurrences)}
+              </Text>
+            </View>
+          )}
 
           {isEditing && initialCard && (
             canDelete ? (

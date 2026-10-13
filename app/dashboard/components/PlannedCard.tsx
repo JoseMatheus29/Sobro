@@ -2,13 +2,13 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
+import { budgetColor } from '@/utils/budget';
 import { formatMoney } from '@/utils/format';
 import {
   BUDGET_BAR_MIN_PERCENT,
   BUDGET_CEILING_LABEL,
   BUDGET_LABEL,
-  BUDGET_WARN_AT,
   BalanceCardProps,
   NO_BUDGET_PAST_LABEL,
   PLANNED_COMMITTED_LABEL,
@@ -16,19 +16,20 @@ import {
   PLANNED_OUT_LABEL,
   PLANNED_TAG,
   PLANNED_USE_LABEL,
-} from '../cardBalance-type';
+} from '@/types/dashboard/cardBalance-type';
 
 // What is already committed in a month that has not started. It is not a balance: nothing happened yet.
 export default function PlannedCard({ summary, budget }: Pick<BalanceCardProps, 'summary' | 'budget'>) {
+  const colors = useColors();
   const use = summary.budgetUse;
   const hasBudget = budget !== null && use !== null;
-  const color = hasBudget && use >= BUDGET_WARN_AT ? palette.expense : palette.income;
+  const color = budgetColor(use, colors);
   const fillPercent = !hasBudget || use <= 0 ? 0 : Math.min(100, Math.max(BUDGET_BAR_MIN_PERCENT, use * 100));
 
   return (
-    <View className="bg-white rounded-[24px] p-6 border border-surface-dark shadow-sm shadow-black/5 elevation-2">
-      <View className="flex-row items-center gap-1 self-start rounded-lg px-2 py-[3px]" style={{ backgroundColor: `${palette.muted}20` }}>
-        <Icon name="schedule" size={13} color={palette.muted} />
+    <View className="bg-card rounded-[24px] p-6 border border-surface-dark shadow-sm shadow-black/5 elevation-2">
+      <View className="flex-row items-center gap-1 self-start rounded-lg px-2 py-[3px]" style={{ backgroundColor: `${colors.muted}20` }}>
+        <Icon name="schedule" size={13} color={colors.muted} />
         <Text className="text-[11px] font-bold tracking-[0.4px] text-muted">{PLANNED_TAG}</Text>
       </View>
 
@@ -46,7 +47,7 @@ export default function PlannedCard({ summary, budget }: Pick<BalanceCardProps, 
             <Text className="text-[13px] font-medium text-muted">{BUDGET_LABEL}</Text>
             <Text className="text-[13px] font-bold" style={{ color }}>{PLANNED_USE_LABEL(Math.round(use * 100))}</Text>
           </View>
-          <View className="h-2 rounded-full overflow-hidden mt-2.5" style={{ backgroundColor: palette.surface.DEFAULT }}>
+          <View className="h-2 rounded-full overflow-hidden mt-2.5" style={{ backgroundColor: colors.surface.DEFAULT }}>
             <View className="h-full rounded-full" style={{ width: `${fillPercent}%`, backgroundColor: color }} />
           </View>
           <View className="flex-row items-center justify-between mt-2">
@@ -56,7 +57,7 @@ export default function PlannedCard({ summary, budget }: Pick<BalanceCardProps, 
         </View>
       ) : (
         <View className="flex-row items-center gap-2">
-          <Icon name="flag" size={16} color={palette.subtle} />
+          <Icon name="flag" size={16} color={colors.subtle} />
           <Text className="flex-1 text-[13px] font-medium text-muted">{NO_BUDGET_PAST_LABEL}</Text>
         </View>
       )}

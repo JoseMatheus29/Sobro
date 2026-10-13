@@ -22,8 +22,6 @@ export const BUDGET_CEILING_LABEL = 'Teto';
 export const NO_BUDGET_LABEL = 'Defina um orçamento mensal no seu perfil';
 export const NO_BUDGET_PAST_LABEL = 'Sem orçamento definido neste mês';
 
-// From this share of the budget on, the bar turns from green to red.
-export const BUDGET_WARN_AT = 0.85;
 // A bar with anything in it never shrinks below this share, so a small spend is still visible.
 export const BUDGET_BAR_MIN_PERCENT = 3;
 

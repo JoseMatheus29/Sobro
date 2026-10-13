@@ -3,21 +3,22 @@ import { Text, Pressable, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import { useColors } from '@/hooks/useColors';
+
 interface GradientButtonProps {
   title: string;
   onPress: () => void;
   icon?: string;
+  /** Left-to-right gradient; the theme's main-button gradient by default. */
   colors?: [string, string, string] | [string, string];
   shadowColor?: string;
 }
 
-export default function GradientButton({
-  title,
-  onPress,
-  icon,
-  colors = ['#3161B2', '#4A74BB'],
-  shadowColor = '#3161B2'
-}: GradientButtonProps) {
+export default function GradientButton({ title, onPress, icon, colors, shadowColor }: GradientButtonProps) {
+  const theme = useColors();
+  const fill = colors ?? theme.buttonGradient;
+  const shadow = shadowColor ?? theme.buttonGradient[0];
+
   return (
     <Pressable onPress={onPress}>
       {/* LinearGradient ignores borderRadius on Android, so the rounding is done
@@ -25,11 +26,11 @@ export default function GradientButton({
           clip would otherwise cut off on iOS. */}
       <View
         className="rounded-2xl shadow-xl elevation-8"
-        style={{ shadowColor, backgroundColor: colors[0] }}
+        style={{ shadowColor: shadow, backgroundColor: fill[0] }}
       >
         <View className="rounded-2xl overflow-hidden">
           <LinearGradient
-            colors={colors}
+            colors={fill}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             className="h-[54px] items-center justify-center flex-row gap-2"

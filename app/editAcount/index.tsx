@@ -7,24 +7,28 @@ import {
 } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import SideBar from '../components/sidebar';
-import { SCROLL_PADDING_WITH_SIDEBAR } from '../components/sidebar-type';
-import GradientButton from '../components/ui/GradientButton';
-import ScreenScroll from '../components/ui/ScreenScroll';
-import ProfileHeader from './components/ProfileHeader';
-import BasicInfoForm from './components/BasicInfoForm';
-import PreferencesForm from './components/PreferencesForm';
-import BackupCard from './components/BackupCard';
-import { useFeedback } from '../components/feedback/FeedbackProvider';
-import { PROFILE_SAVED_TOAST, REMINDERS_DENIED_TOAST } from './editAcount-type';
+import SideBar from '@/app/components/sidebar';
+import { SCROLL_PADDING_WITH_SIDEBAR } from '@/types/components/sidebar-type';
+import GradientButton from '@/app/components/ui/GradientButton';
+import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import ProfileHeader from '@/app/editAcount/components/ProfileHeader';
+import BasicInfoForm from '@/app/editAcount/components/BasicInfoForm';
+import PreferencesForm from '@/app/editAcount/components/PreferencesForm';
+import BackupCard from '@/app/editAcount/components/BackupCard';
+import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import { PROFILE_SAVED_TOAST, REMINDERS_DENIED_TOAST } from '@/types/editAcount/editAcount-type';
 import { useBudgetEntries, useProfile } from '@/db/hooks';
 import { setBudgetFrom } from '@/db/budgets';
 import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
 import { updateProfile } from '@/db/profile';
+import { DEFAULT_THEME, type ThemePreference } from '@/utils/theme-type';
+import { applyTheme } from '@/utils/applyTheme';
 import { budgetForMonth } from '@/utils/budget';
 import { monthKey } from '@/utils/month';
+import { useColors } from '@/hooks/useColors';
 
 export default function EditAcount() {
+  const colors = useColors();
   const db = useSQLiteContext();
   const { showToast } = useFeedback();
   const { profile, loading, refetch } = useProfile();
@@ -36,12 +40,14 @@ export default function EditAcount() {
   const [currency, setCurrency] = useState('BRL');
   const [monthlyBudget, setMonthlyBudget] = useState('');
   const [remindersEnabled, setRemindersEnabled] = useState(true);
+  const [theme, setTheme] = useState<ThemePreference>(DEFAULT_THEME);
 
   useEffect(() => {
     if (!profile) return;
     setNome(profile.name);
     setCurrency(profile.currency);
     setRemindersEnabled(profile.remindersEnabled);
+    setTheme(profile.theme);
   }, [profile]);
 
   useEffect(() => {
@@ -56,6 +62,13 @@ export default function EditAcount() {
       return;
     }
     setRemindersEnabled(next);
+  };
+
+  // Light/dark takes effect and is saved on the spot: it is a look, not something to confirm.
+  const handleChangeTheme = async (next: ThemePreference) => {
+    setTheme(next);
+    applyTheme(next);
+    await updateProfile(db, { theme: next });
   };
 
   const handleSalvar = async () => {
@@ -75,15 +88,15 @@ export default function EditAcount() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#F7F9FC]">
-        <ActivityIndicator size="large" color="#3161B2" />
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      className="flex-1 bg-[#F7F9FC]"
+      className="flex-1 bg-canvas"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
@@ -98,6 +111,7 @@ export default function EditAcount() {
             currency={currency} setCurrency={setCurrency}
             monthlyBudget={monthlyBudget} setMonthlyBudget={setMonthlyBudget}
             remindersEnabled={remindersEnabled} setRemindersEnabled={handleToggleReminders}
+            theme={theme} setTheme={handleChangeTheme}
           />
 
           <BackupCard />

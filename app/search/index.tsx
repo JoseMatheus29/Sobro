@@ -13,15 +13,15 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
-import { palette } from '@/constants/palette';
+import { useColors } from '@/hooks/useColors';
 import { useCategories, useTransactions } from '@/db/hooks';
 import { formatMoney, formatShortDate } from '@/utils/format';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { isTransfer } from '@/utils/transfer';
 import { netOf, searchTransactions, type TypeFilter } from '@/utils/search';
-import CardHorizontal from '../components/cardHorizontal';
-import EmptyState from '../components/ui/EmptyState';
-import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '../registrationSpent/registrationSpent-type';
+import CardHorizontal from '@/app/components/cardHorizontal';
+import EmptyState from '@/app/components/ui/EmptyState';
+import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
 import {
   ALL_CATEGORIES_LABEL,
   CLEAR_LABEL,
@@ -35,10 +35,11 @@ import {
   SEARCH_TITLE,
   TOTAL_LABEL,
   TYPE_OPTIONS,
-} from './search-type';
+} from '@/types/search/search-type';
 
 // A chip of a filter: white, with the active one in the brand blue.
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const colors = useColors();
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -46,17 +47,18 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
       accessibilityState={{ selected: active }}
       className="h-9 px-3.5 rounded-full items-center justify-center mr-2 border"
       style={{
-        backgroundColor: active ? palette.primary.DEFAULT : '#fff',
-        borderColor: active ? palette.primary.DEFAULT : palette.surface.dark,
+        backgroundColor: active ? colors.buttonGradient[0] : colors.card,
+        borderColor: active ? colors.primary.DEFAULT : colors.surface.dark,
       }}
     >
-      <Text className="text-[13px] font-bold" style={{ color: active ? '#fff' : palette.muted }}>{label}</Text>
+      <Text className="text-[13px] font-bold" style={{ color: active ? '#fff' : colors.muted }}>{label}</Text>
     </TouchableOpacity>
   );
 }
 
 // A sheet to find any transaction, in any month: by what was typed, by direction and by category.
 export default function SearchSheet() {
+  const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { transactions } = useTransactions({});
@@ -101,17 +103,17 @@ export default function SearchSheet() {
             accessibilityLabel={CLOSE_LABEL}
             className="absolute left-3 w-11 h-11 rounded-[14px] bg-surface items-center justify-center"
           >
-            <Icon name="close" size={22} color={palette.primary.DEFAULT} />
+            <Icon name="close" size={22} color={colors.primary.DEFAULT} />
           </TouchableOpacity>
           <Text className="text-[17px] font-bold text-ink">{SEARCH_TITLE}</Text>
         </View>
 
-        <View className="mx-5 flex-row items-center bg-white rounded-2xl border-[1.5px] border-line px-3.5 h-[52px]">
-          <Icon name="search" size={20} color={palette.subtle} />
+        <View className="mx-5 flex-row items-center bg-card rounded-2xl border-[1.5px] border-line px-3.5 h-[52px]">
+          <Icon name="search" size={20} color={colors.subtle} />
           <TextInput
             className="flex-1 ml-2.5 text-[15px] text-ink"
             placeholder={SEARCH_PLACEHOLDER}
-            placeholderTextColor={palette.subtle}
+            placeholderTextColor={colors.subtle}
             value={text}
             onChangeText={setText}
             autoFocus
@@ -120,7 +122,7 @@ export default function SearchSheet() {
           />
           {text !== '' && (
             <TouchableOpacity onPress={() => setText('')} accessibilityLabel={CLEAR_LABEL} hitSlop={8}>
-              <Icon name="cancel" size={20} color={palette.subtle} />
+              <Icon name="cancel" size={20} color={colors.subtle} />
             </TouchableOpacity>
           )}
         </View>
