@@ -1,57 +1,7 @@
-import { type SQLiteDatabase } from 'expo-sqlite';
-
+import { api } from '@/api/client';
+import { isApiError } from '@/api/errors';
+import { type ApiGoal, type ApiGoalEntry } from '@/api/types';
 import { type GoalEntryRecord, type GoalRecord } from '@/utils/goals-type';
-
-interface GoalRow {
-  id: number;
-  name: string;
-  target_amount: number;
-  target_month: string | null;
-  color: string;
-  icon: string;
-  saved: number | null;
-}
-
-interface GoalEntryRow {
-  id: number;
-  goal_id: number;
-  amount: number;
-  occurred_at: string;
-}
-
-// What is in a caixinha is derived (the sum of its entries), never stored, so it can't drift from them.
-const SELECT_GOALS = `
-  SELECT
-    goals.id, goals.name, goals.target_amount, goals.target_month, goals.color, goals.icon,
-    (SELECT SUM(amount) FROM goal_entries WHERE goal_entries.goal_id = goals.id) as saved
-  FROM goals
-`;
-
-function mapGoal(row: GoalRow): GoalRecord {
-  return {
-    id: row.id,
-    name: row.name,
-    targetAmount: row.target_amount,
-    targetMonth: row.target_month,
-    color: row.color,
-    icon: row.icon,
-    saved: row.saved ?? 0,
-  };
-}
-
-function mapEntry(row: GoalEntryRow): GoalEntryRecord {
-  return { id: row.id, goalId: row.goal_id, amount: row.amount, occurredAt: row.occurred_at };
-}
-
-export async function getGoals(db: SQLiteDatabase): Promise<GoalRecord[]> {
-  const rows = await db.getAllAsync<GoalRow>(`${SELECT_GOALS} ORDER BY goals.id ASC`);
-  return rows.map(mapGoal);
-}
-
-export async function getGoalById(db: SQLiteDatabase, id: number): Promise<GoalRecord | null> {
-  const row = await db.getFirstAsync<GoalRow>(`${SELECT_GOALS} WHERE goals.id = ?`, id);
-  return row ? mapGoal(row) : null;
-}
 
 export interface GoalInput {
   name: string;
@@ -61,61 +11,67 @@ export interface GoalInput {
   icon: string;
 }
 
-export async function createGoal(db: SQLiteDatabase, input: GoalInput): Promise<number> {
-  const result = await db.runAsync(
-    'INSERT INTO goals (name, target_amount, target_month, color, icon) VALUES (?, ?, ?, ?, ?)',
-    input.name,
-    input.targetAmount,
-    input.targetMonth,
-    input.color,
-    input.icon
-  );
-  return result.lastInsertRowId;
+// What is in a caixinha (`saved`) is worked out by the server from its entries, never stored.
+export function getGoals(): Promise<GoalRecord[]> {
+  return api<ApiGoal[]>('GET', '/v1/goals');
 }
 
-export async function updateGoal(db: SQLiteDatabase, id: number, input: GoalInput): Promise<void> {
-  await db.runAsync(
-    'UPDATE goals SET name = ?, target_amount = ?, target_month = ?, color = ?, icon = ? WHERE id = ?',
-    input.name,
-    input.targetAmount,
-    input.targetMonth,
-    input.color,
-    input.icon,
-    id
-  );
+const NOT_FOUND = 404;
+
+// Null when it does not exist (anymore), or is not the person's.
+export async function getGoalById(id: number): Promise<GoalRecord | null> {
+  try {
+    return await api<ApiGoal>('GET', `/v1/goals/${id}`);
+  } catch (error) {
+    if (isApiError(error) && error.status === NOT_FOUND) return null;
+    throw error;
+  }
+}
+
+// `idempotencyKey` keeps a retry after a lost answer from making two caixinhas.
+export async function createGoal(input: GoalInput, idempotencyKey?: string): Promise<number> {
+  const created = await api<ApiGoal>('POST', '/v1/goals', { body: input, idempotencyKey });
+  return created.id;
+}
+
+export async function updateGoal(id: number, input: GoalInput): Promise<void> {
+  await api('PATCH', `/v1/goals/${id}`, { body: input });
 }
 
 // The caixinha and its history go; the money was never taken out of the accounts, so nothing else changes.
-export async function deleteGoal(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.withTransactionAsync(async () => {
-    await db.runAsync('DELETE FROM goal_entries WHERE goal_id = ?', id);
-    await db.runAsync('DELETE FROM goals WHERE id = ?', id);
-  });
+export async function deleteGoal(id: number): Promise<void> {
+  await api('DELETE', `/v1/goals/${id}`);
 }
 
-// Newest first.
-export async function getGoalEntries(db: SQLiteDatabase, goalId: number): Promise<GoalEntryRecord[]> {
-  const rows = await db.getAllAsync<GoalEntryRow>(
-    'SELECT id, goal_id, amount, occurred_at FROM goal_entries WHERE goal_id = ? ORDER BY occurred_at DESC, id DESC',
-    goalId
-  );
-  return rows.map(mapEntry);
+// Newest first. Empty for a caixinha that does not exist.
+export async function getGoalEntries(goalId: number): Promise<GoalEntryRecord[]> {
+  try {
+    return await api<ApiGoalEntry[]>('GET', `/v1/goals/${goalId}/entries`);
+  } catch (error) {
+    if (isApiError(error) && error.status === NOT_FOUND) return [];
+    throw error;
+  }
 }
 
-// `amount` is positive to put money in and negative to take it out.
+// `amount` is positive to put money in and negative to take it out (the only amount of the API that is signed).
+// The server refuses to take out more than is in the caixinha (409 `goal_insufficient`).
 export async function addGoalEntry(
-  db: SQLiteDatabase,
-  input: { goalId: number; amount: number; occurredAt: string }
+  input: { goalId: number; amount: number },
+  idempotencyKey?: string
 ): Promise<number> {
-  const result = await db.runAsync(
-    'INSERT INTO goal_entries (goal_id, amount, occurred_at) VALUES (?, ?, ?)',
-    input.goalId,
-    input.amount,
-    input.occurredAt
-  );
-  return result.lastInsertRowId;
+  const created = await api<ApiGoalEntry>('POST', `/v1/goals/${input.goalId}/entries`, {
+    body: { amount: input.amount },
+    idempotencyKey,
+  });
+  return created.id;
 }
 
-export async function deleteGoalEntry(db: SQLiteDatabase, id: number): Promise<void> {
-  await db.runAsync('DELETE FROM goal_entries WHERE id = ?', id);
+// Taking back a deposit that was already partly taken out would leave the caixinha negative: 409 `goal_insufficient`.
+export async function deleteGoalEntry(goalId: number, entryId: number): Promise<void> {
+  try {
+    await api('DELETE', `/v1/goals/${goalId}/entries/${entryId}`);
+  } catch (error) {
+    // Already gone (a retry of a delete that worked): that is what was asked for.
+    if (!(isApiError(error) && error.status === NOT_FOUND)) throw error;
+  }
 }

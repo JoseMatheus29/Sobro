@@ -138,3 +138,9 @@ export interface GoalsSectionProps {
   onNew: () => void;
   onOpen: (id: number) => void;
 }
+
+// Errors shown inside the dialogs of a caixinha.
+export const GOAL_SAVE_FAILED = 'Não foi possível salvar a caixinha.';
+export const MOVEMENT_FAILED = 'Não foi possível registrar o valor.';
+export const GOAL_DELETE_FAILED_TITLE = 'Não foi possível excluir a caixinha';
+export const ENTRY_DELETE_FAILED_TITLE = 'Não foi possível desfazer o valor';

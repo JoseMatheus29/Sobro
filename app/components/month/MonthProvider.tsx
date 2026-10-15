@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { monthKey } from '@/utils/month';
+import { currentMonthKey } from '@/utils/month';
 import { MonthContextValue } from '@/types/components/month/month-type';
 
 const MonthContext = createContext<MonthContextValue | null>(null);
@@ -20,11 +20,11 @@ export function MonthProvider({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, []);
 
-  const currentMonth = monthKey(new Date());
+  const currentMonth = currentMonthKey();
   const month = picked ?? currentMonth;
 
   const setMonth = useCallback((next: string) => {
-    setPicked(next === monthKey(new Date()) ? null : next);
+    setPicked(next === currentMonthKey() ? null : next);
   }, []);
 
   const value = useMemo<MonthContextValue>(

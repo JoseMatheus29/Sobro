@@ -4,7 +4,6 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import { useCategoryColor } from '@/hooks/useColors';
 import { type BudgetEntry } from '@/utils/budget';
-import { type GoalEntryRecord, type GoalRecord } from '@/utils/goals-type';
 import { limitsForMonth, type CategoryBudgetEntry } from '@/utils/categoryBudget';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
@@ -138,93 +137,41 @@ export function useInsights() {
 
 // The spending limit of each category, kept per month like the monthly budget (utils/categoryBudget.ts).
 export function useCategoryBudgets() {
-  const db = useSQLiteContext();
-  const [entries, setEntries] = useState<CategoryBudgetEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setEntries(await getCategoryBudgetEntries(db));
-    setLoading(false);
-  }, [db]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
-
-  return { entries, loading, refetch };
+  const query = useScreenQuery({ queryKey: queryKeys.categoryBudgets, queryFn: getCategoryBudgetEntries });
+  return { entries: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
 }
 
 // The caixinhas, each with what is in it.
 export function useGoals() {
-  const db = useSQLiteContext();
-  const [goals, setGoals] = useState<GoalRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setGoals(await getGoals(db));
-    setLoading(false);
-  }, [db]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
-
-  return { goals, loading, refetch };
+  const query = useScreenQuery({ queryKey: queryKeys.goals, queryFn: getGoals });
+  return { goals: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
 }
 
 // One caixinha and what was put in and taken out of it; goal is null once it does not exist anymore.
 export function useGoal(id: number) {
-  const db = useSQLiteContext();
-  const [goal, setGoal] = useState<GoalRecord | null>(null);
-  const [entries, setEntries] = useState<GoalEntryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Both are read at once.
+  const goalQuery = useScreenQuery({ queryKey: queryKeys.goal(id), queryFn: () => getGoalById(id) });
+  const entriesQuery = useScreenQuery({ queryKey: queryKeys.goalEntries(id), queryFn: () => getGoalEntries(id) });
 
+  const { refetch: refetchGoal } = goalQuery;
+  const { refetch: refetchEntries } = entriesQuery;
   const refetch = useCallback(async () => {
-    setLoading(true);
-    const [found, foundEntries] = await Promise.all([getGoalById(db, id), getGoalEntries(db, id)]);
-    setGoal(found);
-    setEntries(foundEntries);
-    setLoading(false);
-  }, [db, id]);
+    await Promise.all([refetchGoal(), refetchEntries()]);
+  }, [refetchGoal, refetchEntries]);
 
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
-
-  return { goal, entries, loading, refetch };
+  return {
+    goal: goalQuery.data ?? null,
+    entries: entriesQuery.data ?? NONE,
+    loading: goalQuery.isLoading || entriesQuery.isLoading,
+    error: goalQuery.error ?? entriesQuery.error,
+    refetch,
+  };
 }
 
 // The monthly budget is kept per month: see utils/budget.ts for how a month's amount is picked.
 export function useBudgetEntries() {
-  const db = useSQLiteContext();
-  const [entries, setEntries] = useState<BudgetEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setEntries(await getBudgetEntries(db));
-    setLoading(false);
-  }, [db]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
-
-  return { entries, loading, refetch };
+  const query = useScreenQuery({ queryKey: queryKeys.monthlyBudgets, queryFn: getBudgetEntries });
+  return { entries: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
 }
 
 // Every month with transactions (and the current one), newest first, for the history.

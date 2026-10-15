@@ -50,6 +50,8 @@ export interface LimitSheetProps {
   /** What the field starts with: the current limit, or empty. */
   initialValue: string;
   hasLimit: boolean;
+  /** What went wrong saving, shown inside the dialog. */
+  error?: string | null;
   onSave: (amount: number) => void;
   onRemove: () => void;
   onClose: () => void;
@@ -70,3 +72,6 @@ export const LIMIT_REMOVE_LABEL = 'Remover limite';
 export const LIMIT_INVALID_TOAST = { type: 'error', title: 'Informe um valor maior que zero.' } as const;
 export const LIMIT_SAVED_TOAST = { type: 'success', title: 'Limite salvo', icon: 'flag' } as const;
 export const LIMIT_REMOVED_TOAST = { type: 'success', title: 'Limite removido', icon: 'flag' } as const;
+
+// Error of the limit dialog (shown inside it).
+export const LIMIT_FAILED_MESSAGE = 'Não foi possível salvar o limite.';

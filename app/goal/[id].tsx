@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
@@ -10,6 +9,7 @@ import { deleteGoal, deleteGoalEntry } from '@/db/goals';
 import { useGoal } from '@/db/hooks';
 import { useColors } from '@/hooks/useColors';
 import { type MovementKind } from '@/utils/goals-type';
+import { errorToast } from '@/utils/apiErrors';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import EmptyState from '@/app/components/ui/EmptyState';
 import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
@@ -24,6 +24,8 @@ import {
   DEPOSIT_LABEL,
   EDIT_GOAL_LABEL,
   ENTRY_DELETED_TOAST,
+  ENTRY_DELETE_FAILED_TITLE,
+  GOAL_DELETE_FAILED_TITLE,
   GOAL_DELETED_TOAST,
   GOAL_NOT_FOUND,
   HISTORY_EMPTY,
@@ -37,7 +39,6 @@ export default function GoalSheet() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const db = useSQLiteContext();
   const { confirm, showToast } = useFeedback();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { goal, entries, loading } = useGoal(Number(id));
@@ -47,7 +48,12 @@ export default function GoalSheet() {
 
   const handleDeleteGoal = async () => {
     if (!goal || !(await confirm(DELETE_GOAL_CONFIRM(goal.name)))) return;
-    await deleteGoal(db, goal.id);
+    try {
+      await deleteGoal(goal.id);
+    } catch (error) {
+      showToast(errorToast(error, GOAL_DELETE_FAILED_TITLE));
+      return;
+    }
     notifyDataChanged();
     showToast(GOAL_DELETED_TOAST);
     router.back();
@@ -55,7 +61,14 @@ export default function GoalSheet() {
 
   const handleDeleteEntry = async (entryId: number) => {
     if (!(await confirm(DELETE_ENTRY_CONFIRM))) return;
-    await deleteGoalEntry(db, entryId);
+    if (!goal) return;
+    try {
+      await deleteGoalEntry(goal.id, entryId);
+    } catch (error) {
+      // The server says why (taking back this deposit would leave the caixinha below zero).
+      showToast(errorToast(error, ENTRY_DELETE_FAILED_TITLE));
+      return;
+    }
     notifyDataChanged();
     showToast(ENTRY_DELETED_TOAST);
   };

@@ -25,7 +25,7 @@ import { updateProfile } from '@/db/profile';
 import { DEFAULT_THEME, type ThemePreference } from '@/utils/theme-type';
 import { applyTheme } from '@/utils/applyTheme';
 import { budgetForMonth } from '@/utils/budget';
-import { monthKey } from '@/utils/month';
+import { currentMonthKey } from '@/utils/month';
 import { useColors } from '@/hooks/useColors';
 
 export default function EditAcount() {
@@ -35,7 +35,7 @@ export default function EditAcount() {
   const { profile, loading, refetch } = useProfile();
   const { entries: budgetEntries, refetch: refetchBudgets } = useBudgetEntries();
   // The budget is kept per month: this form edits the one that applies from the current month on.
-  const currentBudget = budgetForMonth(budgetEntries, monthKey(new Date()));
+  const currentBudget = budgetForMonth(budgetEntries, currentMonthKey());
 
   const [nome, setNome] = useState('');
   const [currency, setCurrency] = useState('BRL');
@@ -81,7 +81,7 @@ export default function EditAcount() {
     const typed = monthlyBudget ? Number(monthlyBudget.replace(',', '.')) : null;
     const nextBudget = typed !== null && Number.isFinite(typed) && typed > 0 ? typed : null;
     // Only a real change starts a new budget; saving the name again must not.
-    if (nextBudget !== currentBudget) await setBudgetFrom(db, monthKey(new Date()), nextBudget);
+    if (nextBudget !== currentBudget) await setBudgetFrom(currentMonthKey(), nextBudget);
     await Promise.all([refetch(), refetchBudgets()]);
     await refreshReminders(db);
     showToast(PROFILE_SAVED_TOAST);
