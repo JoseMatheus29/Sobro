@@ -16,3 +16,10 @@ export const REFRESH_TOKEN_KEY = 'refreshToken';
 export const UNAUTHORIZED_CODE = 'unauthorized';
 
 export const APP_VERSION_FALLBACK = '0.0.0';
+
+// How an error is told to the person (utils/apiErrors.ts); an answer of the server brings its own message.
+export const NETWORK_ERROR_TITLE = 'Sem conexão';
+export const RATE_LIMITED_TITLE = 'Muitas tentativas';
+export const SERVER_ERROR_TITLE = 'Erro no servidor';
+export const SERVER_ERROR_MESSAGE = 'Tente de novo em instantes.';
+export const GENERIC_ERROR_TITLE = 'Algo deu errado';

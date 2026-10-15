@@ -1,0 +1,13 @@
+export const REGISTER_TITLE = 'Criar conta';
+export const REGISTER_SUBTITLE = 'Seus dados ficam guardados na sua conta e valem em qualquer aparelho.';
+export const REGISTER_BUTTON = 'Criar conta';
+export const REGISTER_BUSY_BUTTON = 'Criando...';
+export const REGISTER_FAILED_TITLE = 'Não foi possível criar a conta';
+export const NAME_LABEL = 'Nome (opcional)';
+export const NAME_PLACEHOLDER = 'Como quer ser chamado';
+export const CONFIRM_PASSWORD_LABEL = 'Repetir a senha';
+export const CONFIRM_PASSWORD_PLACEHOLDER = 'Digite a senha de novo';
+export const EMAIL_TAKEN_CODE = 'email_taken';
+export const EMAIL_TAKEN_MESSAGE = 'Esse e-mail já tem cadastro. Entre ou recupere a senha.';
+export const HAS_ACCOUNT_TEXT = 'Já tem conta?';
+export const SIGN_IN_LINK = 'Entrar';

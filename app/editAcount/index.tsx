@@ -15,6 +15,7 @@ import ProfileHeader from '@/app/editAcount/components/ProfileHeader';
 import BasicInfoForm from '@/app/editAcount/components/BasicInfoForm';
 import PreferencesForm from '@/app/editAcount/components/PreferencesForm';
 import BackupCard from '@/app/editAcount/components/BackupCard';
+import AccountCard from '@/app/editAcount/components/AccountCard';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import { PROFILE_SAVED_TOAST, REMINDERS_DENIED_TOAST } from '@/types/editAcount/editAcount-type';
 import { useBudgetEntries, useProfile } from '@/db/hooks';
@@ -115,6 +116,8 @@ export default function EditAcount() {
           />
 
           <BackupCard />
+
+          <AccountCard />
 
           <GradientButton title="Salvar Alterações" onPress={handleSalvar} />
         </View>

@@ -7,6 +7,9 @@ import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 import { getProfile } from '@/db/profile';
 import { migrateDbIfNeeded } from '@/db/schema';
 import { useColors } from '@/hooks/useColors';
+import { AuthProvider, useAuth } from '@/app/components/auth/AuthProvider';
+import SessionGate from '@/app/components/auth/SessionGate';
+import UpgradeRequired from '@/app/components/auth/UpgradeRequired';
 import { FeedbackProvider } from '@/app/components/feedback/FeedbackProvider';
 import { MonthProvider } from '@/app/components/month/MonthProvider';
 import RecurrenceSync from '@/app/components/RecurrenceSync';
@@ -40,69 +43,90 @@ function Root() {
     >
       <SQLiteProvider databaseName="sobro.db" onInit={initDatabase} useSuspense>
         <FeedbackProvider>
-          <RecurrenceSync />
-          <MonthProvider>
-            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="dashboard/index" />
-              <Stack.Screen name="wallet/index" />
-              <Stack.Screen name="myDetailing/index" />
-              <Stack.Screen name="editAcount/index" />
-              {/* Folha sobre a tela de origem: o fundo da rota é transparente e a tela desenha o escurecimento. */}
-              <Stack.Screen
-                name="registrationSpent/index"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-              <Stack.Screen name="detailsSpend/[id]" />
-              {/* Também folhas, como a de nova transação. */}
-              <Stack.Screen
-                name="history/index"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-              <Stack.Screen
-                name="transfer/index"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-              <Stack.Screen
-                name="search/index"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-              <Stack.Screen
-                name="goal/[id]"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-              <Stack.Screen
-                name="insights/index"
-                options={{
-                  presentation: 'transparentModal',
-                  animation: 'slide_from_bottom',
-                  contentStyle: { backgroundColor: 'transparent' },
-                }}
-              />
-            </Stack>
-          </MonthProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
         </FeedbackProvider>
       </SQLiteProvider>
     </Suspense>
+  );
+}
+
+// The screens, or the notice to update the app when the server refuses this version.
+function RootNavigator() {
+  const colors = useColors();
+  const { upgradeRequired } = useAuth();
+
+  if (upgradeRequired) return <UpgradeRequired />;
+
+  return (
+    <>
+      <SessionGate />
+      <RecurrenceSync />
+      <MonthProvider>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.canvas } }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login/index" />
+          <Stack.Screen name="register/index" />
+          <Stack.Screen name="forgot/index" />
+          <Stack.Screen name="reset/index" />
+          <Stack.Screen name="dashboard/index" />
+          <Stack.Screen name="wallet/index" />
+          <Stack.Screen name="myDetailing/index" />
+          <Stack.Screen name="editAcount/index" />
+          {/* Folha sobre a tela de origem: o fundo da rota é transparente e a tela desenha o escurecimento. */}
+          <Stack.Screen
+            name="registrationSpent/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen name="detailsSpend/[id]" />
+          {/* Também folhas, como a de nova transação. */}
+          <Stack.Screen
+            name="history/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen
+            name="transfer/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen
+            name="search/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen
+            name="goal/[id]"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen
+            name="insights/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+        </Stack>
+      </MonthProvider>
+    </>
   );
 }

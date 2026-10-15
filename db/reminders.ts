@@ -27,6 +27,15 @@ export async function ensureReminderPermission(): Promise<boolean> {
   return asked.granted;
 }
 
+// Takes every reminder away. They carry the names of expenses, so they must not outlive the session.
+export async function clearReminders(): Promise<void> {
+  try {
+    await Notifications.cancelAllScheduledNotificationsAsync();
+  } catch {
+    // Nothing scheduled to take away.
+  }
+}
+
 // Schedules again, from scratch, the reminders of what is about to fall due: the morning before.
 // The app only schedules these, so clearing them all first keeps the list exactly what the recurring
 // expenses ask for right now. Safe to call whenever something changes, and never throws: a reminder

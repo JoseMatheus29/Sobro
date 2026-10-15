@@ -11,6 +11,13 @@ export interface FieldProps {
   keyboardType?: any;
   secure?: boolean;
   autoCapitalize?: any;
+  /** What is wrong with the value, shown under the field. */
+  error?: string;
+  /** Lets the keyboard and the password manager know what is being typed (`email`, `password`, `new-password`…). */
+  autoComplete?: any;
+  maxLength?: number;
+  returnKeyType?: any;
+  onSubmitEditing?: () => void;
 }
 
 export const PROFILE_SAVED_TOAST: ToastOptions = {
@@ -80,4 +87,37 @@ export const REMINDERS_DENIED_TOAST: ToastOptions = {
   title: 'Notificações desativadas',
   message: 'Permita as notificações do app nas configurações do celular para receber os lembretes.',
   icon: 'notifications-off',
+};
+
+// The account: leaving this phone, or deleting everything.
+export const ACCOUNT_TITLE = 'Conta';
+export const ACCOUNT_TEXT = 'Saia deste aparelho ou apague a conta com todos os dados.';
+export const SIGN_OUT_LABEL = 'Sair da conta';
+export const SIGN_OUT_CONFIRM: ConfirmOptions = {
+  title: 'Sair da conta?',
+  message: 'Você vai precisar entrar de novo para ver os seus dados neste aparelho.',
+  confirmLabel: 'Sair',
+};
+export const DELETE_ACCOUNT_LABEL = 'Excluir minha conta';
+export const DELETE_ACCOUNT_CONFIRM: ConfirmOptions = {
+  title: 'Excluir a sua conta?',
+  message:
+    'Contas, transações, recorrências, caixinhas e orçamentos serão apagados de vez, em qualquer aparelho. ' +
+    'Isso não pode ser desfeito. Exporte um backup antes, se quiser guardar os dados.',
+  confirmLabel: 'Continuar',
+  destructive: true,
+};
+export const DELETE_MODAL_TITLE = 'Confirme com a sua senha';
+export const DELETE_MODAL_TEXT = 'Por segurança, digite a senha da conta para excluí-la.';
+export const DELETE_PASSWORD_LABEL = 'Senha';
+export const DELETE_PASSWORD_REQUIRED = 'Digite a senha.';
+export const DELETE_SUBMIT_LABEL = 'Excluir conta';
+export const DELETE_SUBMITTING_LABEL = 'Excluindo...';
+export const DELETE_CANCEL_LABEL = 'Cancelar';
+export const DELETE_FAILED_TITLE = 'Não foi possível excluir a conta';
+export const ACCOUNT_DELETED_TOAST: ToastOptions = {
+  type: 'success',
+  title: 'Conta excluída',
+  message: 'Todos os seus dados foram apagados.',
+  icon: 'delete-outline',
 };
