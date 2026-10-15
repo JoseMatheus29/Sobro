@@ -20,6 +20,12 @@ export function monthKey(date: Date): string {
   return date.toISOString().slice(0, 7);
 }
 
+// The month the phone's calendar is in. Not `monthKey(new Date())`: that reads UTC, which is already the next
+// month from 21h on the last day in Brazil, while the transaction made then is dated with the local day.
+export function currentMonthKey(now: Date = new Date()): string {
+  return `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
 export function previousMonthKey(date: Date): string {
   return monthKey(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1)));
 }
