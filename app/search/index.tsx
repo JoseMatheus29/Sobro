@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  ActivityIndicator,
   Text,
   TextInput,
   TouchableOpacity,
@@ -18,9 +19,10 @@ import { useCategories, useTransactions } from '@/db/hooks';
 import { formatMoney, formatShortDate } from '@/utils/format';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { isTransfer } from '@/utils/transfer';
-import { netOf, searchTransactions, type TypeFilter } from '@/utils/search';
+import { netOf, type TypeFilter } from '@/utils/search';
 import CardHorizontal from '@/app/components/cardHorizontal';
 import EmptyState from '@/app/components/ui/EmptyState';
+import LoadError from '@/app/components/ui/LoadError';
 import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
 import {
   ALL_CATEGORIES_LABEL,
@@ -29,6 +31,7 @@ import {
   EMPTY_RESULTS_MESSAGE,
   LIMITED_NOTE,
   MAX_RESULTS,
+  MORE_THAN_LABEL,
   RESULTS_LABEL,
   SEARCH_DEBOUNCE_MS,
   SEARCH_PLACEHOLDER,
@@ -61,7 +64,6 @@ export default function SearchSheet() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { transactions } = useTransactions({});
   const { categories } = useCategories();
 
   const [text, setText] = useState('');
@@ -75,12 +77,23 @@ export default function SearchSheet() {
     return () => clearTimeout(timer);
   }, [text]);
 
-  const found = useMemo(
-    () => searchTransactions(transactions, { text: typed, type, categoryId }),
-    [transactions, typed, type, categoryId]
-  );
-  const shown = found.slice(0, MAX_RESULTS);
   const filtering = typed.trim() !== '' || type !== 'all' || categoryId !== null;
+
+  // The server does the looking (words in the name, description, category or account, accents and case ignored).
+  // With a filter every match is read, so the count and the total are exact; without one only the most recent are
+  // asked for, one more than is listed to know whether there are others.
+  const {
+    transactions: found,
+    loading,
+    error,
+    refetch,
+  } = useTransactions({
+    q: typed.trim() || undefined,
+    type: type === 'all' ? undefined : type,
+    categoryId: categoryId ?? undefined,
+    limit: filtering ? undefined : MAX_RESULTS + 1,
+  });
+  const shown = found.slice(0, MAX_RESULTS);
 
   return (
     <View className="flex-1" style={{ backgroundColor: SHEET_DIM_COLOR }}>
@@ -143,7 +156,9 @@ export default function SearchSheet() {
         </View>
 
         <View className="flex-row items-center justify-between px-5 mt-3 mb-2">
-          <Text className="text-xs font-bold text-muted">{RESULTS_LABEL(found.length)}</Text>
+          <Text className="text-xs font-bold text-muted">
+            {!filtering && found.length > MAX_RESULTS ? MORE_THAN_LABEL(MAX_RESULTS) : RESULTS_LABEL(found.length)}
+          </Text>
           {found.length > 0 && filtering && (
             <Text className="text-xs font-bold text-muted">
               {TOTAL_LABEL}: {netOf(found) < 0 ? '-' : '+'} {formatMoney(Math.abs(netOf(found)))}
@@ -156,7 +171,11 @@ export default function SearchSheet() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {shown.length === 0 ? (
+          {shown.length === 0 && error ? (
+            <LoadError error={error} onRetry={() => refetch()} />
+          ) : shown.length === 0 && loading ? (
+            <ActivityIndicator className="mt-10" size="large" color={colors.primary.DEFAULT} />
+          ) : shown.length === 0 ? (
             <EmptyState icon="search-off" message={filtering ? EMPTY_RESULTS_MESSAGE : EMPTY_ALL_MESSAGE} />
           ) : (
             shown.map((t) => (

@@ -11,13 +11,16 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
 import { useCards } from '@/db/hooks';
+import { notifyDataChanged } from '@/db/events';
 import { createTransfer } from '@/db/transactions';
+import { useSaveKey } from '@/hooks/useSaveKey';
+import { calendarDayAtNoonUtc, roundAmount } from '@/utils/apiInput';
+import { errorToast } from '@/utils/apiErrors';
 import { formatMoney } from '@/utils/format';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import EmptyState from '@/app/components/ui/EmptyState';
@@ -41,6 +44,7 @@ import {
   SWAP_LABEL,
   TO_LABEL,
   TO_SHEET_TITLE,
+  TRANSFER_FAILED_TITLE,
   TRANSFER_TITLE,
   TRANSFERRED_TOAST,
 } from '@/types/transfer/transfer-type';
@@ -51,7 +55,7 @@ export default function TransferSheet() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
   const { showToast } = useFeedback();
   const { cards } = useCards();
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -84,16 +88,25 @@ export default function TransferSheet() {
     if (!valid) return showToast(INVALID_AMOUNT_TOAST);
     if (fromCard.id === toCard.id) return showToast(SAME_ACCOUNT_TOAST);
 
-    setSaving(true);
-    await createTransfer(db, {
+    const input = {
       fromCardId: fromCard.id,
-      fromName: fromCard.name,
       toCardId: toCard.id,
-      toName: toCard.name,
-      amount: value,
+      amount: roundAmount(value),
       description: description.trim() || undefined,
-      occurredAt: date.toISOString(),
-    });
+      // The day on the phone's calendar, at noon UTC (see utils/apiInput.ts).
+      occurredAt: calendarDayAtNoonUtc(date),
+    };
+    setSaving(true);
+    try {
+      // The same key on a retry of the same form, so a lost answer never makes two transfers.
+      await createTransfer(input, saveKey.keyFor(input));
+      saveKey.clear();
+    } catch (error) {
+      showToast(errorToast(error, TRANSFER_FAILED_TITLE));
+      setSaving(false);
+      return;
+    }
+    notifyDataChanged();
     showToast(TRANSFERRED_TOAST(formatMoney(value).replace('R$ ', ''), fromCard.name, toCard.name));
     router.back();
   };

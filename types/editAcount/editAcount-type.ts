@@ -29,10 +29,10 @@ export const PROFILE_SAVED_TOAST: ToastOptions = {
 // The budget applies from the current month on; the months already over keep the one they had.
 export const BUDGET_HINT = 'Vale a partir deste mês. Os meses anteriores mantêm o orçamento que tinham.';
 
-// Backup: everything lives only on this device, so it can be saved to a file and brought back.
+// Backup: everything is in the account, and it can be saved to a file and brought back.
 export const BACKUP_TITLE = 'Seus dados';
 export const BACKUP_TEXT =
-  'Tudo fica só neste aparelho. Exporte um backup para guardar em outro lugar ou levar para outro celular.';
+  'Seus dados ficam na sua conta, em qualquer aparelho. Exporte uma cópia para guardar em outro lugar, ou importe um backup para trocar tudo o que está na conta.';
 export const EXPORT_LABEL = 'Exportar backup';
 export const IMPORT_LABEL = 'Importar backup';
 export const EXPORT_UNAVAILABLE_TOAST: ToastOptions = {
@@ -64,7 +64,7 @@ export const IMPORT_CONFIRM = (summary: BackupSummary, date: string): ConfirmOpt
   title: 'Substituir seus dados?',
   message:
     `Backup de ${date}: ${summary.transactions} transações, ${summary.cards} contas, ${summary.categories} categorias` +
-    ` e ${summary.recurrences} recorrências. Tudo o que está no app agora será substituído. ` +
+    ` e ${summary.recurrences} recorrências. Tudo o que está na sua conta agora será substituído. ` +
     'Exporte antes se quiser guardar os dados atuais.',
   confirmLabel: 'Substituir',
   destructive: true,
@@ -121,3 +121,4 @@ export const ACCOUNT_DELETED_TOAST: ToastOptions = {
   message: 'Todos os seus dados foram apagados.',
   icon: 'delete-outline',
 };
+export const PROFILE_SAVE_FAILED_TITLE = 'Não foi possível salvar o perfil';

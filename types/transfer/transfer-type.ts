@@ -24,3 +24,5 @@ export const TRANSFERRED_TOAST = (amount: string, from: string, to: string): Toa
   message: `R$ ${amount} de ${from} para ${to}`,
   icon: 'swap-horiz',
 });
+
+export const TRANSFER_FAILED_TITLE = 'Não foi possível transferir';

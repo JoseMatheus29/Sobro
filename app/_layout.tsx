@@ -1,11 +1,9 @@
 import '../global.css';
-import { Suspense } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
-import { SQLiteProvider, type SQLiteDatabase } from 'expo-sqlite';
 
-import { getProfile } from '@/db/profile';
-import { migrateDbIfNeeded } from '@/db/schema';
+import { getStoredTheme } from '@/db/theme';
 import { useColors } from '@/hooks/useColors';
 import { AuthProvider, useAuth } from '@/app/components/auth/AuthProvider';
 import SessionGate from '@/app/components/auth/SessionGate';
@@ -17,10 +15,21 @@ import RecurrenceSync from '@/app/components/RecurrenceSync';
 import { applyTheme } from '@/utils/applyTheme';
 import { ThemeProvider } from '@/app/components/theme/ThemeProvider';
 
-// Opens the database and, before anything is drawn, applies the light/dark choice saved in the profile.
-async function initDatabase(db: SQLiteDatabase) {
-  await migrateDbIfNeeded(db);
-  applyTheme((await getProfile(db)).theme);
+// Before anything is drawn, applies the light/dark choice kept on the phone. It is not in the account: it has
+// to be right on the login screens too.
+function useThemeReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    getStoredTheme().then((theme) => {
+      applyTheme(theme);
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return ready;
 }
 
 export default function Layout() {
@@ -33,25 +42,24 @@ export default function Layout() {
 
 function Root() {
   const colors = useColors();
+  const themeReady = useThemeReady();
+
+  if (!themeReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-canvas">
+        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
+      </View>
+    );
+  }
 
   return (
-    <Suspense
-      fallback={
-        <View className="flex-1 items-center justify-center bg-canvas">
-          <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
-        </View>
-      }
-    >
-      <SQLiteProvider databaseName="sobro.db" onInit={initDatabase} useSuspense>
-        <FeedbackProvider>
-          <AuthProvider>
-            <QueryProvider>
-              <RootNavigator />
-            </QueryProvider>
-          </AuthProvider>
-        </FeedbackProvider>
-      </SQLiteProvider>
-    </Suspense>
+    <FeedbackProvider>
+      <AuthProvider>
+        <QueryProvider>
+          <RootNavigator />
+        </QueryProvider>
+      </AuthProvider>
+    </FeedbackProvider>
   );
 }
 

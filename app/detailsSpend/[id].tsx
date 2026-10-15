@@ -3,13 +3,13 @@ import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Text, Touc
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 
 import ArrowBack from '@/app/components/arrowBack';
 import SideBar from '@/app/components/sidebar';
 import { SCROLL_PADDING_WITH_SIDEBAR } from '@/types/components/sidebar-type';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import GradientButton from '@/app/components/ui/GradientButton';
+import LoadError from '@/app/components/ui/LoadError';
 import PickerSheet from '@/app/components/ui/PickerSheet';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
@@ -21,16 +21,19 @@ import {
   CARD_SHEET_TITLE,
   CATEGORY_SHEET_TITLE,
   DELETE_CONFIRM,
+  DELETE_FAILED_TITLE,
   DELETE_LABEL,
   DELETED_TOAST,
   DETAILS_TITLE,
   END_CONFIRM,
+  END_FAILED_TITLE,
   ENDED_TOAST,
   FALLBACK_CATEGORY_ID,
   FIELD_LABELS,
   MISSING_HINT,
   NOT_FOUND_MESSAGE,
   RECURRENCE_ENDED_BY_TYPE,
+  SAVE_FAILED_TITLE,
   SAVE_LABEL,
   UPDATED_TITLE,
 } from '@/types/detailsSpend/detailsSpend-type';
@@ -38,12 +41,13 @@ import { typeColors, type TxType } from '@/types/registrationSpent/registrationS
 import { categoriesForType, formatCents } from '@/utils/transactionForm';
 import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
-import { useCards, useCategories } from '@/db/hooks';
-import { endRecurrence, getRecurrenceById, updateRecurrence } from '@/db/recurrences';
+import { useCards, useCategories, useRecurrence, useTransaction } from '@/db/hooks';
+import { endRecurrence } from '@/db/recurrences';
 import { refreshReminders } from '@/db/reminders';
+import { deleteTransaction, updateTransaction } from '@/db/transactions';
+import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
+import { errorToast } from '@/utils/apiErrors';
 import { nextOccurrence } from '@/utils/recurrence';
-import { type RecurrenceRecord } from '@/utils/recurrence-type';
-import { deleteTransaction, getTransactionById, updateTransaction, type TransactionRecord } from '@/db/transactions';
 import { tint } from '@/utils/color';
 
 const toCents = (amount: number) => Math.round(Math.abs(amount) * 100).toString();
@@ -52,14 +56,14 @@ export default function DetailsSpend() {
   const colors = useColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const db = useSQLiteContext();
   const { confirm, showToast } = useFeedback();
   const { categories } = useCategories();
   const { cards } = useCards();
 
-  const [transaction, setTransaction] = useState<TransactionRecord | null>(null);
-  const [recurrence, setRecurrence] = useState<RecurrenceRecord | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { transaction, loading, error, refetch } = useTransaction(Number(id));
+  // The recurring expense this transaction belongs to, if any.
+  const { recurrence } = useRecurrence(transaction?.recurrence?.id);
+  const [saving, setSaving] = useState(false);
 
   // The form. It starts as a copy of the stored transaction and is compared with it to know what changed.
   const [type, setType] = useState<TxType>('expense');
@@ -75,20 +79,6 @@ export default function DetailsSpend() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const tx = await getTransactionById(db, Number(id));
-      if (!cancelled) {
-        setTransaction(tx);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [id, db]);
-
-  useEffect(() => {
     if (!transaction) return;
     setType(transaction.type);
     setAmount(toCents(transaction.amount));
@@ -98,19 +88,6 @@ export default function DetailsSpend() {
     setCardId(transaction.cardId);
     setDate(new Date(transaction.occurredAt));
   }, [transaction]);
-
-  // The recurring expense this transaction belongs to, if any.
-  const recurrenceId = transaction?.recurrence?.id;
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const found = recurrenceId !== undefined ? await getRecurrenceById(db, recurrenceId) : null;
-      if (!cancelled) setRecurrence(found);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [recurrenceId, db]);
 
   // The tab bar would float above the keyboard and cover the form.
   useEffect(() => {
@@ -131,6 +108,8 @@ export default function DetailsSpend() {
   }
 
   if (!transaction) {
+    // Nothing came back because it could not be read, not because it is gone: say so, with a way to try again.
+    if (error) return <LoadError fill error={error} onRetry={() => refetch()} />;
     return (
       <View className="flex-1 items-center justify-center bg-canvas px-6">
         <Text className="text-base text-muted text-center">{NOT_FOUND_MESSAGE}</Text>
@@ -153,7 +132,8 @@ export default function DetailsSpend() {
     description !== (transaction.description ?? '') ||
     categoryId !== transaction.categoryId ||
     cardId !== transaction.cardId ||
-    date.toISOString() !== new Date(transaction.occurredAt).toISOString();
+    // The date is a calendar day: picking the same day again (at another time of day) is no change.
+    calendarDayAtNoonUtc(date) !== transaction.occurredAt;
   // What still blocks saving, by field name, so the screen can say it instead of just staying gray.
   const missing = [
     cents === 0 ? FIELD_LABELS.amount : null,
@@ -161,7 +141,7 @@ export default function DetailsSpend() {
     categoryId ? null : FIELD_LABELS.category,
     cardId ? null : FIELD_LABELS.card,
   ].filter((label): label is string => label !== null);
-  const canSave = dirty && missing.length === 0;
+  const canSave = dirty && missing.length === 0 && !saving;
 
   // A category picked for one direction may not exist for the other: fall back to a valid one
   // instead of leaving the field empty, which would silently block saving.
@@ -188,25 +168,30 @@ export default function DetailsSpend() {
         cardId !== transaction.cardId);
     const applyToNext = changedForNext ? await confirm(APPLY_CONFIRM) : false;
 
-    await updateTransaction(db, transaction.id, {
-      cardId,
-      categoryId,
-      name: name.trim(),
-      description: description.trim() || null,
-      amount: cents / 100,
-      type,
-      occurredAt: date.toISOString(),
-    });
-    if (recurrence && applyToNext) {
-      await updateRecurrence(db, recurrence.id, { cardId, categoryId, name: name.trim(), amount: cents / 100 });
+    setSaving(true);
+    try {
+      // One call does it all: with `applyToNext` the server also changes the recurrence for the next ones, and
+      // it ends the recurrence when the expense is turned into an income.
+      await updateTransaction(transaction.id, {
+        cardId,
+        categoryId,
+        name: name.trim(),
+        description: description.trim() || null,
+        amount: centsToAmount(cents),
+        type,
+        occurredAt: calendarDayAtNoonUtc(date),
+        ...(applyToNext ? { applyToNext: true } : {}),
+      });
+    } catch (failure) {
+      showToast(errorToast(failure, SAVE_FAILED_TITLE));
+      setSaving(false);
+      return;
     }
-    if (recurrence && turnedIntoIncome) await endRecurrence(db, recurrence.id);
-    if (recurrence && (applyToNext || turnedIntoIncome)) {
-      setRecurrence(await getRecurrenceById(db, recurrence.id));
-      notifyDataChanged();
-      await refreshReminders(db);
-    }
-    setTransaction(await getTransactionById(db, transaction.id));
+
+    // Reads again what this screen shows (and marks the rest old): the form goes back to what is stored.
+    await notifyDataChanged();
+    if (recurrence && (applyToNext || turnedIntoIncome)) await refreshReminders();
+    setSaving(false);
     Keyboard.dismiss();
     showToast({
       type: 'success',
@@ -220,16 +205,26 @@ export default function DetailsSpend() {
 
   const handleEndRecurrence = async () => {
     if (!recurrence || !(await confirm(END_CONFIRM))) return;
-    await endRecurrence(db, recurrence.id);
-    setRecurrence(await getRecurrenceById(db, recurrence.id));
-    notifyDataChanged();
-    await refreshReminders(db);
+    try {
+      await endRecurrence(recurrence.id);
+    } catch (failure) {
+      showToast(errorToast(failure, END_FAILED_TITLE));
+      return;
+    }
+    await notifyDataChanged();
+    await refreshReminders();
     showToast(ENDED_TOAST);
   };
 
   const handleDelete = async () => {
     if (!(await confirm(DELETE_CONFIRM))) return;
-    await deleteTransaction(db, transaction.id);
+    try {
+      await deleteTransaction(transaction.id);
+    } catch (failure) {
+      showToast(errorToast(failure, DELETE_FAILED_TITLE));
+      return;
+    }
+    notifyDataChanged();
     showToast(DELETED_TOAST);
     router.back();
   };

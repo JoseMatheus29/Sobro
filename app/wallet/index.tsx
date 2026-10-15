@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, FlatList, Dimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 
 import SideBar from '@/app/components/sidebar';
 import AddTransactionFab from '@/app/components/AddTransactionFab';
@@ -49,7 +48,6 @@ export default function WalletScreen() {
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
   const [goalFormVisible, setGoalFormVisible] = useState(false);
 
-  const db = useSQLiteContext();
   const { confirm, showToast } = useFeedback();
   const { month } = useSelectedMonth();
   const { cards, loading: loadingCards, refetch: refetchCards } = useCards();
@@ -74,7 +72,7 @@ export default function WalletScreen() {
     setActiveIndex(0);
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     notifyDataChanged();
-    await refreshReminders(db);
+    await refreshReminders();
     showToast(ACCOUNT_DELETED_TOAST);
   };
 

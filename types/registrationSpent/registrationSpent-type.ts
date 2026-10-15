@@ -179,3 +179,4 @@ export const REPEATING_TOAST_SUFFIX = {
 
 // Error of the new-category dialog (shown inside it).
 export const CATEGORY_SAVE_FAILED_MESSAGE = 'Não foi possível criar a categoria.';
+export const SAVE_FAILED_TITLE = 'Não foi possível salvar';

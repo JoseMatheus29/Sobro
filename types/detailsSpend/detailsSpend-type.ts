@@ -113,3 +113,9 @@ export const TRANSFER_DELETE_CONFIRM: ConfirmOptions = {
   destructive: true,
 };
 export const TRANSFER_DELETED_TOAST: ToastOptions = { type: 'success', title: 'Transferência excluída', icon: 'delete-outline' };
+
+// What went wrong, in the title of the toast.
+export const SAVE_FAILED_TITLE = 'Não foi possível salvar';
+export const DELETE_FAILED_TITLE = 'Não foi possível excluir';
+export const END_FAILED_TITLE = 'Não foi possível encerrar';
+export const TRANSFER_DELETE_FAILED_TITLE = 'Não foi possível desfazer a transferência';

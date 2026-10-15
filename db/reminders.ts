@@ -1,9 +1,10 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import { type SQLiteDatabase } from 'expo-sqlite';
 
+import { queryClient } from '@/api/queryClient';
 import { buildReminders } from '@/utils/reminders';
 import { getProfile } from './profile';
+import { queryKeys } from './queryKeys';
 import { getRecurrences } from './recurrences';
 
 const CHANNEL_ID = 'due-dates';
@@ -40,11 +41,12 @@ export async function clearReminders(): Promise<void> {
 // The app only schedules these, so clearing them all first keeps the list exactly what the recurring
 // expenses ask for right now. Safe to call whenever something changes, and never throws: a reminder
 // that fails to schedule must not break the screen that asked for it.
-export async function refreshReminders(db: SQLiteDatabase): Promise<void> {
+export async function refreshReminders(): Promise<void> {
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    const profile = await getProfile(db);
+    // Through the cache: what a screen just read is not asked for again, and what was just changed is.
+    const profile = await queryClient.fetchQuery({ queryKey: queryKeys.profile, queryFn: getProfile });
     if (!profile.remindersEnabled) return;
     if (!(await Notifications.getPermissionsAsync()).granted) return;
 
@@ -55,7 +57,8 @@ export async function refreshReminders(db: SQLiteDatabase): Promise<void> {
       });
     }
 
-    const reminders = buildReminders(await getRecurrences(db), new Date());
+    const recurrences = await queryClient.fetchQuery({ queryKey: queryKeys.recurrences, queryFn: getRecurrences });
+    const reminders = buildReminders(recurrences, new Date());
     for (const reminder of reminders) {
       await Notifications.scheduleNotificationAsync({
         identifier: reminder.key,
