@@ -23,7 +23,7 @@ O servidor espelha as tabelas do SQLite atual (`db/schema.ts`, migração v6), c
 | Tabela | Campos principais | Observações |
 | --- | --- | --- |
 | users | id, email (único), password_hash, created_at | Login próprio. |
-| profile | user_id (PK), name, currency, reminders_enabled, theme (system, light ou dark) | Uma linha por usuário. `avatar_uri` e `monthly_budget` não vão: a foto foi removida e o orçamento mora em `monthly_budgets`. |
+| profile | user_id (PK), name, currency, reminders_enabled | Uma linha por usuário. `avatar_uri`, `monthly_budget` e `theme` não vão: a foto foi removida, o orçamento mora em `monthly_budgets` e o tema (claro, escuro ou do sistema) é preferência do aparelho e precisa valer antes do login, então fica só no app. O backup do app traz `theme`; a API o aceita e descarta. |
 | categories | id (texto: `food`, `salary`, `transfer`…), name, icon, color, bg | Catálogo global e somente leitura, igual para todos, porque o app não permite criar categorias. Vira por usuário se isso mudar. |
 | cards (contas) | id, user_id, name, number (últimos dígitos, opcional), color, light_color, balance | `balance` é o saldo inicial. A API devolve também o saldo atual (inicial + soma das transações), sempre calculado e nunca gravado. |
 | transactions | id, user_id, card_id, category_id, name, description, amount, type (`income`/`expense`), occurred_at, created_at, recurrence_id, installment, transfer_id | `amount` com sinal, como no app. As duas pernas de uma transferência compartilham `transfer_id`. |
