@@ -1,4 +1,5 @@
 import '../global.css';
+import '@/utils/nativewindInterop';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
