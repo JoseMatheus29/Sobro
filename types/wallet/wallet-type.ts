@@ -8,7 +8,7 @@ export interface CardCarouselProps {
   cards: CardRecord[];
   activeIndex: number;
   setActiveIndex: (index: number) => void;
-  flatListRef: RefObject<FlatList>;
+  flatListRef: RefObject<FlatList | null>;
   cardWidth: number;
   onAddCard: () => void;
 }

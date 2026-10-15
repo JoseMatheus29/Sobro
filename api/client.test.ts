@@ -39,7 +39,7 @@ beforeEach(async () => {
   fetchMock.mockReset();
   onExpired.mockReset();
   onUpgrade.mockReset();
-  (global as { fetch: unknown }).fetch = fetchMock;
+  (globalThis as { fetch: unknown }).fetch = fetchMock;
   setOnSessionExpired(onExpired);
   setOnUpgradeRequired(onUpgrade);
   await saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' });

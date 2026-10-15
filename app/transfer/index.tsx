@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -50,6 +49,7 @@ import {
   TRANSFER_TITLE,
   TRANSFERRED_TOAST,
 } from '@/types/transfer/transfer-type';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 // A sheet to move money from one account to another. It is not an income or an expense: it only
 // changes the balance of the two accounts.
@@ -136,7 +136,7 @@ export default function TransferSheet() {
       <Pressable accessibilityLabel={CLOSE_LABEL} onPress={() => router.back()} style={{ height: insets.top + SHEET_TOP_GAP }} />
       <KeyboardAvoidingView
         className="flex-1 bg-canvas rounded-t-[28px] overflow-hidden"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={KEYBOARD_AVOIDING_BEHAVIOR}
       >
         <View className="items-center pt-2.5">
           <View className="w-10 h-1 rounded-full bg-surface-dark" />

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Image, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import { useColors } from '@/hooks/useColors';
 import { AUTH_BOTTOM_PADDING, AUTH_LOGO_SIZE } from '@/types/components/auth/auth-type';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 interface AuthScreenProps {
   title: string;
@@ -20,7 +21,7 @@ export default function AuthScreen({ title, subtitle, children }: AuthScreenProp
   const insets = useSafeAreaInsets();
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-canvas" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView className="flex-1 bg-canvas" behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
       <ScreenScroll bottomPadding={AUTH_BOTTOM_PADDING} keyboardShouldPersistTaps="handled">
         <LinearGradient
           colors={colors.headerGradient}

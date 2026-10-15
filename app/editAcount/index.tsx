@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   View,
 } from 'react-native';
@@ -30,6 +29,7 @@ import { applyTheme } from '@/utils/applyTheme';
 import { budgetForMonth } from '@/utils/budget';
 import { currentMonthKey } from '@/utils/month';
 import { useColors } from '@/hooks/useColors';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 export default function EditAcount() {
   const colors = useColors();
@@ -109,7 +109,7 @@ export default function EditAcount() {
   return (
     <KeyboardAvoidingView
       className="flex-1 bg-canvas"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={KEYBOARD_AVOIDING_BEHAVIOR}
     >
       {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
           cut the content off at its edge while scrolling. */}

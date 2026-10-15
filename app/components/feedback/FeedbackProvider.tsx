@@ -27,7 +27,7 @@ export function useFeedback(): FeedbackContextValue {
 export function FeedbackProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastOptions | null>(null);
   const [request, setRequest] = useState<ConfirmOptions | null>(null);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolver = useRef<((confirmed: boolean) => void) | null>(null);
 

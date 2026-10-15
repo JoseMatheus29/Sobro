@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Text, TouchableOpacity, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -49,6 +49,7 @@ import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { nextOccurrence } from '@/utils/recurrence';
 import { tint } from '@/utils/color';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 const toCents = (amount: number) => Math.round(Math.abs(amount) * 100).toString();
 
@@ -230,7 +231,7 @@ export default function DetailsSpend() {
   };
 
   return (
-    <KeyboardAvoidingView className="flex-1 bg-canvas" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView className="flex-1 bg-canvas" behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
       {/* The header scrolls with the content: a fixed one, with the content pulled up over it,
           cut the content off at its edge while scrolling. */}
       <ScreenScroll bottomPadding={SCROLL_PADDING_WITH_SIDEBAR} keyboardShouldPersistTaps="handled">

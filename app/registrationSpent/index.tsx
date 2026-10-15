@@ -4,7 +4,6 @@ import {
   Pressable,
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -43,6 +42,7 @@ import {
 } from '@/types/registrationSpent/registrationSpent-type';
 import { categoriesForType, formatCents } from '@/utils/transactionForm';
 import { useColors } from '@/hooks/useColors';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 export default function RegistrationSpent() {
   const router = useRouter();
@@ -187,7 +187,7 @@ export default function RegistrationSpent() {
       />
       <KeyboardAvoidingView
         className="flex-1 bg-canvas rounded-t-[28px] overflow-hidden"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={KEYBOARD_AVOIDING_BEHAVIOR}
       >
         <FlowHeader title={TITLES[type]} step={step} onBack={handleBack} />
 

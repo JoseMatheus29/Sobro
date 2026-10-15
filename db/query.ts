@@ -1,4 +1,4 @@
-import { useIsFocused } from '@react-navigation/native';
+import { useIsFocused } from 'expo-router';
 import { useQuery, type UseQueryOptions, type UseQueryResult } from '@tanstack/react-query';
 
 // A query that only runs while its screen is the one in front. Screens of a Stack stay mounted behind the

@@ -13,7 +13,8 @@ const CHANNEL_NAME = 'Vencimentos';
 // A reminder that goes off while the app is open still shows, as a banner.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
   }),

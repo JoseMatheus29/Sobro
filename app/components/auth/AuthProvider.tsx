@@ -27,8 +27,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useFeedback();
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [upgradeRequired, setUpgradeRequired] = useState(false);
+  // What the API client's callback sees when a session ends: the status as it is now, not as it was when it was set.
   const statusRef = useRef(status);
-  statusRef.current = status;
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   useEffect(() => {
     let cancelled = false;

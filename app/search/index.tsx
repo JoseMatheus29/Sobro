@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -39,6 +38,7 @@ import {
   TOTAL_LABEL,
   TYPE_OPTIONS,
 } from '@/types/search/search-type';
+import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
 // A chip of a filter: white, with the active one in the brand blue.
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
@@ -104,7 +104,7 @@ export default function SearchSheet() {
       />
       <KeyboardAvoidingView
         className="flex-1 bg-canvas rounded-t-[28px] overflow-hidden"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={KEYBOARD_AVOIDING_BEHAVIOR}
       >
         <View className="items-center pt-2.5">
           <View className="w-10 h-1 rounded-full bg-surface-dark" />
