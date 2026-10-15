@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity } from 'react-native';
-import { useSQLiteContext } from 'expo-sqlite';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import InlineError from '@/app/components/ui/InlineError';
+import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
+import { useSaveKey } from '@/hooks/useSaveKey';
 import { createCard, getCardUsage, updateCard, type CardRecord } from '@/db/cards';
+import { roundAmount } from '@/utils/apiInput';
+import { errorMessage } from '@/utils/apiErrors';
 import { tint } from '@/utils/color';
 import {
   CANCEL_LABEL,
   COLOR_LABEL,
   DELETE_ACCOUNT_LABEL,
   DELETE_ACCOUNT_WARNING,
+  INVALID_BALANCE_MESSAGE,
+  SAVE_FAILED_MESSAGE,
   EDIT_ACCOUNT_TITLE,
   LAST_ACCOUNT_HINT,
   NAME_LABEL,
@@ -46,7 +52,7 @@ interface CardFormModalProps {
 // Creates or edits an account: a place where the money is (a bank, a card, cash).
 export default function CardFormModal({ visible, initialCard, canDelete, onClose, onSaved, onDelete }: CardFormModalProps) {
   const colors = useColors();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
   const isEditing = !!initialCard;
 
   const [name, setName] = useState('');
@@ -54,6 +60,8 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
   const [startingBalance, setStartingBalance] = useState('');
   const [cardTheme, setCardTheme] = useState(COLOR_OPTIONS[0]);
   const [saving, setSaving] = useState(false);
+  // Inside the dialog: a toast would be drawn behind the Modal.
+  const [error, setError] = useState<string | null>(null);
   // What deleting this account would take with it, to warn before the delete button is pressed.
   const [usage, setUsage] = useState<{ transactions: number; recurrences: number } | null>(null);
 
@@ -63,16 +71,22 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
       return;
     }
     let cancelled = false;
-    getCardUsage(db, initialCard.id).then((found) => {
-      if (!cancelled) setUsage(found);
-    });
+    getCardUsage(initialCard.id)
+      .then((found) => {
+        if (!cancelled) setUsage(found);
+      })
+      .catch(() => {
+        // Only a warning: the delete itself asks again, with the count, before it goes ahead.
+      });
     return () => {
       cancelled = true;
     };
-  }, [visible, initialCard, db]);
+  }, [visible, initialCard]);
 
   useEffect(() => {
     if (!visible) return;
+    setError(null);
+    saveKey.clear();
     if (initialCard) {
       setName(initialCard.name);
       setNumber(initialCard.number);
@@ -88,31 +102,45 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
       setStartingBalance('');
       setCardTheme(COLOR_OPTIONS[0]);
     }
-  }, [visible, initialCard]);
+  }, [visible, initialCard, saveKey]);
 
   const canSave = name.trim() !== '' && !saving;
 
   const handleSave = async () => {
     if (!canSave) return;
-    setSaving(true);
-    if (isEditing && initialCard) {
-      await updateCard(db, initialCard.id, {
-        name: name.trim(),
-        number: number.trim(),
-        color: cardTheme.color,
-        lightColor: cardTheme.lightColor,
-      });
-    } else {
-      await createCard(db, {
-        name: name.trim(),
-        number: number.trim(),
-        color: cardTheme.color,
-        lightColor: cardTheme.lightColor,
-        startingBalance: startingBalance ? Number(startingBalance.replace(',', '.')) : 0,
-      });
+    const balance = startingBalance.trim() ? Number(startingBalance.replace(',', '.')) : 0;
+    if (!isEditing && !Number.isFinite(balance)) {
+      setError(INVALID_BALANCE_MESSAGE);
+      return;
     }
-    setSaving(false);
-    onSaved();
+    setError(null);
+    setSaving(true);
+    try {
+      if (isEditing && initialCard) {
+        await updateCard(initialCard.id, {
+          name: name.trim(),
+          number: number.trim(),
+          color: cardTheme.color,
+          lightColor: cardTheme.lightColor,
+        });
+      } else {
+        const input = {
+          name: name.trim(),
+          number: number.trim(),
+          color: cardTheme.color,
+          lightColor: cardTheme.lightColor,
+          startingBalance: roundAmount(balance),
+        };
+        await createCard(input, saveKey.keyFor(input));
+        saveKey.clear();
+      }
+      notifyDataChanged();
+      onSaved();
+    } catch (failure) {
+      setError(errorMessage(failure, SAVE_FAILED_MESSAGE));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -175,6 +203,8 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
               );
             })}
           </View>
+
+          <InlineError message={error} />
 
           <View className="flex-row gap-3">
             <TouchableOpacity onPress={onClose} className="flex-1 h-12 rounded-[14px] items-center justify-center bg-canvas">

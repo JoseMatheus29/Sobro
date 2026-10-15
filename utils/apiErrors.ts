@@ -8,6 +8,12 @@ import {
 } from '@/types/api/api-type';
 import { type ToastOptions } from '@/types/components/feedback/feedback-type';
 
+// The same, as one line for inside a dialog (where a toast would be hidden behind it).
+export function errorMessage(error: unknown, fallback: string = GENERIC_ERROR_TITLE): string {
+  const { title, message } = errorToast(error, fallback);
+  return message ?? title;
+}
+
 // What to tell the person when a call failed: no signal, too many tries, the server down, or a rule of the
 // server (its message is already in Portuguese and says what is wrong). `fallbackTitle` names what was being done.
 export function errorToast(error: unknown, fallbackTitle: string = GENERIC_ERROR_TITLE): ToastOptions {

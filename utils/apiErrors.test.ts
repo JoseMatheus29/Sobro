@@ -1,5 +1,19 @@
 import { ApiError, NetworkError } from '@/api/errors';
-import { errorToast } from './apiErrors';
+import { errorMessage, errorToast } from './apiErrors';
+
+describe('errorMessage', () => {
+  it('gives one line for a dialog', () => {
+    expect(errorMessage(new NetworkError())).toBe('Sem conexão. Tente de novo.');
+    expect(errorMessage(new ApiError(409, 'goal_insufficient', 'Só há R$ 80,00 nessa caixinha para retirar.'))).toBe(
+      'Só há R$ 80,00 nessa caixinha para retirar.'
+    );
+    expect(errorMessage(new ApiError(500, 'internal_error', 'x'))).toBe('Tente de novo em instantes.');
+  });
+
+  it('falls back to what was being done when nothing is known', () => {
+    expect(errorMessage(new Error('boom'), 'Não foi possível guardar')).toBe('Não foi possível guardar');
+  });
+});
 
 describe('errorToast', () => {
   it('tells about a missing connection', () => {

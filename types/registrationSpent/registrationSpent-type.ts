@@ -176,3 +176,6 @@ export const REPEATING_TOAST_SUFFIX = {
   monthly: 'repete todo mês',
   installments: 'parcelado',
 };
+
+// Error of the new-category dialog (shown inside it).
+export const CATEGORY_SAVE_FAILED_MESSAGE = 'Não foi possível criar a categoria.';

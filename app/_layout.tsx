@@ -12,6 +12,7 @@ import SessionGate from '@/app/components/auth/SessionGate';
 import UpgradeRequired from '@/app/components/auth/UpgradeRequired';
 import { FeedbackProvider } from '@/app/components/feedback/FeedbackProvider';
 import { MonthProvider } from '@/app/components/month/MonthProvider';
+import QueryProvider from '@/app/components/QueryProvider';
 import RecurrenceSync from '@/app/components/RecurrenceSync';
 import { applyTheme } from '@/utils/applyTheme';
 import { ThemeProvider } from '@/app/components/theme/ThemeProvider';
@@ -44,7 +45,9 @@ function Root() {
       <SQLiteProvider databaseName="sobro.db" onInit={initDatabase} useSuspense>
         <FeedbackProvider>
           <AuthProvider>
-            <RootNavigator />
+            <QueryProvider>
+              <RootNavigator />
+            </QueryProvider>
           </AuthProvider>
         </FeedbackProvider>
       </SQLiteProvider>

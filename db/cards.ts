@@ -1,4 +1,6 @@
-import { type SQLiteDatabase } from 'expo-sqlite';
+import { api } from '@/api/client';
+import { isApiError } from '@/api/errors';
+import { type ApiCard, type CardInput, type CardPatch, type CardUsage } from '@/api/types';
 
 export interface CardRecord {
   id: number;
@@ -6,104 +8,52 @@ export interface CardRecord {
   number: string;
   color: string;
   lightColor: string;
+  /** Current balance: the starting balance plus its transactions, worked out by the server. */
   balance: number;
 }
 
-interface CardRow {
-  id: number;
-  name: string;
-  number: string;
-  color: string;
-  light_color: string;
-  starting_balance: number;
-  transactions_total: number | null;
-}
-
-// balance is derived (starting balance + sum of its transactions), never stored/updated
-// directly, so it can't drift out of sync with the transactions table.
-const SELECT_CARDS = `
-  SELECT
-    cards.id, cards.name, cards.number, cards.color, cards.light_color,
-    cards.balance as starting_balance,
-    (SELECT SUM(amount) FROM transactions WHERE transactions.card_id = cards.id) as transactions_total
-  FROM cards
-`;
-
-function mapRow(row: CardRow): CardRecord {
+function toRecord(card: ApiCard): CardRecord {
   return {
-    id: row.id,
-    name: row.name,
-    number: row.number,
-    color: row.color,
-    lightColor: row.light_color,
-    balance: row.starting_balance + (row.transactions_total ?? 0),
+    id: card.id,
+    name: card.name,
+    number: card.number,
+    color: card.color,
+    lightColor: card.lightColor,
+    balance: card.balance,
   };
 }
 
-export async function getCards(db: SQLiteDatabase): Promise<CardRecord[]> {
-  const rows = await db.getAllAsync<CardRow>(`${SELECT_CARDS} ORDER BY cards.id ASC`);
-  return rows.map(mapRow);
+export async function getCards(): Promise<CardRecord[]> {
+  return (await api<ApiCard[]>('GET', '/v1/cards')).map(toRecord);
 }
 
-export async function getCardById(db: SQLiteDatabase, id: number): Promise<CardRecord | null> {
-  const row = await db.getFirstAsync<CardRow>(`${SELECT_CARDS} WHERE cards.id = ?`, id);
-  return row ? mapRow(row) : null;
+// Null when it does not exist (anymore), or is not the person's.
+export async function getCardById(id: number): Promise<CardRecord | null> {
+  try {
+    return toRecord(await api<ApiCard>('GET', `/v1/cards/${id}`));
+  } catch (error) {
+    if (isApiError(error) && error.status === 404) return null;
+    throw error;
+  }
 }
 
-export async function createCard(
-  db: SQLiteDatabase,
-  input: { name: string; number: string; color: string; lightColor: string; startingBalance?: number }
-): Promise<number> {
-  const result = await db.runAsync(
-    'INSERT INTO cards (name, number, color, light_color, balance) VALUES (?, ?, ?, ?, ?)',
-    input.name,
-    input.number,
-    input.color,
-    input.lightColor,
-    input.startingBalance ?? 0
-  );
-  return result.lastInsertRowId;
+// `idempotencyKey` keeps a retry after a lost answer from making two accounts.
+export async function createCard(input: CardInput, idempotencyKey?: string): Promise<number> {
+  const created = await api<ApiCard>('POST', '/v1/cards', { body: input, idempotencyKey });
+  return created.id;
 }
 
-export async function updateCard(
-  db: SQLiteDatabase,
-  id: number,
-  patch: Partial<{ name: string; number: string; color: string; lightColor: string }>
-): Promise<void> {
-  const fields: string[] = [];
-  const values: (string | number)[] = [];
-  if (patch.name !== undefined) { fields.push('name = ?'); values.push(patch.name); }
-  if (patch.number !== undefined) { fields.push('number = ?'); values.push(patch.number); }
-  if (patch.color !== undefined) { fields.push('color = ?'); values.push(patch.color); }
-  if (patch.lightColor !== undefined) { fields.push('light_color = ?'); values.push(patch.lightColor); }
-  if (fields.length === 0) return;
-
-  values.push(id);
-  await db.runAsync(`UPDATE cards SET ${fields.join(', ')} WHERE id = ?`, values);
+export async function updateCard(id: number, patch: CardPatch): Promise<void> {
+  await api('PATCH', `/v1/cards/${id}`, { body: patch });
 }
 
-// The transactions of an account, and the other leg of every transfer it took part in: a transfer
-// whose other half is gone would leave the other account's balance wrong.
-const OF_ACCOUNT = `(card_id = ? OR transfer_id IN (SELECT transfer_id FROM transactions WHERE card_id = ? AND transfer_id IS NOT NULL))`;
-
-// What deleting an account would take with it, to tell the person before it happens.
-export async function getCardUsage(
-  db: SQLiteDatabase,
-  id: number
-): Promise<{ transactions: number; recurrences: number }> {
-  const row = await db.getFirstAsync<{ transactions: number; recurrences: number }>(
-    `SELECT (SELECT COUNT(*) FROM transactions WHERE ${OF_ACCOUNT}) as transactions,
-            (SELECT COUNT(*) FROM recurrences WHERE card_id = ?) as recurrences`,
-    id,
-    id,
-    id
-  );
-  return row ?? { transactions: 0, recurrences: 0 };
+// What deleting an account would take with it, to tell the person before it happens: its transactions (and the
+// other leg of every transfer it took part in) and its recurrences.
+export function getCardUsage(id: number): Promise<CardUsage> {
+  return api<CardUsage>('GET', `/v1/cards/${id}/usage`);
 }
 
-export async function deleteCard(db: SQLiteDatabase, id: number): Promise<void> {
-  // no FK cascade in SQLite by default: drop what points at this card first to avoid orphans
-  await db.runAsync('DELETE FROM recurrences WHERE card_id = ?', id);
-  await db.runAsync(`DELETE FROM transactions WHERE ${OF_ACCOUNT}`, id, id);
-  await db.runAsync('DELETE FROM cards WHERE id = ?', id);
+// Takes the transactions and recurrences along; 409 `last_card` for the only account left.
+export async function deleteCard(id: number): Promise<void> {
+  await api('DELETE', `/v1/cards/${id}`);
 }

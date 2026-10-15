@@ -21,6 +21,7 @@ import { useCards, useGoals, useTransactions } from '@/db/hooks';
 import { deleteCard, getCardUsage, type CardRecord } from '@/db/cards';
 import { notifyDataChanged } from '@/db/events';
 import { refreshReminders } from '@/db/reminders';
+import { errorToast } from '@/utils/apiErrors';
 import { formatShortDate } from '@/utils/format';
 import { monthNameOf } from '@/utils/month';
 import { recurrenceBadge } from '@/utils/recurrence';
@@ -31,6 +32,7 @@ import {
   CAROUSEL_PEEK,
   CAROUSEL_SIDE_PADDING,
   DELETE_ACCOUNT_CONFIRM,
+  DELETE_FAILED_TITLE,
   EMPTY_TRANSACTIONS_MESSAGE,
   SEARCH_LABEL,
 } from '@/types/wallet/wallet-type';
@@ -60,10 +62,15 @@ export default function WalletScreen() {
   // Deleting an account takes its transactions and recurrences with it, so the person is told how many.
   const handleDeleteCard = async (card: CardRecord) => {
     setModalVisible(false);
-    const usage = await getCardUsage(db, card.id);
-    if (!(await confirm(DELETE_ACCOUNT_CONFIRM(card.name, usage.transactions, usage.recurrences)))) return;
+    try {
+      const usage = await getCardUsage(card.id);
+      if (!(await confirm(DELETE_ACCOUNT_CONFIRM(card.name, usage.transactions, usage.recurrences)))) return;
 
-    await deleteCard(db, card.id);
+      await deleteCard(card.id);
+    } catch (error) {
+      showToast(errorToast(error, DELETE_FAILED_TITLE));
+      return;
+    }
     setActiveIndex(0);
     flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
     notifyDataChanged();

@@ -13,11 +13,13 @@ import { futureMonths, plannedTransactions } from '@/utils/recurrence';
 import { type RecurrenceRecord } from '@/utils/recurrence-type';
 
 import { getBudgetEntries } from './budgets';
-import { getCards, type CardRecord } from './cards';
+import { getCards } from './cards';
 import { getCategoryBudgetEntries } from './categoryBudgets';
 import { getGoalById, getGoalEntries, getGoals } from './goals';
-import { getCategories, type CategoryRecord } from './categories';
+import { getCategories } from './categories';
 import { useRefetchOnDataChange } from './events';
+import { NONE, useScreenQuery } from './query';
+import { queryKeys } from './queryKeys';
 import { getProfile, type ProfileRecord } from './profile';
 import { getRecurrences } from './recurrences';
 import {
@@ -36,25 +38,10 @@ import {
 // expenses that fell due while the app was in the background) calls `notifyDataChanged`, and
 // `useRefetchOnDataChange` makes each hook below read again.
 
+// The accounts, each with its current balance (worked out by the server).
 export function useCards() {
-  const db = useSQLiteContext();
-  const [cards, setCards] = useState<CardRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setCards(await getCards(db));
-    setLoading(false);
-  }, [db]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
-
-  return { cards, loading, refetch };
+  const query = useScreenQuery({ queryKey: queryKeys.cards, queryFn: getCards });
+  return { cards: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
 }
 
 // The recurring expenses, with their category and account. Only read when asked to: most screens do not need them.
@@ -331,22 +318,8 @@ export function useCategoryTotals(filters: { month?: string } = {}) {
 }
 
 export function useCategories() {
-  const db = useSQLiteContext();
-  const [categories, setCategories] = useState<CategoryRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setCategories(await getCategories(db));
-    setLoading(false);
-  }, [db]);
-
-  useFocusEffect(
-    useCallback(() => {
-      refetch();
-    }, [refetch])
-  );
-  useRefetchOnDataChange(refetch);
+  const query = useScreenQuery({ queryKey: queryKeys.categories, queryFn: getCategories });
+  const categories = query.data ?? NONE;
 
   const recolor = useCategoryColor();
   const shown = useMemo(
@@ -357,7 +330,7 @@ export function useCategories() {
       }),
     [categories, recolor]
   );
-  return { categories: shown, loading, refetch };
+  return { categories: shown, loading: query.isLoading, error: query.error, refetch: query.refetch };
 }
 
 export function useProfile() {

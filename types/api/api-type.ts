@@ -17,6 +17,16 @@ export const UNAUTHORIZED_CODE = 'unauthorized';
 
 export const APP_VERSION_FALLBACK = '0.0.0';
 
+// The in-memory cache (api/queryClient.ts): how long what was read counts as fresh, and how long a screen's
+// data is kept after it is left.
+export const QUERY_STALE_MS = 30_000;
+export const QUERY_GC_MS = 5 * 60_000;
+
+// A page of transactions is at most this long (the server's limit); more are read page by page.
+export const TRANSACTIONS_PAGE_SIZE = 500;
+// A guard against a cursor that never ends: 20 pages of 500 is far beyond what a person registers.
+export const TRANSACTIONS_MAX_PAGES = 20;
+
 // How an error is told to the person (utils/apiErrors.ts); an answer of the server brings its own message.
 export const NETWORK_ERROR_TITLE = 'Sem conexão';
 export const RATE_LIMITED_TITLE = 'Muitas tentativas';

@@ -1,13 +1,20 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-// A counter bumped when data changes outside what a screen did itself (the recurring expenses that
-// fell due while the app was in the background). The data hooks listen to it and refetch.
+import { queryClient } from '@/api/queryClient';
+
+// Called after something was saved, edited or deleted (or changed without a screen doing it): every cached
+// read is marked old and the ones on screen are read again. Whatever is behind another screen reads when it
+// comes back (see db/query.ts).
+//
+// The counter and the listeners below are for the hooks that still read the old local database; they go
+// away with it.
 let version = 0;
 const listeners = new Set<() => void>();
 
 export function notifyDataChanged() {
   version += 1;
   listeners.forEach((listener) => listener());
+  void queryClient.invalidateQueries();
 }
 
 function subscribe(listener: () => void) {
