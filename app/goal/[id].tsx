@@ -12,6 +12,8 @@ import { type MovementKind } from '@/utils/goals-type';
 import { errorToast } from '@/utils/apiErrors';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import EmptyState from '@/app/components/ui/EmptyState';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
 import GoalCard from '@/app/components/GoalCard';
 import GoalFormModal from '@/app/components/GoalFormModal';
@@ -41,7 +43,7 @@ export default function GoalSheet() {
   const colors = useColors();
   const { confirm, showToast } = useFeedback();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { goal, entries, loading } = useGoal(Number(id));
+  const { goal, entries, loading, error, refetch } = useGoal(Number(id));
 
   const [movement, setMovement] = useState<MovementKind | null>(null);
   const [editing, setEditing] = useState(false);
@@ -95,7 +97,9 @@ export default function GoalSheet() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {!goal && !loading && <EmptyState icon="savings" message={GOAL_NOT_FOUND} />}
+          {!goal && loading && <LoadingBlock />}
+          {!goal && !loading && error && <LoadError error={error} onRetry={() => refetch()} />}
+          {!goal && !loading && !error && <EmptyState icon="savings" message={GOAL_NOT_FOUND} />}
 
           {goal && (
             <>

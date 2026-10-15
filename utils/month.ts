@@ -26,6 +26,14 @@ export function currentMonthKey(now: Date = new Date()): string {
   return `${String(now.getFullYear()).padStart(4, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
+// "Now" for the functions that read a date in UTC (the summary and the insights compare the day of the month): a
+// Date whose UTC fields are the phone's own, so that at 22h on the last day it is still that day and that month.
+export function localNow(now: Date = new Date()): Date {
+  return new Date(
+    Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds())
+  );
+}
+
 export function previousMonthKey(date: Date): string {
   return monthKey(new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1)));
 }

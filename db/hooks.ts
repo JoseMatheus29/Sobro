@@ -5,7 +5,7 @@ import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
-import { addMonths, currentMonthKey } from '@/utils/month';
+import { addMonths, currentMonthKey, localNow } from '@/utils/month';
 import { futureMonths, plannedTransactions } from '@/utils/recurrence';
 
 import { getBudgetEntries } from './budgets';
@@ -13,7 +13,7 @@ import { getCards } from './cards';
 import { getCategoryBudgetEntries } from './categoryBudgets';
 import { getGoalById, getGoalEntries, getGoals } from './goals';
 import { getCategories } from './categories';
-import { NONE, useScreenQuery } from './query';
+import { loadError, NONE, useScreenQuery } from './query';
 import { queryKeys } from './queryKeys';
 import { getProfile } from './profile';
 import { getRecurrenceById, getRecurrences } from './recurrences';
@@ -35,7 +35,7 @@ import {
 // The accounts, each with its current balance (worked out by the server).
 export function useCards() {
   const query = useScreenQuery({ queryKey: queryKeys.cards, queryFn: getCards });
-  return { cards: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { cards: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // The recurring expenses, with their category and account. Only read when asked to: most screens do not need them.
@@ -44,7 +44,7 @@ export function useRecurrences(enabled = true) {
   return {
     recurrences: query.data ?? NONE,
     loading: enabled && query.isLoading,
-    error: query.error,
+    error: loadError(query),
     refetch: query.refetch,
   };
 }
@@ -59,7 +59,7 @@ export function useRecurrence(id: number | undefined) {
   return {
     recurrence: query.data ?? null,
     loading: id !== undefined && query.isLoading,
-    error: query.error,
+    error: loadError(query),
     refetch: query.refetch,
   };
 }
@@ -98,7 +98,7 @@ export function useTransactions(filters: TransactionFilters = {}) {
   return {
     transactions: shown,
     loading: !future && (query.isLoading || query.isPlaceholderData),
-    error: query.error,
+    error: loadError(query),
     refetch,
   };
 }
@@ -106,7 +106,7 @@ export function useTransactions(filters: TransactionFilters = {}) {
 // One transaction; null once it does not exist anymore.
 export function useTransaction(id: number) {
   const query = useScreenQuery({ queryKey: queryKeys.transaction(id), queryFn: () => getTransactionById(id) });
-  return { transaction: query.data ?? null, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { transaction: query.data ?? null, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // The two legs of a transfer (the month is where both of them are).
@@ -116,21 +116,33 @@ export function useTransferLegs(transferId: number | null | undefined, month: st
     queryFn: () => getTransferLegs(transferId as number, month),
     enabled: transferId !== null && transferId !== undefined,
   });
-  return { legs: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { legs: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // A month's transactions and the month before it: what the Dashboard and the insights compare.
 export function useMonthTransactions(month: string) {
-  const { transactions: current } = useTransactions({ month });
-  const { transactions: previous } = useTransactions({ month: addMonths(month, -1) });
-  return { current, previous };
+  const currentQuery = useTransactions({ month });
+  const previousQuery = useTransactions({ month: addMonths(month, -1) });
+
+  const { refetch: refetchCurrent } = currentQuery;
+  const { refetch: refetchPrevious } = previousQuery;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchCurrent(), refetchPrevious()]);
+  }, [refetchCurrent, refetchPrevious]);
+
+  return {
+    current: currentQuery.transactions,
+    previous: previousQuery.transactions,
+    loading: currentQuery.loading || previousQuery.loading,
+    error: currentQuery.error ?? previousQuery.error,
+    refetch,
+  };
 }
 
 // Tips and insights for the current month, drawn from this and the previous month's transactions.
 // It also hands back the two months it read, so a screen that needs them does not fetch them twice.
 export function useInsights() {
-  const now = new Date();
-  const { current, previous } = useMonthTransactions(currentMonthKey(now));
+  const { current, previous, loading, error, refetch } = useMonthTransactions(currentMonthKey());
   const { entries: limitEntries } = useCategoryBudgets();
 
   const insights = useMemo(
@@ -138,25 +150,25 @@ export function useInsights() {
       generateInsights({
         current,
         previous,
-        now: new Date(),
+        now: localNow(),
         limits: limitsForMonth(limitEntries, currentMonthKey()),
       }),
     [current, previous, limitEntries]
   );
 
-  return { insights, current, previous };
+  return { insights, current, previous, loading, error, refetch };
 }
 
 // The spending limit of each category, kept per month like the monthly budget (utils/categoryBudget.ts).
 export function useCategoryBudgets() {
   const query = useScreenQuery({ queryKey: queryKeys.categoryBudgets, queryFn: getCategoryBudgetEntries });
-  return { entries: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { entries: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // The caixinhas, each with what is in it.
 export function useGoals() {
   const query = useScreenQuery({ queryKey: queryKeys.goals, queryFn: getGoals });
-  return { goals: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { goals: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // One caixinha and what was put in and taken out of it; goal is null once it does not exist anymore.
@@ -175,7 +187,7 @@ export function useGoal(id: number) {
     goal: goalQuery.data ?? null,
     entries: entriesQuery.data ?? NONE,
     loading: goalQuery.isLoading || entriesQuery.isLoading,
-    error: goalQuery.error ?? entriesQuery.error,
+    error: loadError(goalQuery) ?? loadError(entriesQuery),
     refetch,
   };
 }
@@ -183,7 +195,7 @@ export function useGoal(id: number) {
 // The monthly budget is kept per month: see utils/budget.ts for how a month's amount is picked.
 export function useBudgetEntries() {
   const query = useScreenQuery({ queryKey: queryKeys.monthlyBudgets, queryFn: getBudgetEntries });
-  return { entries: query.data ?? NONE, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { entries: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // Every month with transactions (and the current one), newest first, for the history.
@@ -194,7 +206,7 @@ export function useMonthlyHistory() {
 
   const history = useMemo(() => buildHistory({ totals, budgets, currentMonth: currentMonthKey() }), [totals, budgets]);
 
-  return { history, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { history, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // The months ahead that have something planned in them, for the history.
@@ -251,7 +263,7 @@ export function useCategoryTotals(filters: { month?: string } = {}) {
   return {
     totals: shown,
     loading: !future && (query.isLoading || query.isPlaceholderData),
-    error: query.error,
+    error: loadError(query),
     refetch,
   };
 }
@@ -269,11 +281,11 @@ export function useCategories() {
       }),
     [categories, recolor]
   );
-  return { categories: shown, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { categories: shown, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
 // The account's profile, with the light/dark choice of this phone.
 export function useProfile() {
   const query = useScreenQuery({ queryKey: queryKeys.profile, queryFn: getProfile });
-  return { profile: query.data ?? null, loading: query.isLoading, error: query.error, refetch: query.refetch };
+  return { profile: query.data ?? null, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }

@@ -24,6 +24,8 @@ import { errorToast } from '@/utils/apiErrors';
 import { formatMoney } from '@/utils/format';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import EmptyState from '@/app/components/ui/EmptyState';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import GradientButton from '@/app/components/ui/GradientButton';
 import PickerSheet from '@/app/components/ui/PickerSheet';
 import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
@@ -57,7 +59,7 @@ export default function TransferSheet() {
   const insets = useSafeAreaInsets();
   const saveKey = useSaveKey();
   const { showToast } = useFeedback();
-  const { cards } = useCards();
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
   const { from } = useLocalSearchParams<{ from?: string }>();
 
   const [amount, setAmount] = useState('');
@@ -150,7 +152,11 @@ export default function TransferSheet() {
           <Text className="text-[17px] font-bold text-ink">{TRANSFER_TITLE}</Text>
         </View>
 
-        {cards.length < 2 ? (
+        {cardsError ? (
+          <LoadError error={cardsError} onRetry={() => refetchCards()} />
+        ) : loadingCards && cards.length === 0 ? (
+          <LoadingBlock />
+        ) : cards.length < 2 ? (
           <View className="px-5 pt-4">
             <EmptyState icon="account-balance-wallet" message={NEED_TWO_ACCOUNTS} />
           </View>

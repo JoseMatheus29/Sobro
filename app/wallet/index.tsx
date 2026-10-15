@@ -8,6 +8,8 @@ import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import MonthPill from '@/app/components/month/MonthPill';
 import { useSelectedMonth } from '@/app/components/month/MonthProvider';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import TransactionList from '@/app/components/ui/TransactionList';
 import CardCarousel from '@/app/wallet/components/CardCarousel';
@@ -50,12 +52,17 @@ export default function WalletScreen() {
 
   const { confirm, showToast } = useFeedback();
   const { month } = useSelectedMonth();
-  const { cards, loading: loadingCards, refetch: refetchCards } = useCards();
-  const { goals } = useGoals();
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
+  const { goals, loading: loadingGoals, error: goalsError, refetch: refetchGoals } = useGoals();
   // The carousel's last page is the "add card" tile; while it is focused the
   // summary and transactions keep showing the last card.
   const activeCard: CardRecord | undefined = cards[Math.min(activeIndex, cards.length - 1)];
-  const { transactions, refetch: refetchTransactions } = useTransactions({ cardId: activeCard?.id, month });
+  const {
+    transactions,
+    loading: loadingTransactions,
+    error: transactionsError,
+    refetch: refetchTransactions,
+  } = useTransactions({ cardId: activeCard?.id, month });
 
   // Deleting an account takes its transactions and recurrences with it, so the person is told how many.
   const handleDeleteCard = async (card: CardRecord) => {
@@ -75,6 +82,9 @@ export default function WalletScreen() {
     await refreshReminders();
     showToast(ACCOUNT_DELETED_TOAST);
   };
+
+  // Without the accounts there is nothing to show: say why, with a way to try again.
+  if (cardsError) return <LoadError fill error={cardsError} onRetry={() => refetchCards()} />;
 
   if (loadingCards && cards.length === 0) {
     return (
@@ -140,21 +150,34 @@ export default function WalletScreen() {
             />
           )}
 
-          <GoalsSection
-            goals={goals}
-            accountBalances={cards.map((c) => c.balance)}
-            onNew={() => setGoalFormVisible(true)}
-            onOpen={(id) => router.push({ pathname: '/goal/[id]', params: { id: String(id) } })}
-          />
+          {goalsError ? (
+            <View className="mx-4 mb-7 bg-card rounded-[20px]">
+              <LoadError error={goalsError} onRetry={() => refetchGoals()} />
+            </View>
+          ) : loadingGoals ? null : (
+            // Not drawn while they load: an empty list would offer to create the first one when there already are some.
+            <GoalsSection
+              goals={goals}
+              accountBalances={cards.map((c) => c.balance)}
+              onNew={() => setGoalFormVisible(true)}
+              onOpen={(id) => router.push({ pathname: '/goal/[id]', params: { id: String(id) } })}
+            />
+          )}
 
-          <TransactionList
-            title={`Transações de ${monthNameOf(month)}`}
-            actionLabel={SEARCH_LABEL}
-            onActionPress={() => router.push('/search')}
-            transactions={displayTransactions}
-            emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
-            onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-          />
+          {transactionsError ? (
+            <LoadError error={transactionsError} onRetry={() => refetchTransactions()} />
+          ) : loadingTransactions ? (
+            <LoadingBlock />
+          ) : (
+            <TransactionList
+              title={`Transações de ${monthNameOf(month)}`}
+              actionLabel={SEARCH_LABEL}
+              onActionPress={() => router.push('/search')}
+              transactions={displayTransactions}
+              emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
+              onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+            />
+          )}
         </View>
       </ScreenScroll>
 

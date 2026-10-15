@@ -7,6 +7,8 @@ import AddTransactionFab from '@/app/components/AddTransactionFab';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import MonthPill from '@/app/components/month/MonthPill';
 import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import PickerSheet from '@/app/components/ui/PickerSheet';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
@@ -42,8 +44,11 @@ export default function MyDetailing() {
   const { showToast } = useFeedback();
   const { month, isCurrent } = useSelectedMonth();
 
-  const { transactions } = useTransactions({ month });
-  const { totals: categoryTotals } = useCategoryTotals({ month });
+  const { transactions, loading: loadingTransactions, error: transactionsError, refetch: refetchTransactions } = useTransactions({ month });
+  const { totals: categoryTotals, loading: loadingTotals, error: totalsError, refetch: refetchTotals } = useCategoryTotals({ month });
+  // The chart, the progress and the list all depend on the month's figures: until they come (or fail) none is drawn.
+  const detailError = transactionsError ?? totalsError;
+  const detailLoading = loadingTransactions || loadingTotals;
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { categories } = useCategories();
@@ -140,31 +145,49 @@ export default function MyDetailing() {
         </ScreenHeader>
 
         <View className="-mt-7">
-          <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
+          {detailError ? (
+            <View className="mx-4 bg-card rounded-[24px]">
+              <LoadError
+                error={detailError}
+                onRetry={() => {
+                  refetchTransactions();
+                  refetchTotals();
+                }}
+              />
+            </View>
+          ) : detailLoading ? (
+            <View className="mx-4 bg-card rounded-[24px]">
+              <LoadingBlock />
+            </View>
+          ) : (
+            <>
+              <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
 
-          <MonthlyProgress
-            totalGastos={totalGastos}
-            progress={progress}
-            percentage={percentage}
-            hasBudget={hasBudget}
-          />
+              <MonthlyProgress
+                totalGastos={totalGastos}
+                progress={progress}
+                percentage={percentage}
+                hasBudget={hasBudget}
+              />
 
-          <CategoryLimits
-            rows={limitRows}
-            canEdit={isCurrent}
-            onPressRow={(id) => {
-              setLimitError(null);
-              setEditingId(id);
-            }}
-            onAdd={() => setPicking(true)}
-          />
+              <CategoryLimits
+                rows={limitRows}
+                canEdit={isCurrent}
+                onPressRow={(id) => {
+                  setLimitError(null);
+                  setEditingId(id);
+                }}
+                onAdd={() => setPicking(true)}
+              />
 
-          <TransactionList
-            title="Seus Gastos"
-            emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
-            transactions={displayTransactions}
-            onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-          />
+              <TransactionList
+                title="Seus Gastos"
+                emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
+                transactions={displayTransactions}
+                onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+              />
+            </>
+          )}
         </View>
       </ScreenScroll>
 

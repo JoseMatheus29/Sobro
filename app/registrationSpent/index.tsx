@@ -20,6 +20,8 @@ import { useSaveKey } from '@/hooks/useSaveKey';
 import { type RepeatInput } from '@/api/types';
 import { type RepeatMode } from '@/utils/recurrence-type';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import AmountStep from '@/app/registrationSpent/components/AmountStep';
 import CategoryStep from '@/app/registrationSpent/components/CategoryStep';
 import DetailsStep from '@/app/registrationSpent/components/DetailsStep';
@@ -48,8 +50,8 @@ export default function RegistrationSpent() {
   const { showToast } = useFeedback();
   const saveKey = useSaveKey();
 
-  const { categories, refetch: refetchCategories } = useCategories();
-  const { cards } = useCards();
+  const { categories, loading: loadingCategories, error: categoriesError, refetch: refetchCategories } = useCategories();
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
 
   const [step, setStep]               = useState<FlowStep>(1);
   const [type, setType]               = useState<TxType>('expense');
@@ -200,7 +202,11 @@ export default function RegistrationSpent() {
           />
         )}
 
-        {step === 2 && (
+        {step === 2 && categoriesError ? (
+          <LoadError error={categoriesError} onRetry={() => refetchCategories()} />
+        ) : step === 2 && loadingCategories && categories.length === 0 ? (
+          <LoadingBlock />
+        ) : step === 2 ? (
           <CategoryStep
             type={type}
             categories={visibleCategories}
@@ -210,9 +216,13 @@ export default function RegistrationSpent() {
             onPick={handlePickCategory}
             onCategoryCreated={refetchCategories}
           />
-        )}
+        ) : null}
 
-        {step === 3 && (
+        {step === 3 && cardsError ? (
+          <LoadError error={cardsError} onRetry={() => refetchCards()} />
+        ) : step === 3 && loadingCards && cards.length === 0 ? (
+          <LoadingBlock />
+        ) : step === 3 ? (
           <>
             <DetailsStep
               typeColor={typeColor}
@@ -243,7 +253,7 @@ export default function RegistrationSpent() {
               onPress={handleSalvar}
             />
           </>
-        )}
+        ) : null}
       </KeyboardAvoidingView>
     </View>
   );
