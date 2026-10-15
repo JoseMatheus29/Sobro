@@ -1,6 +1,8 @@
 import {
   addMonths,
+  currentMonthKey,
   daysInMonth,
+  localNow,
   monthEnd,
   monthKey,
   monthKeyToDate,
@@ -15,6 +17,21 @@ describe('month helpers', () => {
   it('reads the month of a date in UTC', () => {
     expect(monthKey(new Date('2026-10-09T12:00:00.000Z'))).toBe('2026-10');
     expect(monthKey(new Date('2026-10-31T23:59:59.000Z'))).toBe('2026-10');
+  });
+
+  it('reads the current month from the phone calendar, not from UTC', () => {
+    // Built from local fields: late on the last day it is still that month, whatever UTC says.
+    expect(currentMonthKey(new Date(2026, 9, 31, 23, 30))).toBe('2026-10');
+    expect(currentMonthKey(new Date(2026, 10, 1, 0, 5))).toBe('2026-11');
+    expect(currentMonthKey(new Date(2026, 0, 15, 12))).toBe('2026-01');
+  });
+
+  it('hands the phone calendar to the functions that read UTC', () => {
+    // Built from local fields, so it holds in any time zone.
+    const late = localNow(new Date(2026, 9, 31, 22, 30, 15));
+    expect(late.toISOString()).toBe('2026-10-31T22:30:15.000Z');
+    expect(late.getUTCDate()).toBe(31);
+    expect(monthKey(late)).toBe('2026-10');
   });
 
   it('finds the previous month, across a year', () => {

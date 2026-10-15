@@ -1,25 +1,12 @@
-import { type SQLiteDatabase } from 'expo-sqlite';
-
+import { api } from '@/api/client';
+import { type ApiCategoryBudget } from '@/api/types';
 import { type CategoryBudgetEntry } from '@/utils/categoryBudget';
 
-export async function getCategoryBudgetEntries(db: SQLiteDatabase): Promise<CategoryBudgetEntry[]> {
-  const rows = await db.getAllAsync<{ category_id: string; month: string; amount: number | null }>(
-    'SELECT category_id, month, amount FROM category_budgets ORDER BY month ASC'
-  );
-  return rows.map((r) => ({ categoryId: r.category_id, month: r.month, amount: r.amount }));
+export function getCategoryBudgetEntries(): Promise<CategoryBudgetEntry[]> {
+  return api<ApiCategoryBudget[]>('GET', '/v1/budgets/categories');
 }
 
 // The limit applies from `month` on, until the next change. A null amount removes it from then on.
-export async function setCategoryBudgetFrom(
-  db: SQLiteDatabase,
-  categoryId: string,
-  month: string,
-  amount: number | null
-): Promise<void> {
-  await db.runAsync(
-    'INSERT OR REPLACE INTO category_budgets (category_id, month, amount) VALUES (?, ?, ?)',
-    categoryId,
-    month,
-    amount
-  );
+export async function setCategoryBudgetFrom(categoryId: string, month: string, amount: number | null): Promise<void> {
+  await api('PUT', `/v1/budgets/categories/${encodeURIComponent(categoryId)}/${month}`, { body: { amount } });
 }

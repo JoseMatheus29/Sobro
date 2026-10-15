@@ -8,6 +8,8 @@ import { useColors } from '@/hooks/useColors';
 import { useInsights } from '@/db/hooks';
 import { MONTH_NAMES } from '@/utils/month';
 import EmptyState from '@/app/components/ui/EmptyState';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import { CLOSE_LABEL, SHEET_DIM_COLOR } from '@/types/registrationSpent/registrationSpent-type';
 import InsightItem from '@/app/insights/components/InsightItem';
 import {
@@ -23,8 +25,8 @@ export default function InsightsSheet() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { insights } = useInsights();
-  const month = MONTH_NAMES[new Date().getUTCMonth()];
+  const { insights, loading, error, refetch } = useInsights();
+  const month = MONTH_NAMES[new Date().getMonth()];
 
   return (
     <View className="flex-1" style={{ backgroundColor: SHEET_DIM_COLOR }}>
@@ -53,7 +55,11 @@ export default function InsightsSheet() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {insights.length === 0 ? (
+          {error ? (
+            <LoadError error={error} onRetry={() => refetch()} />
+          ) : loading ? (
+            <LoadingBlock />
+          ) : insights.length === 0 ? (
             <EmptyState icon="lightbulb-outline" message={EMPTY_INSIGHTS_MESSAGE} />
           ) : (
             insights.map((insight) => <InsightItem key={insight.id} insight={insight} />)

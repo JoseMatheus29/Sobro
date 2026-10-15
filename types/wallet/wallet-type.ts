@@ -74,3 +74,8 @@ export const DELETE_ACCOUNT_CONFIRM = (name: string, transactions: number, recur
   destructive: true,
 });
 export const ACCOUNT_DELETED_TOAST = { type: 'success', title: 'Conta excluída', icon: 'delete-outline' } as const;
+
+// Errors of the account dialog and of deleting one.
+export const SAVE_FAILED_MESSAGE = 'Não foi possível salvar a conta.';
+export const INVALID_BALANCE_MESSAGE = 'Informe um saldo inicial válido.';
+export const DELETE_FAILED_TITLE = 'Não foi possível excluir a conta';

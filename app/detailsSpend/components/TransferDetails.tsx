@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
-import { deleteTransfer, getTransferLegs, type TransactionRecord } from '@/db/transactions';
+import { useTransferLegs } from '@/db/hooks';
+import { deleteTransfer, type TransactionRecord } from '@/db/transactions';
+import { errorToast } from '@/utils/apiErrors';
 import { formatLongDate, formatMoney } from '@/utils/format';
 import ArrowBack from '@/app/components/arrowBack';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
@@ -16,6 +17,7 @@ import {
   TRANSFER_DELETE_CONFIRM,
   TRANSFER_DELETE_LABEL,
   TRANSFER_DELETED_TOAST,
+  TRANSFER_DELETE_FAILED_TITLE,
   TRANSFER_FROM_LABEL,
   TRANSFER_HINT,
   TRANSFER_NOTE_LABEL,
@@ -29,15 +31,11 @@ import { tint } from '@/utils/color';
 export default function TransferDetails({ transaction }: { transaction: TransactionRecord }) {
   const colors = useColors();
   const router = useRouter();
-  const db = useSQLiteContext();
   const { confirm, showToast } = useFeedback();
-  const [legs, setLegs] = useState<TransactionRecord[]>([]);
 
+  // Both legs share their date, so they are both in the transfers of that month.
   const transferId = transaction.transferId;
-  useEffect(() => {
-    if (transferId == null) return;
-    getTransferLegs(db, transferId).then(setLegs);
-  }, [db, transferId]);
+  const { legs } = useTransferLegs(transferId, transaction.occurredAt.slice(0, 7));
 
   const outgoing = legs.find((l) => l.type === 'expense');
   const incoming = legs.find((l) => l.type === 'income');
@@ -45,7 +43,13 @@ export default function TransferDetails({ transaction }: { transaction: Transact
 
   const handleDelete = async () => {
     if (transferId == null || !(await confirm(TRANSFER_DELETE_CONFIRM))) return;
-    await deleteTransfer(db, transferId);
+    try {
+      // Either leg: the server takes away both.
+      await deleteTransfer(transaction.id);
+    } catch (error) {
+      showToast(errorToast(error, TRANSFER_DELETE_FAILED_TITLE));
+      return;
+    }
     notifyDataChanged();
     showToast(TRANSFER_DELETED_TOAST);
     router.back();

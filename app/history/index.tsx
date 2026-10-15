@@ -8,6 +8,8 @@ import { useColors } from '@/hooks/useColors';
 import { useFutureMonths, useMonthlyHistory } from '@/db/hooks';
 import { countKeptMonths } from '@/utils/history';
 import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import { CLOSE_LABEL, SHEET_DIM_COLOR } from '@/types/registrationSpent/registrationSpent-type';
 import FutureMonthRow from '@/app/history/components/FutureMonthRow';
 import MonthRow from '@/app/history/components/MonthRow';
@@ -19,7 +21,7 @@ export default function HistorySheet() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { history } = useMonthlyHistory();
+  const { history, loading, error, refetch } = useMonthlyHistory();
   const future = useFutureMonths();
   const { month, setMonth } = useSelectedMonth();
   const { kept, total } = countKeptMonths(history);
@@ -51,7 +53,12 @@ export default function HistorySheet() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {future.length > 0 && (
+          {error ? (
+            <LoadError error={error} onRetry={() => refetch()} />
+          ) : loading ? (
+            <LoadingBlock />
+          ) : null}
+          {!error && !loading && future.length > 0 && (
             <>
               <Text className="text-[11px] font-bold tracking-[1px] uppercase text-muted mt-1 mb-2">{FUTURE_SECTION}</Text>
               {[...future].reverse().map((entry) => (
@@ -68,7 +75,7 @@ export default function HistorySheet() {
               <Text className="text-[11px] font-bold tracking-[1px] uppercase text-muted mt-3 mb-2">{PAST_SECTION}</Text>
             </>
           )}
-          {history.map((entry) => (
+          {!error && !loading && history.map((entry) => (
             <MonthRow
               key={entry.month}
               entry={entry}

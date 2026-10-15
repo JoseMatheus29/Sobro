@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSQLiteContext } from 'expo-sqlite';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { createGoal, updateGoal } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useCategoryColor, useColors } from '@/hooks/useColors';
+import { useSaveKey } from '@/hooks/useSaveKey';
+import { roundAmount } from '@/utils/apiInput';
+import { errorMessage } from '@/utils/apiErrors';
 import { GOAL_DEFAULT_MONTHS_AHEAD, GOAL_MAX_MONTHS_AHEAD, GOAL_NAME_MAX_LENGTH } from '@/utils/goals-type';
-import { addMonths, monthKey, monthsBetween, monthTitle } from '@/utils/month';
+import { addMonths, currentMonthKey, monthsBetween, monthTitle } from '@/utils/month';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import {
   CANCEL_LABEL,
@@ -21,6 +23,7 @@ import {
   GOAL_ICONS,
   GOAL_NAME_LABEL,
   GOAL_NAME_PLACEHOLDER,
+  GOAL_SAVE_FAILED,
   GOAL_SAVED_TOAST,
   GOAL_TARGET_LABEL,
   GOAL_TARGET_PLACEHOLDER,
@@ -42,10 +45,10 @@ const INPUT_CLASS = 'bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5 
 export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalFormModalProps) {
   const colors = useColors();
   const recolor = useCategoryColor();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
   const { showToast } = useFeedback();
   const isEditing = !!goal;
-  const currentMonth = monthKey(new Date());
+  const currentMonth = currentMonthKey();
 
   const [name, setName] = useState('');
   const [target, setTarget] = useState('');
@@ -79,19 +82,27 @@ export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalF
     if (!trimmed) return setError(NAME_REQUIRED);
     if (!Number.isFinite(amount) || amount <= 0) return setError(TARGET_REQUIRED);
 
+    setError(null);
     setSaving(true);
-    const input = { name: trimmed, targetAmount: amount, targetMonth, color, icon };
-    let id: number;
-    if (goal) {
-      await updateGoal(db, goal.id, input);
-      id = goal.id;
-    } else {
-      id = await createGoal(db, input);
+    try {
+      const input = { name: trimmed, targetAmount: roundAmount(amount), targetMonth, color, icon };
+      let id: number;
+      if (goal) {
+        await updateGoal(goal.id, input);
+        id = goal.id;
+      } else {
+        id = await createGoal(input, saveKey.keyFor(input));
+        saveKey.clear();
+      }
+      notifyDataChanged();
+      onSaved(id);
+      showToast(goal ? GOAL_SAVED_TOAST : GOAL_CREATED_TOAST(trimmed));
+    } catch (failure) {
+      // Inside the dialog: a toast would be drawn behind the Modal.
+      setError(errorMessage(failure, GOAL_SAVE_FAILED));
+    } finally {
+      setSaving(false);
     }
-    notifyDataChanged();
-    setSaving(false);
-    onSaved(id);
-    showToast(goal ? GOAL_SAVED_TOAST : GOAL_CREATED_TOAST(trimmed));
   };
 
   const tone = recolor(color);

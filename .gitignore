@@ -39,3 +39,5 @@ yarn-error.*
 
 app-example
 BACKLOG.md
+# local env (the example stays)
+.env

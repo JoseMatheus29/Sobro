@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSQLiteContext } from 'expo-sqlite';
 
 import { addGoalEntry } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
+import { useSaveKey } from '@/hooks/useSaveKey';
+import { roundAmount } from '@/utils/apiInput';
+import { errorMessage } from '@/utils/apiErrors';
 import { formatMoney } from '@/utils/format';
 import { movementProblem } from '@/utils/goals';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
@@ -18,6 +20,7 @@ import {
   GOAL_REACHED_TOAST,
   INVALID_AMOUNT,
   MOVEMENT_AMOUNT_LABEL,
+  MOVEMENT_FAILED,
   MOVEMENT_PLACEHOLDER,
   MovementModalProps,
   WITHDRAW_SUBMIT,
@@ -28,7 +31,7 @@ import {
 // Puts money in a caixinha or takes it out. Only what is in it can come out.
 export default function MovementModal({ visible, kind, goal, onClose }: MovementModalProps) {
   const colors = useColors();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
   const { showToast } = useFeedback();
   const deposit = kind === 'deposit';
 
@@ -52,8 +55,20 @@ export default function MovementModal({ visible, kind, goal, onClose }: Movement
     if (problem === 'invalid') return setError(INVALID_AMOUNT);
     if (problem === 'exceeds') return setError(EXCEEDS(formatMoney(goal.saved)));
 
+    setError(null);
     setSaving(true);
-    await addGoalEntry(db, { goalId: goal.id, amount: deposit ? value : -value, occurredAt: new Date().toISOString() });
+    try {
+      // The only signed amount of the API: positive puts money in, negative takes it out.
+      const input = { goalId: goal.id, amount: roundAmount(deposit ? value : -value) };
+      await addGoalEntry(input, saveKey.keyFor(input));
+      saveKey.clear();
+    } catch (failure) {
+      // Inside the dialog: a toast would be drawn behind the Modal. The server's own message says how
+      // much there is to take out when two phones took from the same caixinha.
+      setError(errorMessage(failure, MOVEMENT_FAILED));
+      setSaving(false);
+      return;
+    }
     notifyDataChanged();
     setSaving(false);
     onClose();

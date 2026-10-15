@@ -8,17 +8,20 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCards, useCategories } from '@/db/hooks';
 import { notifyDataChanged } from '@/db/events';
-import { createRecurrence, materializeDueRecurrences } from '@/db/recurrences';
 import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
 import { createTransaction } from '@/db/transactions';
-import { monthKey } from '@/utils/month';
+import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
+import { errorToast } from '@/utils/apiErrors';
+import { useSaveKey } from '@/hooks/useSaveKey';
+import { type RepeatInput } from '@/api/types';
 import { type RepeatMode } from '@/utils/recurrence-type';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import AmountStep from '@/app/registrationSpent/components/AmountStep';
 import CategoryStep from '@/app/registrationSpent/components/CategoryStep';
 import DetailsStep from '@/app/registrationSpent/components/DetailsStep';
@@ -29,6 +32,7 @@ import {
   FlowStep,
   SAVE_LABELS,
   REPEATING_TOAST_SUFFIX,
+  SAVE_FAILED_TITLE,
   SAVED_TITLES,
   SHEET_DIM_COLOR,
   SHEET_TOP_GAP,
@@ -44,10 +48,10 @@ export default function RegistrationSpent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showToast } = useFeedback();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
 
-  const { categories, refetch: refetchCategories } = useCategories();
-  const { cards } = useCards();
+  const { categories, loading: loadingCategories, error: categoriesError, refetch: refetchCategories } = useCategories();
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
 
   const [step, setStep]               = useState<FlowStep>(1);
   const [type, setType]               = useState<TxType>('expense');
@@ -61,6 +65,7 @@ export default function RegistrationSpent() {
   const [installments, setInstallments] = useState(10);
   const [currentInstallment, setCurrentInstallment] = useState(1);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true));
@@ -115,51 +120,51 @@ export default function RegistrationSpent() {
   };
 
   const handleSalvar = async () => {
+    if (saving) return;
     const invalid = (message: string) => showToast({ type: 'error', title: message });
     if (!amount) return invalid(VALIDATION_MESSAGES.amount);
     if (!selectedCat) return invalid(VALIDATION_MESSAGES.category);
     if (!selectedCardId) return invalid(VALIDATION_MESSAGES.card);
     if (!nome.trim()) return invalid(VALIDATION_MESSAGES.name);
 
-    // Only an expense repeats. The transaction made here is the first occurrence; the following
-    // ones are made by the app when they fall due, and show up as planned until then.
+    // Only an expense repeats. The transaction made here is the first occurrence; the server makes the
+    // following ones when they fall due, and they show up as planned until then.
     const repeating = type === 'expense' && repeat !== 'none';
-    const total = repeat === 'installments' ? installments : null;
-    const firstInstallment = total !== null ? currentInstallment : 1;
-    const value = parseInt(amount, 10) / 100;
+    const repeatInput: RepeatInput | undefined = !repeating
+      ? undefined
+      : repeat === 'installments'
+        ? { mode: 'installments', total: installments, current: currentInstallment }
+        : { mode: 'monthly' };
 
-    const recurrenceId = repeating
-      ? await createRecurrence(db, {
-          cardId: selectedCardId,
-          categoryId: selectedCat,
-          name: nome.trim(),
-          description: descricao.trim() || undefined,
-          amount: value,
-          day: date.getUTCDate(),
-          startMonth: monthKey(date),
-          firstInstallment,
-          total,
-        })
-      : undefined;
-
-    await createTransaction(db, {
+    const input = {
       cardId: selectedCardId,
       categoryId: selectedCat,
       name: nome.trim(),
       description: descricao.trim() || undefined,
-      amount: value,
+      amount: centsToAmount(parseInt(amount, 10)),
       type,
-      occurredAt: date.toISOString(),
-      recurrenceId,
-      installment: recurrenceId !== undefined && total !== null ? firstInstallment : undefined,
-    });
+      // The day on the phone's calendar, not an instant: at 22h in Brazil it is already tomorrow in UTC.
+      occurredAt: calendarDayAtNoonUtc(date),
+      ...(repeatInput ? { repeat: repeatInput } : {}),
+    };
 
-    // A plan registered with a past date may already have occurrences that fell due since then.
-    if (repeating && (await materializeDueRecurrences(db)) > 0) notifyDataChanged();
+    setSaving(true);
+    try {
+      // The same key on a retry of the same form, so a lost answer never makes two transactions.
+      await createTransaction(input, saveKey.keyFor(input));
+      saveKey.clear();
+    } catch (error) {
+      // The form stays as it is, so the person can try again.
+      showToast(errorToast(error, SAVE_FAILED_TITLE));
+      setSaving(false);
+      return;
+    }
+
+    notifyDataChanged();
     // The first recurrence is the moment to ask to notify, in context; the reminders follow what is planned.
     if (repeating) {
       await ensureReminderPermission();
-      await refreshReminders(db);
+      await refreshReminders();
     }
 
     // The toast lives above the navigator, so it stays on screen after the sheet closes.
@@ -197,7 +202,11 @@ export default function RegistrationSpent() {
           />
         )}
 
-        {step === 2 && (
+        {step === 2 && categoriesError ? (
+          <LoadError error={categoriesError} onRetry={() => refetchCategories()} />
+        ) : step === 2 && loadingCategories && categories.length === 0 ? (
+          <LoadingBlock />
+        ) : step === 2 ? (
           <CategoryStep
             type={type}
             categories={visibleCategories}
@@ -207,9 +216,13 @@ export default function RegistrationSpent() {
             onPick={handlePickCategory}
             onCategoryCreated={refetchCategories}
           />
-        )}
+        ) : null}
 
-        {step === 3 && (
+        {step === 3 && cardsError ? (
+          <LoadError error={cardsError} onRetry={() => refetchCards()} />
+        ) : step === 3 && loadingCards && cards.length === 0 ? (
+          <LoadingBlock />
+        ) : step === 3 ? (
           <>
             <DetailsStep
               typeColor={typeColor}
@@ -235,12 +248,12 @@ export default function RegistrationSpent() {
             <FlowButton
               label={SAVE_LABELS[type]}
               type={type}
-              disabled={!amount || !selectedCat || !selectedCardId || !nome.trim()}
+              disabled={!amount || !selectedCat || !selectedCardId || !nome.trim() || saving}
               compact={keyboardVisible}
               onPress={handleSalvar}
             />
           </>
-        )}
+        ) : null}
       </KeyboardAvoidingView>
     </View>
   );

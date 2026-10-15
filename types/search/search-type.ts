@@ -12,6 +12,7 @@ export const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
 export const ALL_CATEGORIES_LABEL = 'Todas as categorias';
 
 export const RESULTS_LABEL = (count: number) => (count === 1 ? '1 transação' : `${count} transações`);
+export const MORE_THAN_LABEL = (max: number) => `Mais de ${max} transações`;
 export const TOTAL_LABEL = 'Total';
 export const EMPTY_RESULTS_MESSAGE = 'Nenhuma transação encontrada para essa busca';
 export const EMPTY_ALL_MESSAGE = 'Suas transações aparecem aqui';
@@ -19,4 +20,5 @@ export const EMPTY_ALL_MESSAGE = 'Suas transações aparecem aqui';
 // Rendering thousands of rows at once would make the sheet slow: only the most recent are listed.
 export const MAX_RESULTS = 100;
 export const LIMITED_NOTE = (max: number) => `Mostrando as ${max} mais recentes. Refine a busca para ver as outras.`;
-export const SEARCH_DEBOUNCE_MS = 200;
+// The server does the searching, so the typing is waited for a little longer than a local filter needed.
+export const SEARCH_DEBOUNCE_MS = 300;

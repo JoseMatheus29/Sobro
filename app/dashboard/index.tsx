@@ -6,6 +6,8 @@ import SideBar from '@/app/components/sidebar';
 import AddTransactionFab from '@/app/components/AddTransactionFab';
 import { SCROLL_PADDING_WITH_FAB } from '@/types/components/sidebar-type';
 import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import CardBalance from '@/app/dashboard/components/CardBalance';
 import DashboardHeader from '@/app/dashboard/components/DashboardHeader';
@@ -29,14 +31,14 @@ import { useBudgetEntries, useCategoryBudgets, useMonthTransactions, useProfile,
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { generateInsights } from '@/utils/insightRules';
-import { monthEnd, monthKeyWithYear, monthNameOf } from '@/utils/month';
+import { localNow, monthEnd, monthKeyWithYear, monthNameOf } from '@/utils/month';
 import { buildSummary } from '@/utils/summary';
 
 export default function DashboardScreen() {
   const router = useRouter();
 
   const { month, isCurrent, isFuture } = useSelectedMonth();
-  const { current, previous } = useMonthTransactions(month);
+  const { current, previous, loading: loadingMonth, error: monthError, refetch: refetchMonth } = useMonthTransactions(month);
   const { transactions: recent } = useTransactions({ month, limit: RECENT_MAX });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
@@ -46,14 +48,14 @@ export default function DashboardScreen() {
   // day: it is compared with the whole of the month before it.
   const budget = budgetForMonth(budgetEntries, month);
   const summary = useMemo(
-    () => buildSummary({ current, previous, budget, now: isCurrent ? new Date() : monthEnd(month) }),
+    () => buildSummary({ current, previous, budget, now: isCurrent ? localNow() : monthEnd(month) }),
     [current, previous, budget, isCurrent, month]
   );
   // The tips are about the month in progress.
   const insights = useMemo(
     () =>
       isCurrent
-        ? generateInsights({ current, previous, now: new Date(), limits: limitsForMonth(limitEntries, month) })
+        ? generateInsights({ current, previous, now: localNow(), limits: limitsForMonth(limitEntries, month) })
         : [],
     [current, previous, isCurrent, limitEntries, month]
   );
@@ -79,49 +81,62 @@ export default function DashboardScreen() {
         </View>
 
         <View className="px-5" style={{ marginTop: -SUMMARY_OVERLAP }}>
-          {isFuture ? (
-            <PlannedCard summary={summary} budget={budget} />
+          {monthError && current.length === 0 ? (
+            // The month could not be read: nothing is shown as if it had loaded (a balance of zero would be a lie).
+            <View className="bg-card rounded-[24px]">
+              <LoadError error={monthError} onRetry={() => refetchMonth()} />
+            </View>
+          ) : loadingMonth ? (
+            <View className="bg-card rounded-[24px]">
+              <LoadingBlock />
+            </View>
           ) : (
-            <CardBalance
-              summary={summary}
-              budget={budget}
-              onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
-            />
-          )}
+            <>
+              {isFuture ? (
+                <PlannedCard summary={summary} budget={budget} />
+              ) : (
+                <CardBalance
+                  summary={summary}
+                  budget={budget}
+                  onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
+                />
+              )}
 
-          {!isFuture && (
-            <View style={{ marginTop: SECTION_GAP }}>
-              <FlowSection summary={summary} monthLabel={monthKeyWithYear(month)} />
-            </View>
-          )}
+              {!isFuture && (
+                <View style={{ marginTop: SECTION_GAP }}>
+                  <FlowSection summary={summary} monthLabel={monthKeyWithYear(month)} />
+                </View>
+              )}
 
-          {insights.length > 0 && (
-            <View style={{ marginTop: SECTION_GAP }}>
-              <InsightHighlight
-                insight={insights[0]}
-                count={insights.length}
-                onPress={() => router.push('/insights')}
-              />
-            </View>
-          )}
+              {insights.length > 0 && (
+                <View style={{ marginTop: SECTION_GAP }}>
+                  <InsightHighlight
+                    insight={insights[0]}
+                    count={insights.length}
+                    onPress={() => router.push('/insights')}
+                  />
+                </View>
+              )}
 
-          <View
-            style={{ marginTop: SECTION_GAP }}
-            onLayout={(e: LayoutChangeEvent) => setRecentsTop(e.nativeEvent.layout.y)}
-          >
-            <RecentTransactions
-              title={
-                isFuture
-                  ? PLANNED_TITLE(monthNameOf(month))
-                  : isCurrent
-                    ? RECENT_TITLE
-                    : RECENT_MONTH_TITLE(monthNameOf(month))
-              }
-              transactions={recent.slice(0, recentCount)}
-              onSeeAll={() => router.push('/wallet')}
-              onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-            />
-          </View>
+              <View
+                style={{ marginTop: SECTION_GAP }}
+                onLayout={(e: LayoutChangeEvent) => setRecentsTop(e.nativeEvent.layout.y)}
+              >
+                <RecentTransactions
+                  title={
+                    isFuture
+                      ? PLANNED_TITLE(monthNameOf(month))
+                      : isCurrent
+                        ? RECENT_TITLE
+                        : RECENT_MONTH_TITLE(monthNameOf(month))
+                  }
+                  transactions={recent.slice(0, recentCount)}
+                  onSeeAll={() => router.push('/wallet')}
+                  onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+                />
+              </View>
+            </>
+          )}
         </View>
       </ScreenScroll>
 

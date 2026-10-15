@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Keyboard, Modal, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import InlineError from '@/app/components/ui/InlineError';
 import { useColors } from '@/hooks/useColors';
 import { DIALOG_DIM_COLOR } from '@/types/components/feedback/feedback-type';
 import {
@@ -20,6 +21,7 @@ export default function LimitSheet({
   categoryName,
   initialValue,
   hasLimit,
+  error,
   onSave,
   onRemove,
   onClose,
@@ -66,6 +68,12 @@ export default function LimitSheet({
             />
           </View>
           <Text className="text-xs text-muted mt-2">{LIMIT_SHEET_HINT}</Text>
+
+          {error ? (
+            <View className="mt-3">
+              <InlineError message={error} />
+            </View>
+          ) : null}
 
           <TouchableOpacity
             onPress={() => onSave(amount)}

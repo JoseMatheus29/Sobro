@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useSQLiteContext } from 'expo-sqlite';
 
+import InlineError from '@/app/components/ui/InlineError';
 import { useColors } from '@/hooks/useColors';
+import { useSaveKey } from '@/hooks/useSaveKey';
 import { createCategory } from '@/db/categories';
+import { notifyDataChanged } from '@/db/events';
+import { errorMessage } from '@/utils/apiErrors';
+import { CATEGORY_SAVE_FAILED_MESSAGE } from '@/types/registrationSpent/registrationSpent-type';
 
 const ICON_OPTIONS = [
   'shopping-cart', 'home', 'pets', 'flight', 'school', 'fitness-center',
@@ -31,13 +35,16 @@ interface NewCategoryModalProps {
 
 export default function NewCategoryModal({ visible, onClose, onCreated }: NewCategoryModalProps) {
   const colors = useColors();
-  const db = useSQLiteContext();
+  const saveKey = useSaveKey();
   const [name, setName] = useState('');
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [color, setColor] = useState(COLOR_OPTIONS[0]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
+    setError(null);
+    saveKey.clear();
     setName('');
     setIcon(ICON_OPTIONS[0]);
     setColor(COLOR_OPTIONS[0]);
@@ -50,11 +57,19 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
 
   const handleCreate = async () => {
     if (!name.trim()) return;
+    setError(null);
     setSaving(true);
-    const id = await createCategory(db, { name: name.trim(), icon, color, bg: hexToRgba(color, 0.12) });
-    setSaving(false);
-    reset();
-    onCreated(id);
+    try {
+      const input = { name: name.trim(), icon, color, bg: hexToRgba(color, 0.12) };
+      const id = await createCategory(input, saveKey.keyFor(input));
+      notifyDataChanged();
+      reset();
+      onCreated(id);
+    } catch (failure) {
+      setError(errorMessage(failure, CATEGORY_SAVE_FAILED_MESSAGE));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -105,6 +120,8 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
               );
             })}
           </View>
+
+          <InlineError message={error} />
 
           <View className="flex-row gap-3">
             <TouchableOpacity

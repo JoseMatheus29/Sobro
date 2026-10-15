@@ -7,6 +7,7 @@ import { FieldProps } from '@/types/editAcount/editAcount-type';
 export default function Field({
   label, placeholder, value, onChangeText,
   icon, keyboardType = 'default', secure = false, autoCapitalize = 'none',
+  error, autoComplete, maxLength, returnKeyType, onSubmitEditing,
 }: FieldProps) {
   const colors = useColors();
   const [focused, setFocused] = useState(false);
@@ -17,8 +18,11 @@ export default function Field({
       <Text className="text-[11px] font-bold text-primary-lighter tracking-[0.8px] uppercase mb-1.5">
         {label}
       </Text>
-      <View className={`flex-row items-center bg-canvas rounded-2xl border-[1.5px] px-3.5 h-[52px] ${focused ? 'border-primary' : 'border-line'}`}>
-        <Icon name={icon} size={18} color={focused ? colors.primary.DEFAULT : colors.subtle} />
+      <View
+        className={`flex-row items-center bg-canvas rounded-2xl border-[1.5px] px-3.5 h-[52px] ${focused ? 'border-primary' : 'border-line'}`}
+        style={error ? { borderColor: colors.expense } : undefined}
+      >
+        <Icon name={icon} size={18} color={error ? colors.expense : focused ? colors.primary.DEFAULT : colors.subtle} />
         <TextInput
           className="flex-1 ml-2.5 text-[15px] text-ink"
           placeholder={placeholder}
@@ -28,6 +32,10 @@ export default function Field({
           keyboardType={keyboardType}
           secureTextEntry={secure && !showSecure}
           autoCapitalize={autoCapitalize}
+          autoComplete={autoComplete}
+          maxLength={maxLength}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
         />
@@ -37,6 +45,11 @@ export default function Field({
           </TouchableOpacity>
         )}
       </View>
+      {error ? (
+        <Text className="text-[12px] mt-1.5" style={{ color: colors.expense }}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }

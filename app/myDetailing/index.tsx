@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 
 import SideBar from '@/app/components/sidebar';
 import AddTransactionFab from '@/app/components/AddTransactionFab';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import MonthPill from '@/app/components/month/MonthPill';
 import { useSelectedMonth } from '@/app/components/month/MonthProvider';
+import LoadError from '@/app/components/ui/LoadError';
+import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import PickerSheet from '@/app/components/ui/PickerSheet';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
@@ -18,15 +19,19 @@ import ExpenseChart from '@/app/myDetailing/components/ExpenseChart';
 import LimitSheet from '@/app/myDetailing/components/LimitSheet';
 import MonthlyProgress from '@/app/myDetailing/components/MonthlyProgress';
 import { setCategoryBudgetFrom } from '@/db/categoryBudgets';
+import { notifyDataChanged } from '@/db/events';
 import { useBudgetEntries, useCategories, useCategoryBudgets, useCategoryTotals, useTransactions } from '@/db/hooks';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { formatShortDate } from '@/utils/format';
-import { monthKey } from '@/utils/month';
+import { currentMonthKey } from '@/utils/month';
+import { errorMessage } from '@/utils/apiErrors';
+import { type ToastOptions } from '@/types/components/feedback/feedback-type';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { withoutTransfers } from '@/utils/transfer';
 import {
   EMPTY_TRANSACTIONS_MESSAGE,
+  LIMIT_FAILED_MESSAGE,
   LIMIT_INVALID_TOAST,
   LIMIT_PICKER_TITLE,
   LIMIT_REMOVED_TOAST,
@@ -36,17 +41,21 @@ import {
 
 export default function MyDetailing() {
   const router = useRouter();
-  const db = useSQLiteContext();
   const { showToast } = useFeedback();
   const { month, isCurrent } = useSelectedMonth();
 
-  const { transactions } = useTransactions({ month });
-  const { totals: categoryTotals } = useCategoryTotals({ month });
+  const { transactions, loading: loadingTransactions, error: transactionsError, refetch: refetchTransactions } = useTransactions({ month });
+  const { totals: categoryTotals, loading: loadingTotals, error: totalsError, refetch: refetchTotals } = useCategoryTotals({ month });
+  // The chart, the progress and the list all depend on the month's figures: until they come (or fail) none is drawn.
+  const detailError = transactionsError ?? totalsError;
+  const detailLoading = loadingTransactions || loadingTotals;
   const { entries: budgetEntries } = useBudgetEntries();
-  const { entries: limitEntries, refetch: refetchLimits } = useCategoryBudgets();
+  const { entries: limitEntries } = useCategoryBudgets();
   const { categories } = useCategories();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  // Inside the limit dialog: a toast would be drawn behind it.
+  const [limitError, setLimitError] = useState<string | null>(null);
 
   const totalGastos = categoryTotals.reduce((sum, c) => sum + c.total, 0);
   const pieData = categoryTotals.map((c) => ({
@@ -78,24 +87,33 @@ export default function MyDetailing() {
   const editing = expenseCategories.find((c) => c.id === editingId) ?? null;
   const editingLimit = editingId ? limits[editingId] : undefined;
 
+  // The limit applies from the current month on; the months already over keep the one they had.
+  const saveLimit = async (amount: number | null, done: ToastOptions) => {
+    if (!editingId) return;
+    setLimitError(null);
+    try {
+      await setCategoryBudgetFrom(editingId, currentMonthKey(), amount);
+      await notifyDataChanged();
+    } catch (error) {
+      setLimitError(errorMessage(error, LIMIT_FAILED_MESSAGE));
+      return;
+    }
+    setEditingId(null);
+    showToast(done);
+  };
+
   const handleSaveLimit = async (amount: number) => {
     if (!editingId) return;
     if (!Number.isFinite(amount) || amount <= 0) {
       showToast(LIMIT_INVALID_TOAST);
       return;
     }
-    await setCategoryBudgetFrom(db, editingId, monthKey(new Date()), amount);
-    await refetchLimits();
-    setEditingId(null);
-    showToast(LIMIT_SAVED_TOAST);
+    await saveLimit(amount, LIMIT_SAVED_TOAST);
   };
 
   const handleRemoveLimit = async () => {
     if (!editingId) return;
-    await setCategoryBudgetFrom(db, editingId, monthKey(new Date()), null);
-    await refetchLimits();
-    setEditingId(null);
-    showToast(LIMIT_REMOVED_TOAST);
+    await saveLimit(null, LIMIT_REMOVED_TOAST);
   };
 
   const displayTransactions = withoutTransfers(transactions)
@@ -127,28 +145,49 @@ export default function MyDetailing() {
         </ScreenHeader>
 
         <View className="-mt-7">
-          <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
+          {detailError ? (
+            <View className="mx-4 bg-card rounded-[24px]">
+              <LoadError
+                error={detailError}
+                onRetry={() => {
+                  refetchTransactions();
+                  refetchTotals();
+                }}
+              />
+            </View>
+          ) : detailLoading ? (
+            <View className="mx-4 bg-card rounded-[24px]">
+              <LoadingBlock />
+            </View>
+          ) : (
+            <>
+              <ExpenseChart pieData={pieData} totalGastos={totalGastos} />
 
-          <MonthlyProgress
-            totalGastos={totalGastos}
-            progress={progress}
-            percentage={percentage}
-            hasBudget={hasBudget}
-          />
+              <MonthlyProgress
+                totalGastos={totalGastos}
+                progress={progress}
+                percentage={percentage}
+                hasBudget={hasBudget}
+              />
 
-          <CategoryLimits
-            rows={limitRows}
-            canEdit={isCurrent}
-            onPressRow={setEditingId}
-            onAdd={() => setPicking(true)}
-          />
+              <CategoryLimits
+                rows={limitRows}
+                canEdit={isCurrent}
+                onPressRow={(id) => {
+                  setLimitError(null);
+                  setEditingId(id);
+                }}
+                onAdd={() => setPicking(true)}
+              />
 
-          <TransactionList
-            title="Seus Gastos"
-            emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
-            transactions={displayTransactions}
-            onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
-          />
+              <TransactionList
+                title="Seus Gastos"
+                emptyMessage={EMPTY_TRANSACTIONS_MESSAGE}
+                transactions={displayTransactions}
+                onPressItem={(id) => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(id) } })}
+              />
+            </>
+          )}
         </View>
       </ScreenScroll>
 
@@ -157,6 +196,7 @@ export default function MyDetailing() {
         categoryName={editing?.name ?? ''}
         initialValue={editingLimit !== undefined ? String(editingLimit) : ''}
         hasLimit={editingLimit !== undefined}
+        error={limitError}
         onSave={handleSaveLimit}
         onRemove={handleRemoveLimit}
         onClose={() => setEditingId(null)}
