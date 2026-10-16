@@ -12,7 +12,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sobro-api-b00e8bca72f0.herokuapp.com"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -21,13 +22,15 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sobro-api-b00e8bca72f0.herokuapp.com"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://sobro-api-b00e8bca72f0.herokuapp.com"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
