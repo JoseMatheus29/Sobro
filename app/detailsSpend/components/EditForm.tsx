@@ -26,7 +26,7 @@ const INPUT_CLASS = 'text-base font-medium text-ink mt-0.5';
 
 export default function EditForm({
   typeColor, type, setType, amount, setAmount, name, setName, category, card, date,
-  description, setDescription, onPickCategory, onPickCard, onPickDate, showPayment, payment, setPayment,
+  description, setDescription, onPickCategory, onPickCard, onPickDate, showPayment, creditAvailable, payment, setPayment,
 }: EditFormProps) {
   const colors = useColors();
   const cents = parseInt(amount || '0', 10) || 0;
@@ -109,8 +109,8 @@ export default function EditForm({
       {showPayment && (
         <DetailRow icon="credit-card" color={colors.primary.DEFAULT} label={FIELD_LABELS.payment}>
           <View className="mt-1.5 pb-1">
-            <PaymentMethodToggle value={payment} onChange={setPayment} />
-            <Text className="text-xs leading-[17px] text-muted mt-2">{PAYMENT_EDIT_HINT}</Text>
+            <PaymentMethodToggle value={payment} onChange={setPayment} creditAvailable={creditAvailable} />
+            {creditAvailable && <Text className="text-xs leading-[17px] text-muted mt-2">{PAYMENT_EDIT_HINT}</Text>}
           </View>
         </DetailRow>
       )}

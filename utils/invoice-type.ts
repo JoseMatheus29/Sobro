@@ -21,13 +21,13 @@ export interface Invoice {
   opensOn: string;
   closesOn: string;
   dueOn: string;
-  /** What was bought in the cycle (positive); planned installments are not in it. */
+  /** What the invoice comes to (positive): what was bought in the cycle plus what is already planned for it. */
   total: number;
   /** What was already paid of it (positive). */
   paid: number;
-  /** What is left to pay: never negative. */
+  /** What is left to pay of what was already bought (never negative): the planned part cannot be paid yet. */
   remaining: number;
-  /** Installments and recurring purchases that fall in the cycle but were not made yet (positive). */
+  /** The part of `total` that is installments and recurring purchases not made yet (positive). */
   plannedTotal: number;
   status: InvoiceStatus;
   /** The purchases of the cycle, newest first, with the planned ones marked `planned`. */

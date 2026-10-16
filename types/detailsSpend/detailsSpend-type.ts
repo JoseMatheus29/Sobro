@@ -34,8 +34,10 @@ export interface EditFormProps {
   onPickCategory: () => void;
   onPickCard: () => void;
   onPickDate: () => void;
-  /** Only an expense of an account with a credit card has "Como pagou". */
+  /** Only an expense has "Como pagou". */
   showPayment: boolean;
+  /** Credit is only an option on an account with a credit card. */
+  creditAvailable: boolean;
   /** Null while the expense says nothing about how it was paid (the old ones). */
   payment: PaymentMethod | null;
   setPayment: (method: PaymentMethod) => void;

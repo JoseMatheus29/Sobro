@@ -10,7 +10,7 @@ import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import TransactionList from '@/app/components/ui/TransactionList';
-import { useCards, useInvoice } from '@/db/hooks';
+import { useCards, useInvoice, useRecurrences } from '@/db/hooks';
 import { useColors } from '@/hooks/useColors';
 import { SCROLL_PADDING_WITH_SIDEBAR } from '@/types/components/sidebar-type';
 import {
@@ -35,7 +35,7 @@ import {
 } from '@/types/invoice/invoice-type';
 import { tint } from '@/utils/color';
 import { formatMoney, formatShortDate } from '@/utils/format';
-import { daysBetween, formatCalendarDay, openInvoiceMonth, todayKey } from '@/utils/invoice';
+import { daysBetween, formatCalendarDay, lastPlannedInvoice, openInvoiceMonth, todayKey } from '@/utils/invoice';
 import { INVOICE_MONTHS_AHEAD, type InvoiceStatus } from '@/utils/invoice-type';
 import { addMonths, monthKeyWithYear, monthNameOf } from '@/utils/month';
 import { recurrenceBadge } from '@/utils/recurrence';
@@ -74,11 +74,18 @@ export default function InvoiceScreen() {
   const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
   const card = cards.find((c) => c.id === Number(id)) ?? null;
   const openMonth = card?.credit ? openInvoiceMonth(todayKey(), card.credit) : null;
+  // As far ahead as the installments already registered reach, and never less than the usual horizon: a purchase
+  // in 10 payments shows in the value of each of the next ten invoices.
+  const { recurrences } = useRecurrences();
+  const lastPlanned = card?.credit ? lastPlannedInvoice(recurrences, card.credit, card.id) : null;
+  const horizon = openMonth ? addMonths(openMonth, INVOICE_MONTHS_AHEAD) : null;
+  const lastMonth = horizon && lastPlanned && lastPlanned > horizon ? lastPlanned : horizon;
 
   // The invoice that opened the screen, until the person moves to another one.
   const [picked, setPicked] = useState<string | null>(monthParam ?? null);
   const month = picked ?? openMonth;
   const { invoice, error, refetch } = useInvoice(card, month);
+  const atLastInvoice = month !== null && lastMonth !== null && month >= lastMonth;
 
   const header = (
     <ScreenHeader title={INVOICE_SCREEN_TITLE} leftComponent={<ArrowBack />}>
@@ -96,10 +103,10 @@ export default function InvoiceScreen() {
             <Text className="min-w-[150px] text-center text-lg font-bold text-headerInk">{monthKeyWithYear(month)}</Text>
             <TouchableOpacity
               onPress={() => setPicked(addMonths(month, 1))}
-              disabled={month >= addMonths(openMonth, INVOICE_MONTHS_AHEAD)}
+              disabled={atLastInvoice}
               accessibilityLabel={NEXT_MONTH_LABEL}
               className="w-10 h-10 items-center justify-center"
-              style={{ opacity: month >= addMonths(openMonth, INVOICE_MONTHS_AHEAD) ? 0.3 : 1 }}
+              style={{ opacity: atLastInvoice ? 0.3 : 1 }}
             >
               <Icon name="chevron-right" size={26} color={colors.headerInk} />
             </TouchableOpacity>

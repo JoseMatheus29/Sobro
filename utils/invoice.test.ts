@@ -6,6 +6,7 @@ import {
   daysBetween,
   dueOn,
   invoiceMonthOf,
+  lastPlannedInvoice,
   openInvoiceMonth,
   opensOn,
   plannedPurchases,
@@ -197,7 +198,7 @@ describe('plannedPurchases', () => {
     expect(plannedPurchases([{ ...recurrence, paymentMethod: 'pix' }], '2026-12', RULES, 1)).toHaveLength(0);
   });
 
-  it('counts apart from the total of the invoice', () => {
+  it('counts in the value of the invoice, saying how much of it is only planned', () => {
     const planned = plannedPurchases([recurrence], '2026-12', RULES, 1);
     const invoice = buildInvoice({
       month: '2026-12',
@@ -207,9 +208,63 @@ describe('plannedPurchases', () => {
       planned,
       today: '2026-10-16',
     });
-    expect(invoice.total).toBe(0);
+    expect(invoice.total).toBe(150);
     expect(invoice.plannedTotal).toBe(150);
     expect(invoice.purchases).toHaveLength(1);
+    // Nothing was bought yet, so there is nothing to pay yet.
+    expect(invoice.remaining).toBe(0);
+  });
+
+  it('adds to what was already bought, and only what was bought can be paid', () => {
+    const planned = plannedPurchases([recurrence], '2026-12', RULES, 1);
+    const bought = purchase('2026-11-10', 80);
+    const invoice = buildInvoice({
+      month: '2026-12',
+      rules: RULES,
+      purchases: [bought],
+      payments: [],
+      planned,
+      today: '2026-11-20',
+    });
+    expect(invoice.total).toBe(230);
+    expect(invoice.plannedTotal).toBe(150);
+    expect(invoice.remaining).toBe(80);
+  });
+});
+
+describe('lastPlannedInvoice', () => {
+  const plan = (overrides: Partial<RecurrenceRecord> = {}): RecurrenceRecord => ({
+    id: 9,
+    cardId: 1,
+    cardName: 'Nubank',
+    categoryId: 'shopping',
+    categoryName: 'Compras',
+    categoryIcon: 'shopping-bag',
+    categoryColor: '#9B59B6',
+    name: 'Notebook',
+    description: null,
+    amount: 25,
+    day: 16,
+    startMonth: '2026-10',
+    firstInstallment: 1,
+    total: 10,
+    endMonth: null,
+    generatedUntil: '2026-10',
+    paymentMethod: 'credit',
+    ...overrides,
+  });
+
+  it('is the invoice the last installment falls in', () => {
+    // 10 payments from October: the last is on 16 July 2027, which is in the August invoice.
+    expect(lastPlannedInvoice([plan()], RULES, 1)).toBe('2027-08');
+  });
+
+  it('takes the furthest of several plans and skips what has no end, other cards and other ways to pay', () => {
+    const longer = plan({ id: 10, total: 12 });
+    expect(lastPlannedInvoice([plan(), longer], RULES, 1)).toBe('2027-10');
+    expect(lastPlannedInvoice([plan({ total: null })], RULES, 1)).toBeNull();
+    expect(lastPlannedInvoice([plan()], RULES, 2)).toBeNull();
+    expect(lastPlannedInvoice([plan({ paymentMethod: 'pix' })], RULES, 1)).toBeNull();
   });
 });
 

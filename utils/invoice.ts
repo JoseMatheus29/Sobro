@@ -1,7 +1,7 @@
 import { type TransactionRecord } from '@/db/transactions';
 import { INVOICE_EPSILON, type Invoice, type InvoiceRules, type InvoiceStatus } from './invoice-type';
 import { addMonths, MONTH_NAMES } from './month';
-import { occurrenceIn } from './recurrence';
+import { lastMonthOf, occurrenceDate, occurrenceIn } from './recurrence';
 import { PLANNED_ID_BASE, type RecurrenceRecord } from './recurrence-type';
 
 // The credit card invoice is not stored: it is worked out from the purchases made on credit and from the payments.
@@ -122,6 +122,20 @@ export function plannedPurchases(
   return planned;
 }
 
+// The last invoice a plan on this card reaches: where the installments registered today stop. Null when there is
+// no plan with an end (a monthly expense without end has no last invoice).
+export function lastPlannedInvoice(recurrences: RecurrenceRecord[], rules: InvoiceRules, cardId: number): string | null {
+  let last: string | null = null;
+  for (const r of recurrences) {
+    if (r.cardId !== cardId || r.paymentMethod !== 'credit') continue;
+    const end = lastMonthOf(r);
+    if (end === null) continue;
+    const invoice = invoiceMonthOf(dayOf(occurrenceDate(end, r.day)), rules);
+    if (last === null || invoice > last) last = invoice;
+  }
+  return last;
+}
+
 // One invoice of a card. `purchases` are the transactions made on credit (any month: the ones outside the cycle are
 // ignored), `payments` the payments of invoices of this card, `planned` what `plannedPurchases` found.
 export function buildInvoice(input: {
@@ -141,10 +155,11 @@ export function buildInvoice(input: {
       invoiceMonthOf(dayOf(t.occurredAt), rules) === month
   );
   const planned = input.planned ?? [];
-  const total = sumAbs(real);
+  const boughtTotal = sumAbs(real);
+  const plannedTotal = sumAbs(planned);
   const payments = input.payments.filter((t) => t.invoiceMonth === month);
   const paid = sumAbs(payments);
-  const remaining = Math.max(0, total - paid);
+  const remaining = Math.max(0, boughtTotal - paid);
   const closes = closesOn(month, rules);
   const due = dueOn(month, rules);
 
@@ -153,10 +168,10 @@ export function buildInvoice(input: {
     opensOn: opensOn(month, rules),
     closesOn: closes,
     dueOn: due,
-    total,
+    total: boughtTotal + plannedTotal,
     paid,
     remaining,
-    plannedTotal: sumAbs(planned),
+    plannedTotal,
     status: statusOf(today, closes, due, remaining),
     purchases: [...real, ...planned].sort(newestFirst),
     payments: [...payments].sort(newestFirst),

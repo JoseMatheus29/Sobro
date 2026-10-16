@@ -135,9 +135,10 @@ export default function RegistrationSpent() {
     // Only an expense repeats. The transaction made here is the first occurrence; the server makes the
     // following ones when they fall due, and they show up as planned until then.
     const repeating = type === 'expense' && repeat !== 'none';
-    // Only an account with a credit card asks how it was paid; on the other ones the expense just leaves the balance.
+    // How it was paid: credit only exists on an account with a credit card, on any other one it is Pix or debit.
     const creditRules = type === 'expense' ? (cards.find((c) => c.id === selectedCardId)?.credit ?? null) : null;
-    const paymentMethod = creditRules ? payment : undefined;
+    const paymentMethod =
+      type === 'expense' ? (payment === 'credit' && !creditRules ? DEFAULT_PAYMENT_METHOD : payment) : undefined;
     const repeatInput: RepeatInput | undefined = !repeating
       ? undefined
       : repeat === 'installments'

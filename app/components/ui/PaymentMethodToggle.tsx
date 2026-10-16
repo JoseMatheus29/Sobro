@@ -10,14 +10,17 @@ interface PaymentMethodToggleProps {
   /** Null while the expense says nothing about how it was paid (the old ones): none is marked. */
   value: PaymentMethod | null;
   onChange: (method: PaymentMethod) => void;
+  /** Credit only exists on an account with a credit card; on any other one the choice is Pix or debit. */
+  creditAvailable: boolean;
 }
 
 // Pix, débito or crédito, in the same segmented style as the Repetir options.
-export default function PaymentMethodToggle({ value, onChange }: PaymentMethodToggleProps) {
+export default function PaymentMethodToggle({ value, onChange, creditAvailable }: PaymentMethodToggleProps) {
   const colors = useColors();
+  const options = PAYMENT_OPTIONS.filter((option) => option.method !== 'credit' || creditAvailable);
   return (
     <View className="flex-row bg-surface rounded-2xl p-1 gap-1">
-      {PAYMENT_OPTIONS.map((option) => {
+      {options.map((option) => {
         const active = option.method === value;
         return (
           <TouchableOpacity

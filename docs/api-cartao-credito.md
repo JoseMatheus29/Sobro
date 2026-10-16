@@ -92,6 +92,7 @@ O objeto transação ganha dois campos:
 Regras (todas `400` `validation_failed`, com `fields[].path = "paymentMethod"`):
 
 - Só vale em **despesa**. Em receita, `paymentMethod` é recusado; se uma despesa vira receita pelo `PATCH`, o método vira `null` sozinho (como a recorrência já é encerrada).
+- `pix` e `debit` valem em **qualquer** conta (com ou sem cartão); só o `credit` depende do cartão.
 - `credit` exige que a conta da transação **tenha cartão**: "Esta conta não tem cartão de crédito.". Trocar o `cardId` para uma conta sem cartão numa transação no crédito é recusado do mesmo jeito.
 - Não vale na categoria `transfer` nem na `invoice`.
 

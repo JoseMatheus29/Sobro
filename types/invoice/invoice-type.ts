@@ -18,7 +18,7 @@ export const DUE_TEXT = (due: string, days: number) =>
 export const CLOSES_AND_DUE = (closes: string, due: string) => `Fecha ${closes} · vence ${due}`;
 export const REMAINING_TEXT = (amount: string) => `Falta pagar ${amount}`;
 export const PAID_TEXT = (amount: string) => `Já pago ${amount}`;
-export const PLANNED_NOTE = (amount: string) => `Mais ${amount} previstos em parcelas e recorrências, ainda fora do total.`;
+export const PLANNED_NOTE = (amount: string) => `Inclui ${amount} previstos de parcelas e recorrências.`;
 export const NOTHING_TO_PAY_TEXT = 'Nada a pagar nesta fatura.';
 
 export const PURCHASES_TITLE = 'Compras desta fatura';

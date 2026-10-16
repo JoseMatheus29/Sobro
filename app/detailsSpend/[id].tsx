@@ -131,9 +131,12 @@ export default function DetailsSpend() {
   const typeColor = typeColors(colors)[type];
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const card = cards.find((c) => c.id === cardId) ?? null;
-  // Only an expense of an account with a credit card says how it was paid; on any other the server keeps none.
-  const showPayment = type === 'expense' && card?.credit != null;
-  const effectivePayment: PaymentMethod | null = showPayment ? payment : null;
+  // Only an expense says how it was paid. Credit needs an account with a credit card: moving the expense to one
+  // without it turns it into Pix, which is what the toggle then shows.
+  const showPayment = type === 'expense';
+  const creditAvailable = card?.credit != null;
+  const shownPayment: PaymentMethod | null = payment === 'credit' && !creditAvailable ? 'pix' : payment;
+  const effectivePayment: PaymentMethod | null = showPayment ? shownPayment : null;
   const storedPayment = transaction.paymentMethod ?? null;
 
   const dirty =
@@ -279,7 +282,8 @@ export default function DetailsSpend() {
             onPickCard={() => setSheet('card')}
             onPickDate={() => setShowDatePicker(true)}
             showPayment={showPayment}
-            payment={payment}
+            creditAvailable={creditAvailable}
+            payment={shownPayment}
             setPayment={setPayment}
           />
 
