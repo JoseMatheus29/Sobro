@@ -12,7 +12,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCards, useCategories } from '@/db/hooks';
 import { notifyDataChanged } from '@/db/events';
 import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
-import { createTransaction } from '@/db/transactions';
+import { createTransaction, type PaymentMethod } from '@/db/transactions';
+import { DEFAULT_PAYMENT_METHOD } from '@/types/components/ui/payment-type';
+import { invoiceMonthOf, localDay } from '@/utils/invoice';
+import { monthNameOf } from '@/utils/month';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { useSaveKey } from '@/hooks/useSaveKey';
@@ -28,6 +31,7 @@ import FlowButton from '@/app/registrationSpent/components/FlowButton';
 import FlowHeader from '@/app/registrationSpent/components/FlowHeader';
 import {
   CLOSE_LABEL,
+  CREDIT_TOAST_SUFFIX,
   FlowStep,
   SAVE_LABELS,
   REPEATING_TOAST_SUFFIX,
@@ -64,6 +68,7 @@ export default function RegistrationSpent() {
   const [repeat, setRepeat]           = useState<RepeatMode>('none');
   const [installments, setInstallments] = useState(10);
   const [currentInstallment, setCurrentInstallment] = useState(1);
+  const [payment, setPayment]         = useState<PaymentMethod>(DEFAULT_PAYMENT_METHOD);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -130,6 +135,9 @@ export default function RegistrationSpent() {
     // Only an expense repeats. The transaction made here is the first occurrence; the server makes the
     // following ones when they fall due, and they show up as planned until then.
     const repeating = type === 'expense' && repeat !== 'none';
+    // Only an account with a credit card asks how it was paid; on the other ones the expense just leaves the balance.
+    const creditRules = type === 'expense' ? (cards.find((c) => c.id === selectedCardId)?.credit ?? null) : null;
+    const paymentMethod = creditRules ? payment : undefined;
     const repeatInput: RepeatInput | undefined = !repeating
       ? undefined
       : repeat === 'installments'
@@ -146,6 +154,7 @@ export default function RegistrationSpent() {
       // The day on the phone's calendar, not an instant: at 22h in Brazil it is already tomorrow in UTC.
       occurredAt: calendarDayAtNoonUtc(date),
       ...(repeatInput ? { repeat: repeatInput } : {}),
+      ...(paymentMethod ? { paymentMethod } : {}),
     };
 
     setSaving(true);
@@ -171,7 +180,11 @@ export default function RegistrationSpent() {
     showToast({
       type: 'success',
       title: SAVED_TITLES[type],
-      message: `R$ ${amountText} em ${category?.name ?? ''}${repeating ? ` · ${REPEATING_TOAST_SUFFIX[repeat as 'monthly' | 'installments']}` : ''}`.trim(),
+      message: `R$ ${amountText} em ${category?.name ?? ''}${repeating ? ` · ${REPEATING_TOAST_SUFFIX[repeat as 'monthly' | 'installments']}` : ''}${
+        paymentMethod === 'credit' && creditRules
+          ? ` · ${CREDIT_TOAST_SUFFIX(monthNameOf(invoiceMonthOf(localDay(date), creditRules)))}`
+          : ''
+      }`.trim(),
       icon: category?.icon,
     });
     router.back();
@@ -244,6 +257,8 @@ export default function RegistrationSpent() {
               setInstallments={setInstallments}
               currentInstallment={currentInstallment}
               setCurrentInstallment={setCurrentInstallment}
+              payment={payment}
+              setPayment={setPayment}
             />
             <FlowButton
               label={SAVE_LABELS[type]}

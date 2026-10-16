@@ -26,6 +26,8 @@ export interface RecurrenceRecord {
   endMonth: string | null;
   /** Last month already turned into a transaction. */
   generatedUntil: string;
+  /** How each occurrence is paid; the ones made inherit it. */
+  paymentMethod?: 'pix' | 'debit' | 'credit' | null;
 }
 
 export interface Occurrence {

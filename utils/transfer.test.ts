@@ -1,7 +1,7 @@
 import { type TransactionRecord } from '@/db/transactions';
 import { generateInsights } from './insightRules';
 import { buildSummary } from './summary';
-import { isTransfer, withoutTransfers } from './transfer';
+import { isInvoicePayment, isMoneyMove, isTransfer, withoutTransfers } from './transfer';
 
 const NOW = new Date('2026-10-09T12:00:00.000Z');
 let id = 1;
@@ -74,5 +74,26 @@ describe('a transfer between accounts', () => {
     const without = generateInsights({ current: [salary, market], previous: [], now: NOW });
     expect(withTransfer.map((i) => i.id)).toEqual(without.map((i) => i.id));
     expect(withTransfer.find((i) => i.id === 'balance')?.title).toBe(without.find((i) => i.id === 'balance')?.title);
+  });
+});
+
+describe('the payment of a credit card invoice', () => {
+  // The purchases were counted on the day they were made: paying the invoice must not count them again.
+  const purchase = tx({ name: 'Tênis', amount: -300, categoryId: 'shopping', paymentMethod: 'credit' });
+  const invoicePayment = tx({ name: 'Fatura Nubank', amount: -300, categoryId: 'invoice', invoiceMonth: '2026-11' });
+
+  it('moves money, like a transfer, and is neutral in the lists', () => {
+    expect(isInvoicePayment(invoicePayment)).toBe(true);
+    expect(isInvoicePayment(purchase)).toBe(false);
+    expect(isMoneyMove(invoicePayment)).toBe(true);
+    expect(isMoneyMove(transferOut)).toBe(true);
+    expect(isMoneyMove(market)).toBe(false);
+    expect(withoutTransfers([salary, purchase, invoicePayment, transferOut])).toEqual([salary, purchase]);
+  });
+
+  it('is not spent twice in the month', () => {
+    const summary = buildSummary({ current: [salary, purchase, invoicePayment], previous: [], budget: 1000, now: NOW });
+    expect(summary.expense).toBe(300);
+    expect(summary.budgetUse).toBeCloseTo(0.3);
   });
 });

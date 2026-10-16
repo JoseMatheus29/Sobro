@@ -16,6 +16,7 @@ import CardCarousel from '@/app/wallet/components/CardCarousel';
 import WalletSummary from '@/app/wallet/components/WalletSummary';
 import CardFormModal from '@/app/wallet/components/CardFormModal';
 import GoalsSection from '@/app/wallet/components/GoalsSection';
+import InvoiceCard from '@/app/wallet/components/InvoiceCard';
 import GoalFormModal from '@/app/components/GoalFormModal';
 import { useColors } from '@/hooks/useColors';
 import { useCards, useGoals, useTransactions } from '@/db/hooks';
@@ -26,7 +27,9 @@ import { errorToast } from '@/utils/apiErrors';
 import { formatShortDate } from '@/utils/format';
 import { monthNameOf } from '@/utils/month';
 import { recurrenceBadge } from '@/utils/recurrence';
-import { isTransfer } from '@/utils/transfer';
+import { isMoneyMove } from '@/utils/transfer';
+import { dayOf, invoiceMonthOf, shortMonthName } from '@/utils/invoice';
+import { INVOICE_TAG } from '@/types/components/ui/payment-type';
 import {
   ACCOUNT_DELETED_TOAST,
   CAROUSEL_GAP,
@@ -94,6 +97,11 @@ export default function WalletScreen() {
     );
   }
 
+  const invoiceTag = (t: (typeof transactions)[number]) => {
+    const rules = t.paymentMethod === 'credit' ? cards.find((c) => c.id === t.cardId)?.credit : null;
+    return rules ? INVOICE_TAG(shortMonthName(invoiceMonthOf(dayOf(t.occurredAt), rules))) : undefined;
+  };
+
   const displayTransactions = transactions.map((t) => ({
     id: t.id,
     name: t.name,
@@ -105,7 +113,9 @@ export default function WalletScreen() {
     type: t.type,
     badge: t.recurrence ? recurrenceBadge(t.recurrence) : undefined,
     planned: t.planned,
-    transfer: isTransfer(t),
+    transfer: isMoneyMove(t),
+    // The invoice a purchase on credit went into.
+    tag: invoiceTag(t),
   }));
 
   return (
@@ -147,6 +157,18 @@ export default function WalletScreen() {
                 setEditingCard(activeCard);
                 setModalVisible(true);
               }}
+            />
+          )}
+
+          {activeCard?.credit && (
+            <InvoiceCard
+              card={activeCard}
+              onOpen={(invoiceMonth) =>
+                router.push({ pathname: '/invoice/[id]', params: { id: String(activeCard.id), month: invoiceMonth } } as any)
+              }
+              onPay={(invoiceMonth) =>
+                router.push({ pathname: '/payInvoice/[id]', params: { id: String(activeCard.id), month: invoiceMonth } } as any)
+              }
             />
           )}
 

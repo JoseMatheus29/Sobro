@@ -89,6 +89,7 @@ export function plannedTransactions(
       createdAt: occurrence.date,
       planned: true,
       recurrence: { id: r.id, installment: occurrence.installment, total: r.total },
+      paymentMethod: r.paymentMethod ?? null,
     });
   }
   // The nearest first: it is a list of what is coming.

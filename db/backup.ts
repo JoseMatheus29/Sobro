@@ -2,7 +2,7 @@ import { api } from '@/api/client';
 import { type BackupFile } from '@/utils/backup-type';
 
 // The newest format of backup the server takes (it takes files of any version from 1 to this one).
-export const BACKUP_SCHEMA_VERSION = 8;
+export const BACKUP_SCHEMA_VERSION = 9;
 
 // Everything in the account, as the file of a backup (the same format the first version of the app saved).
 export function exportBackup(): Promise<BackupFile> {

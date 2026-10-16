@@ -75,7 +75,24 @@ export const DELETE_ACCOUNT_CONFIRM = (name: string, transactions: number, recur
 });
 export const ACCOUNT_DELETED_TOAST = { type: 'success', title: 'Conta excluída', icon: 'delete-outline' } as const;
 
+// The credit card of an account: when its invoice closes and falls due.
+export const CREDIT_LABEL = 'Tem cartão de crédito';
+export const CREDIT_HINT = 'Libera o Crédito nas saídas desta conta e controla a fatura.';
+export const CREDIT_LIMIT_LABEL = 'Limite (opcional)';
+export const CREDIT_LIMIT_PLACEHOLDER = '0,00';
+export const CREDIT_CLOSING_LABEL = 'Fecha no dia';
+export const CREDIT_DUE_LABEL = 'Vence no dia';
+export const CREDIT_DAYS_HINT = (closing: number, due: number) =>
+  `Compras até o dia ${closing} entram na fatura que fecha nesse dia e vence no dia ${due}${
+    due <= closing ? ' do mês seguinte' : ''
+  }. Depois do fechamento, vão para a fatura seguinte.`;
+export const DEFAULT_CLOSING_DAY = 5;
+export const DEFAULT_DUE_DAY = 12;
+export const MIN_CARD_DAY = 1;
+export const MAX_CARD_DAY = 31;
+
 // Errors of the account dialog and of deleting one.
 export const SAVE_FAILED_MESSAGE = 'Não foi possível salvar a conta.';
 export const INVALID_BALANCE_MESSAGE = 'Informe um saldo inicial válido.';
+export const INVALID_LIMIT_MESSAGE = 'Informe um limite válido.';
 export const DELETE_FAILED_TITLE = 'Não foi possível excluir a conta';

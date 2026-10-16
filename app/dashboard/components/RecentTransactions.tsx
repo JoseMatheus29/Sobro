@@ -5,7 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useColors } from '@/hooks/useColors';
 import { formatDayMonth } from '@/utils/format';
 import { recurrenceBadge } from '@/utils/recurrence';
-import { isTransfer } from '@/utils/transfer';
+import { isMoneyMove } from '@/utils/transfer';
 import EmptyState from '@/app/components/ui/EmptyState';
 import { PLANNED_LABEL } from '@/types/components/cardHorizontal-type';
 import RecurrenceBadge from '@/app/components/ui/RecurrenceBadge';
@@ -35,7 +35,7 @@ export default function RecentTransactions({ title, transactions, onSeeAll, onPr
           {transactions.map((t, i) => {
             const isIncome = t.type === 'income';
             const planned = t.planned === true;
-            const transfer = isTransfer(t);
+            const transfer = isMoneyMove(t);
             return (
               <TouchableOpacity
                 key={t.id}

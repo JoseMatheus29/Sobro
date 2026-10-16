@@ -68,15 +68,29 @@ export interface CategoryInput {
 
 // ---- accounts ----
 
+/** How a purchase was paid. Only 'credit' stays out of the balance: it goes to the invoice. */
+export type ApiPaymentMethod = 'pix' | 'debit' | 'credit';
+
+/** The credit card of an account: when its invoice closes and falls due. */
+export interface ApiCardCredit {
+  /** The card's limit, when the person says it. */
+  limit: number | null;
+  /** 1 to 31; a shorter month uses its last day. */
+  closingDay: number;
+  dueDay: number;
+}
+
 export interface ApiCard {
   id: number;
   name: string;
   number: string;
   color: string;
   lightColor: string;
-  /** Current balance: starting balance plus its transactions. */
+  /** Current balance: starting balance plus its transactions, leaving out what was bought on credit. */
   balance: number;
   startingBalance: number;
+  /** Null for an account without a credit card. Absent from a server that does not know cards yet. */
+  credit?: ApiCardCredit | null;
 }
 
 export interface CardInput {
@@ -85,9 +99,13 @@ export interface CardInput {
   color: string;
   lightColor: string;
   startingBalance?: number;
+  credit?: ApiCardCredit;
 }
 
-export type CardPatch = Partial<Pick<CardInput, 'name' | 'number' | 'color' | 'lightColor'>>;
+export type CardPatch = Partial<Pick<CardInput, 'name' | 'number' | 'color' | 'lightColor'>> & {
+  /** Null takes the credit card off the account (409 `credit_in_use` while it has purchases). */
+  credit?: ApiCardCredit | null;
+};
 
 export interface CardUsage {
   transactions: number;
@@ -115,6 +133,10 @@ export interface ApiTransaction {
   createdAt: string;
   recurrence: { id: number; installment: number | null; total: number | null } | null;
   transferId: number | null;
+  /** Null for what leaves the balance without saying how (the old ones), and for incomes. */
+  paymentMethod?: ApiPaymentMethod | null;
+  /** 'YYYY-MM' of the invoice, only on the payment of an invoice. */
+  invoiceMonth?: string | null;
 }
 
 export interface TransactionPage {
@@ -128,6 +150,7 @@ export interface TransactionQuery {
   cardId?: number;
   categoryId?: string;
   type?: ApiTransactionType;
+  paymentMethod?: ApiPaymentMethod;
   q?: string;
   limit?: number;
   cursor?: string;
@@ -146,6 +169,8 @@ export interface TransactionInput {
   occurredAt: string;
   /** Only for an expense. */
   repeat?: RepeatInput;
+  /** Only for an expense; 'credit' needs an account with a credit card. */
+  paymentMethod?: ApiPaymentMethod;
 }
 
 export interface TransactionPatch {
@@ -158,6 +183,7 @@ export interface TransactionPatch {
   occurredAt?: string;
   /** Also change the recurrence this one came from, so the next ones come out the same. */
   applyToNext?: boolean;
+  paymentMethod?: ApiPaymentMethod | null;
 }
 
 export interface TransferInput {
@@ -194,6 +220,19 @@ export interface ApiRecurrence {
   total: number | null;
   endMonth: string | null;
   generatedUntil: string;
+  paymentMethod?: ApiPaymentMethod | null;
+}
+
+// ---- credit card invoices ----
+
+/** Pays (part of) an invoice with the balance of the same account. */
+export interface InvoicePaymentInput {
+  /** The invoice: 'YYYY-MM' of the month it closes in (utils/invoice.ts). */
+  month: string;
+  /** Positive. */
+  amount: number;
+  /** The calendar day of the payment, at noon UTC. */
+  occurredAt: string;
 }
 
 // ---- caixinhas ----

@@ -9,6 +9,8 @@ export interface CardHorizontalProps {
   iconColor?: string;
   /** Short text next to the name, for what comes from a recurring expense: "4/10" or "Todo mês". */
   badge?: string;
+  /** Short neutral text after the name, for the invoice a credit purchase went into: "Fatura nov". */
+  tag?: string;
   /** A planned expense of a month that has not started: dashed, muted, and not pressable. */
   planned?: boolean;
   /** A transfer between accounts: neither income nor expense, so the amount is neutral. */

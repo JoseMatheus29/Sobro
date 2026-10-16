@@ -2,6 +2,8 @@ import { api } from '@/api/client';
 import { isApiError } from '@/api/errors';
 import {
   type ApiCategoryTotal,
+  type ApiPaymentMethod,
+  type InvoicePaymentInput,
   type ApiMonthlyTotal,
   type ApiTransaction,
   type TransactionInput,
@@ -12,9 +14,11 @@ import {
 } from '@/api/types';
 import { TRANSACTIONS_MAX_PAGES, TRANSACTIONS_PAGE_SIZE } from '@/types/api/api-type';
 import { type MonthTotals } from '@/utils/history-type';
+import { INVOICE_CATEGORY_ID } from '@/utils/invoice-type';
 import { buildQuery } from '@/utils/queryString';
 
 export type TransactionType = 'income' | 'expense';
+export type PaymentMethod = ApiPaymentMethod;
 
 // Set on the transactions that come from a recurring expense (see utils/recurrence.ts).
 export interface TransactionRecurrence {
@@ -44,6 +48,10 @@ export interface TransactionRecord {
   planned?: boolean;
   /** Shared by the two legs of a transfer between accounts; null for an ordinary transaction. */
   transferId?: number | null;
+  /** How it was paid; null for the ones that just leave the balance (the old ones) and for incomes. */
+  paymentMethod?: PaymentMethod | null;
+  /** 'YYYY-MM' of the invoice it pays; only on the payment of an invoice. */
+  invoiceMonth?: string | null;
 }
 
 export interface TransactionFilters {
@@ -52,6 +60,7 @@ export interface TransactionFilters {
   month?: string;
   categoryId?: string;
   type?: TransactionType;
+  paymentMethod?: PaymentMethod;
   /** Words that have to be in the name, the description, the category or the account (accents and case ignored). */
   q?: string;
   /** Newest first, so this keeps the most recent N. Without it, every page is read. */
@@ -79,6 +88,8 @@ function toRecord(t: ApiTransaction): TransactionRecord {
     createdAt: t.createdAt,
     recurrence: t.recurrence,
     transferId: t.transferId,
+    paymentMethod: t.paymentMethod ?? null,
+    invoiceMonth: t.invoiceMonth ?? null,
   };
 }
 
@@ -139,6 +150,21 @@ export async function deleteTransaction(id: number): Promise<void> {
 }
 
 export const TRANSFER_CATEGORY_ID = 'transfer';
+// The hidden category of the payment of a credit card invoice: it moves the balance but is not a spending.
+export { INVOICE_CATEGORY_ID };
+
+// Pays (part of) an invoice with the balance of the account that has the card. It is an expense of the account in
+// the hidden "invoice" category, so it changes the balance and counts as no month's spending (the purchases were
+// counted the day they were made). Undone by deleting the transaction. `idempotencyKey` keeps a retry from paying twice.
+export async function payInvoice(
+  cardId: number,
+  input: InvoicePaymentInput,
+  idempotencyKey?: string
+): Promise<TransactionRecord> {
+  return toRecord(
+    await api<ApiTransaction>('POST', `/v1/cards/${cardId}/invoice-payments`, { body: input, idempotencyKey })
+  );
+}
 
 // Moves money from one account to another: an expense in the first and an income in the second, tied by a
 // `transferId`. Both change the balances, but neither counts as the month's income or expense.

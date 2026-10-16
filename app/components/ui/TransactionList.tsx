@@ -15,9 +15,11 @@ export interface Transaction {
   type: 'income' | 'expense';
   /** "4/10" or "Todo mês", when it comes from a recurring expense. */
   badge?: string;
+  /** The invoice a credit purchase went into: "Fatura nov". */
+  tag?: string;
   /** Planned for a month that has not started. */
   planned?: boolean;
-  /** A transfer between accounts. */
+  /** A transfer between accounts, or the payment of an invoice: no income or expense color. */
   transfer?: boolean;
 }
 
@@ -61,6 +63,7 @@ export default function TransactionList({
             iconColor={t.categoryColor}
             type={t.type}
             badge={t.badge}
+            tag={t.tag}
             planned={t.planned}
             transfer={t.transfer}
             onPress={() => onPressItem?.(t.id)}

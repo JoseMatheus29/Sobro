@@ -3,13 +3,16 @@ import { keepPreviousData } from '@tanstack/react-query';
 
 import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
+import { buildInvoice, openInvoiceMonth, plannedPurchases, todayKey } from '@/utils/invoice';
+import { type Invoice } from '@/utils/invoice-type';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
 import { addMonths, currentMonthKey, localNow } from '@/utils/month';
 import { futureMonths, plannedTransactions } from '@/utils/recurrence';
 
 import { getBudgetEntries } from './budgets';
-import { getCards } from './cards';
+import { getCards, type CardRecord } from './cards';
+import { getInvoiceSources } from './invoices';
 import { getCategoryBudgetEntries } from './categoryBudgets';
 import { getGoalById, getGoalEntries, getGoals } from './goals';
 import { getCategories } from './categories';
@@ -36,6 +39,52 @@ import {
 export function useCards() {
   const query = useScreenQuery({ queryKey: queryKeys.cards, queryFn: getCards });
   return { cards: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
+}
+
+// One invoice (by the month it closes in) of the credit card of an account: what was bought in its cycle, what was
+// paid and what is still planned (see utils/invoice.ts). Null while it loads, or when the account has no credit card.
+export function useInvoice(card: CardRecord | null | undefined, month: string | null) {
+  const credit = card?.credit ?? null;
+  const rules = useMemo(
+    () => (credit ? { closingDay: credit.closingDay, dueDay: credit.dueDay } : null),
+    [credit]
+  );
+  const enabled = card != null && rules !== null && month !== null;
+
+  const query = useScreenQuery({
+    queryKey: queryKeys.invoice(card?.id ?? 0, month ?? '', rules?.closingDay ?? 0, rules?.dueDay ?? 0),
+    queryFn: () => getInvoiceSources((card as CardRecord).id, month as string, rules as NonNullable<typeof rules>),
+    enabled,
+  });
+  const { recurrences } = useRecurrences(enabled);
+  const recolor = useCategoryColor();
+
+  const { data } = query;
+  const invoice: Invoice | null = useMemo(() => {
+    if (!enabled || !data || !rules || !card || !month) return null;
+    const built = buildInvoice({
+      month,
+      rules,
+      purchases: data.purchases,
+      payments: data.payments,
+      planned: plannedPurchases(recurrences, month, rules, card.id),
+      today: todayKey(),
+    });
+    // The category colors are drawn softened on the dark theme, like in every other list.
+    return {
+      ...built,
+      purchases: built.purchases.map((t) => ({ ...t, categoryColor: recolor(t.categoryColor) })),
+    };
+  }, [enabled, data, rules, card, month, recurrences, recolor]);
+
+  return { invoice, loading: enabled && query.isLoading, error: loadError(query), refetch: query.refetch };
+}
+
+// The invoice that is taking purchases now.
+export function useOpenInvoice(card: CardRecord | null | undefined) {
+  const credit = card?.credit ?? null;
+  const month = credit ? openInvoiceMonth(todayKey(), credit) : null;
+  return { month, ...useInvoice(card, month) };
 }
 
 // The recurring expenses, with their category and account. Only read when asked to: most screens do not need them.

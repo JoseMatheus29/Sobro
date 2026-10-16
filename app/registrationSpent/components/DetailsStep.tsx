@@ -5,14 +5,18 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 import { useColors } from '@/hooks/useColors';
 import { CHANGE_LABEL, DetailsStepProps } from '@/types/registrationSpent/registrationSpent-type';
+import PaymentSection from '@/app/components/ui/PaymentSection';
 import RepeatSection from '@/app/registrationSpent/components/RepeatSection';
 
 export default function DetailsStep({
   typeColor, amountText, category, nome, setNome, descricao, setDescricao,
   cards, selectedCardId, setSelectedCardId, date, setDate, onEditAmount, onEditCategory,
   type, amountValue, repeat, setRepeat, installments, setInstallments, currentInstallment, setCurrentInstallment,
+  payment, setPayment,
 }: DetailsStepProps) {
   const colors = useColors();
+  // Only an account with a credit card has something to ask: the other ones just spend from the balance.
+  const creditRules = cards.find((card) => card.id === selectedCardId)?.credit ?? null;
   const [showPicker, setShowPicker] = useState(false);
 
   return (
@@ -118,6 +122,15 @@ export default function DetailsStep({
         </View>
         <Text className="text-[13px] font-bold text-primary">{CHANGE_LABEL}</Text>
       </TouchableOpacity>
+      {type === 'expense' && creditRules && (
+        <PaymentSection
+          method={payment}
+          onChange={setPayment}
+          rules={creditRules}
+          date={date}
+          installments={repeat === 'installments'}
+        />
+      )}
       {type === 'expense' && (
         <RepeatSection
           amountValue={amountValue}

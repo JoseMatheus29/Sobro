@@ -2,6 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import Stepper from '@/app/components/ui/Stepper';
 import { useColors } from '@/hooks/useColors';
 import { tint } from '@/utils/color';
 import { formatMoney } from '@/utils/format';
@@ -20,44 +21,6 @@ import {
   RepeatSectionProps,
   toggleThumbStyle,
 } from '@/types/registrationSpent/registrationSpent-type';
-
-function Stepper({
-  label,
-  value,
-  min,
-  max,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  onChange: (n: number) => void;
-}) {
-  const colors = useColors();
-  return (
-    <View className="flex-1 bg-card rounded-2xl border-[1.5px] border-line px-2.5 py-2">
-      <Text className="text-[11px] text-subtle mb-1">{label}</Text>
-      <View className="flex-row items-center justify-between">
-        <TouchableOpacity
-          onPress={() => onChange(Math.max(min, value - 1))}
-          accessibilityLabel={`Menos: ${label}`}
-          className="w-9 h-9 rounded-xl bg-surface items-center justify-center"
-        >
-          <Icon name="remove" size={20} color={colors.primary.DEFAULT} />
-        </TouchableOpacity>
-        <Text className="text-lg font-extrabold text-ink">{value}</Text>
-        <TouchableOpacity
-          onPress={() => onChange(Math.min(max, value + 1))}
-          accessibilityLabel={`Mais: ${label}`}
-          className="w-9 h-9 rounded-xl bg-surface items-center justify-center"
-        >
-          <Icon name="add" size={20} color={colors.primary.DEFAULT} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
 
 // "Repetir": does not repeat, every month, or in installments. Only an expense gets it.
 export default function RepeatSection({
