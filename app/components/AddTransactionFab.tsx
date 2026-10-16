@@ -14,6 +14,7 @@ import {
   SIDEBAR_HEIGHT,
 } from '@/types/components/sidebar-type';
 import { useColors } from '@/hooks/useColors';
+import { useTutorialTarget } from '@/hooks/useTutorialTarget';
 
 // Opens the new-transaction sheet. Render it next to <SideBar /> on screens where
 // registering a transaction makes sense; it positions itself above the bar.
@@ -21,6 +22,7 @@ export default function AddTransactionFab() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const tutorialRef = useTutorialTarget('fab');
 
   const handlePress = () => {
     router.push(FAB_ROUTE as any);
@@ -28,6 +30,7 @@ export default function AddTransactionFab() {
 
   return (
     <TouchableOpacity
+      ref={tutorialRef}
       onPress={handlePress}
       activeOpacity={0.85}
       accessibilityLabel={FAB_LABEL}

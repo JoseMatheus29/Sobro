@@ -9,6 +9,9 @@ import { useSelectedMonth } from '@/app/components/month/MonthProvider';
 import LoadError from '@/app/components/ui/LoadError';
 import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
+import TutorialOverlay from '@/app/components/tutorial/TutorialOverlay';
+import { useTutorial } from '@/hooks/useTutorial';
+import { useTutorialTarget } from '@/hooks/useTutorialTarget';
 import CardBalance from '@/app/dashboard/components/CardBalance';
 import DashboardHeader from '@/app/dashboard/components/DashboardHeader';
 import FlowSection from '@/app/dashboard/components/FlowSection';
@@ -43,6 +46,13 @@ export default function DashboardScreen() {
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { profile } = useProfile();
+
+  // The first-run tutorial starts once the month is on screen (and only on the current month, where the balance card is).
+  const balanceRef = useTutorialTarget('balance');
+  const tutorial = useTutorial({
+    userId: profile?.id,
+    ready: !loadingMonth && !monthError && isCurrent && profile !== null,
+  });
 
   // The budget that applied to the month shown, and, for a month that is over, "today" is its last
   // day: it is compared with the whole of the month before it.
@@ -95,11 +105,13 @@ export default function DashboardScreen() {
               {isFuture ? (
                 <PlannedCard summary={summary} budget={budget} />
               ) : (
-                <CardBalance
-                  summary={summary}
-                  budget={budget}
-                  onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
-                />
+                <View ref={balanceRef} collapsable={false}>
+                  <CardBalance
+                    summary={summary}
+                    budget={budget}
+                    onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
+                  />
+                </View>
               )}
 
               {!isFuture && (
@@ -142,6 +154,16 @@ export default function DashboardScreen() {
 
       <SideBar />
       <AddTransactionFab />
+
+      {tutorial.visible && (
+        <TutorialOverlay
+          steps={tutorial.steps}
+          index={tutorial.index}
+          onNext={tutorial.next}
+          onBack={tutorial.back}
+          onSkip={tutorial.finish}
+        />
+      )}
     </View>
   );
 }

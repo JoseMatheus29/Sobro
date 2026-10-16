@@ -4,6 +4,8 @@ import { type ThemePreference } from '@/utils/theme-type';
 import { getStoredTheme, setStoredTheme } from './theme';
 
 export interface ProfileRecord {
+  /** The account, for what is kept on this phone about it (see db/tutorial.ts). */
+  id: string;
   email: string;
   name: string;
   currency: string;
@@ -17,6 +19,7 @@ export interface ProfileRecord {
 export async function getProfile(): Promise<ProfileRecord> {
   const [me, theme] = await Promise.all([api<ApiProfile>('GET', '/v1/me'), getStoredTheme()]);
   return {
+    id: me.id,
     email: me.email,
     name: me.name,
     currency: me.currency,

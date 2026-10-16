@@ -13,6 +13,7 @@ import ProfileHeader from '@/app/editAcount/components/ProfileHeader';
 import BasicInfoForm from '@/app/editAcount/components/BasicInfoForm';
 import PreferencesForm from '@/app/editAcount/components/PreferencesForm';
 import BackupCard from '@/app/editAcount/components/BackupCard';
+import TutorialCard from '@/app/editAcount/components/TutorialCard';
 import AccountCard from '@/app/editAcount/components/AccountCard';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import { PROFILE_SAVED_TOAST, PROFILE_SAVE_FAILED_TITLE, REMINDERS_DENIED_TOAST } from '@/types/editAcount/editAcount-type';
@@ -125,6 +126,8 @@ export default function EditAcount() {
             remindersEnabled={remindersEnabled} setRemindersEnabled={handleToggleReminders}
             theme={theme} setTheme={handleChangeTheme}
           />
+
+          <TutorialCard />
 
           <BackupCard />
 
