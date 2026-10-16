@@ -1,6 +1,6 @@
 import { api } from '@/api/client';
 import { isApiError } from '@/api/errors';
-import { type ApiCard, type CardInput, type CardPatch, type CardUsage } from '@/api/types';
+import { type ApiCard, type ApiCardCredit, type CardInput, type CardPatch, type CardUsage } from '@/api/types';
 
 export interface CardRecord {
   id: number;
@@ -8,9 +8,13 @@ export interface CardRecord {
   number: string;
   color: string;
   lightColor: string;
-  /** Current balance: the starting balance plus its transactions, worked out by the server. */
+  /** Current balance: the starting balance plus its transactions, worked out by the server. What was bought on credit waits in the invoice and does not count here. */
   balance: number;
+  /** The credit card of the account; null when it has none. */
+  credit: CardCredit | null;
 }
+
+export type CardCredit = ApiCardCredit;
 
 function toRecord(card: ApiCard): CardRecord {
   return {
@@ -20,6 +24,7 @@ function toRecord(card: ApiCard): CardRecord {
     color: card.color,
     lightColor: card.lightColor,
     balance: card.balance,
+    credit: card.credit ?? null,
   };
 }
 

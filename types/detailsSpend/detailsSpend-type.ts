@@ -2,6 +2,7 @@ import React from 'react';
 
 import { type ConfirmOptions, type ToastOptions } from '@/types/components/feedback/feedback-type';
 import { type CardRecord } from '@/db/cards';
+import { type PaymentMethod } from '@/db/transactions';
 import { type Category, type TxType } from '@/types/registrationSpent/registrationSpent-type';
 
 export interface DetailRowProps {
@@ -33,6 +34,13 @@ export interface EditFormProps {
   onPickCategory: () => void;
   onPickCard: () => void;
   onPickDate: () => void;
+  /** Only an expense has "Como pagou". */
+  showPayment: boolean;
+  /** Credit is only an option on an account with a credit card. */
+  creditAvailable: boolean;
+  /** Null while the expense says nothing about how it was paid (the old ones). */
+  payment: PaymentMethod | null;
+  setPayment: (method: PaymentMethod) => void;
 }
 
 export const DETAILS_TITLE = 'Detalhes';
@@ -48,6 +56,7 @@ export const FIELD_LABELS = {
   category: 'Categoria',
   card: 'Conta',
   date: 'Data',
+  payment: 'Como pagou',
   description: 'Descrição',
 };
 export const NAME_PLACEHOLDER = 'Ex: Almoço no restaurante';
@@ -113,6 +122,27 @@ export const TRANSFER_DELETE_CONFIRM: ConfirmOptions = {
   destructive: true,
 };
 export const TRANSFER_DELETED_TOAST: ToastOptions = { type: 'success', title: 'Transferência excluída', icon: 'delete-outline' };
+
+// The payment of a credit card invoice: it has no form to edit, only the way to undo it.
+export const INVOICE_PAYMENT_TITLE = 'Pagamento de fatura';
+export const INVOICE_PAYMENT_INVOICE_LABEL = 'Fatura paga';
+export const INVOICE_PAYMENT_FROM_LABEL = 'Saiu do saldo de';
+export const INVOICE_PAYMENT_DATE_LABEL = 'Data do pagamento';
+export const INVOICE_PAYMENT_HINT =
+  'Pagar a fatura só tira o dinheiro do saldo: as compras já contaram no mês em que você as fez.';
+export const INVOICE_PAYMENT_DELETE_LABEL = 'Desfazer pagamento';
+export const INVOICE_PAYMENT_DELETE_CONFIRM: ConfirmOptions = {
+  title: 'Desfazer o pagamento?',
+  message: 'O valor volta para o saldo da conta e a fatura volta a ficar em aberto. Esta ação não pode ser desfeita.',
+  confirmLabel: 'Desfazer',
+  destructive: true,
+};
+export const INVOICE_PAYMENT_DELETED_TOAST: ToastOptions = {
+  type: 'success',
+  title: 'Pagamento desfeito',
+  icon: 'delete-outline',
+};
+export const INVOICE_PAYMENT_DELETE_FAILED_TITLE = 'Não foi possível desfazer o pagamento';
 
 // What went wrong, in the title of the toast.
 export const SAVE_FAILED_TITLE = 'Não foi possível salvar';

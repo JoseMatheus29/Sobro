@@ -17,7 +17,7 @@ import { useColors } from '@/hooks/useColors';
 import { useCategories, useTransactions } from '@/db/hooks';
 import { formatMoney, formatShortDate } from '@/utils/format';
 import { recurrenceBadge } from '@/utils/recurrence';
-import { isTransfer } from '@/utils/transfer';
+import { isMoneyMove } from '@/utils/transfer';
 import { netOf, type TypeFilter } from '@/utils/search';
 import CardHorizontal from '@/app/components/cardHorizontal';
 import EmptyState from '@/app/components/ui/EmptyState';
@@ -189,7 +189,7 @@ export default function SearchSheet() {
                 iconColor={t.categoryColor}
                 type={t.type}
                 badge={t.recurrence ? recurrenceBadge(t.recurrence) : undefined}
-                transfer={isTransfer(t)}
+                transfer={isMoneyMove(t)}
                 onPress={() => router.push({ pathname: '/detailsSpend/[id]', params: { id: String(t.id) } })}
               />
             ))

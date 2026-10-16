@@ -1,4 +1,5 @@
 import { type Palette } from '@/constants/palette';
+import { type PaymentKind, type PaymentSplit } from '@/utils/spending-type';
 
 export interface PieDataItem {
   value: number;
@@ -16,6 +17,19 @@ export interface MonthlyProgressProps {
   progress: number;
   percentage: number;
   hasBudget: boolean;
+  /** The account being looked at, when it is not all of them: the budget is for the whole account, so it is left out. */
+  scopeName?: string | null;
+}
+
+export interface PaymentSplitCardProps {
+  split: PaymentSplit;
+}
+
+export interface AccountFilterProps {
+  accounts: { id: number; name: string }[];
+  /** Null is "Todas". */
+  selectedId: number | null;
+  onSelect: (id: number | null) => void;
 }
 
 // Single neutral slice so the donut keeps its shape when there is nothing to plot.
@@ -24,6 +38,25 @@ export const emptyPieData = (colors: Palette): PieDataItem[] => [{ value: 100, c
 export const EMPTY_CHART_TITLE = 'Nenhum gasto neste mês';
 export const EMPTY_CHART_HINT = 'Toque em + para registrar seu primeiro gasto.';
 export const EMPTY_TRANSACTIONS_MESSAGE = 'Seus gastos do mês aparecem aqui';
+
+// The account filter and how the month's spending was paid.
+export const ALL_ACCOUNTS_LABEL = 'Todas';
+export const PAYMENT_SPLIT_TITLE = 'Como você pagou';
+export const PAYMENT_SPLIT_LABELS: Record<PaymentKind, string> = {
+  pix: 'Pix',
+  debit: 'Débito',
+  credit: 'Crédito',
+  other: 'Sem forma informada',
+};
+export const PAYMENT_SPLIT_CREDIT_HINT = 'O crédito entra na fatura e só sai do saldo quando você a paga.';
+
+// The color of each slice on the active theme.
+export const paymentColors = (colors: Palette): Record<PaymentKind, string> => ({
+  pix: colors.expense,
+  debit: colors.warning,
+  credit: colors.primary.DEFAULT,
+  other: colors.subtle,
+});
 
 // Spending limits per category.
 export interface LimitRow {

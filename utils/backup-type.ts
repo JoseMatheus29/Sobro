@@ -68,7 +68,18 @@ export const BACKUP_TABLES: TableSpec[] = [
   { name: 'categories', columns: [text('id'), text('name'), text('icon'), text('color'), text('bg')] },
   {
     name: 'cards',
-    columns: [integer('id'), text('name'), text('number'), text('color'), text('light_color'), number('balance', { required: false, fallback: 0 })],
+    columns: [
+      integer('id'),
+      text('name'),
+      text('number'),
+      text('color'),
+      text('light_color'),
+      number('balance', { required: false, fallback: 0 }),
+      // The credit card of the account: all empty when it has none (and in the files of schema 8 or older).
+      number('credit_limit', { required: false, nullable: true, fallback: null }),
+      integer('closing_day', { required: false, nullable: true, fallback: null }),
+      integer('due_day', { required: false, nullable: true, fallback: null }),
+    ],
   },
   {
     name: 'recurrences',
@@ -85,6 +96,7 @@ export const BACKUP_TABLES: TableSpec[] = [
       integer('total', { required: false, nullable: true, fallback: null }),
       text('end_month', { required: false, nullable: true, fallback: null }),
       text('generated_until'),
+      text('payment_method', { required: false, nullable: true, fallback: null }),
     ],
   },
   {
@@ -102,6 +114,8 @@ export const BACKUP_TABLES: TableSpec[] = [
       integer('recurrence_id', { required: false, nullable: true, fallback: null }),
       integer('installment', { required: false, nullable: true, fallback: null }),
       integer('transfer_id', { required: false, nullable: true, fallback: null }),
+      text('payment_method', { required: false, nullable: true, fallback: null }),
+      text('invoice_month', { required: false, nullable: true, fallback: null }),
     ],
   },
   {

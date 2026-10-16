@@ -18,13 +18,15 @@ import {
   SELECT_LABEL,
 } from '@/types/detailsSpend/detailsSpend-type';
 import DetailRow from '@/app/detailsSpend/components/DetailRow';
+import PaymentMethodToggle from '@/app/components/ui/PaymentMethodToggle';
+import { PAYMENT_EDIT_HINT } from '@/types/components/ui/payment-type';
 import { useColors } from '@/hooks/useColors';
 
 const INPUT_CLASS = 'text-base font-medium text-ink mt-0.5';
 
 export default function EditForm({
   typeColor, type, setType, amount, setAmount, name, setName, category, card, date,
-  description, setDescription, onPickCategory, onPickCard, onPickDate,
+  description, setDescription, onPickCategory, onPickCard, onPickDate, showPayment, creditAvailable, payment, setPayment,
 }: EditFormProps) {
   const colors = useColors();
   const cents = parseInt(amount || '0', 10) || 0;
@@ -103,6 +105,15 @@ export default function EditForm({
       <DetailRow icon="event" color={colors.primary.DEFAULT} label={FIELD_LABELS.date} onPress={onPickDate}>
         <Text className={INPUT_CLASS}>{formatLongDate(date.toISOString())}</Text>
       </DetailRow>
+
+      {showPayment && (
+        <DetailRow icon="credit-card" color={colors.primary.DEFAULT} label={FIELD_LABELS.payment}>
+          <View className="mt-1.5 pb-1">
+            <PaymentMethodToggle value={payment} onChange={setPayment} creditAvailable={creditAvailable} />
+            {creditAvailable && <Text className="text-xs leading-[17px] text-muted mt-2">{PAYMENT_EDIT_HINT}</Text>}
+          </View>
+        </DetailRow>
+      )}
 
       <DetailRow icon="notes" color={colors.primary.DEFAULT} label={FIELD_LABELS.description} last>
         <TextInput

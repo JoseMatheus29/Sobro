@@ -96,6 +96,7 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen name="detailsSpend/[id]" />
+          <Stack.Screen name="invoice/[id]" />
           {/* Também folhas, como a de nova transação. */}
           <Stack.Screen
             name="history/index"
@@ -107,6 +108,14 @@ function RootNavigator() {
           />
           <Stack.Screen
             name="transfer/index"
+            options={{
+              presentation: 'transparentModal',
+              animation: 'slide_from_bottom',
+              contentStyle: { backgroundColor: 'transparent' },
+            }}
+          />
+          <Stack.Screen
+            name="payInvoice/[id]"
             options={{
               presentation: 'transparentModal',
               animation: 'slide_from_bottom',

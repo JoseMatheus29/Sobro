@@ -15,12 +15,15 @@ import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import TransactionList from '@/app/components/ui/TransactionList';
 import { categoriesForType } from '@/utils/transactionForm';
 import CategoryLimits from '@/app/myDetailing/components/CategoryLimits';
+import AccountFilter from '@/app/myDetailing/components/AccountFilter';
 import ExpenseChart from '@/app/myDetailing/components/ExpenseChart';
 import LimitSheet from '@/app/myDetailing/components/LimitSheet';
 import MonthlyProgress from '@/app/myDetailing/components/MonthlyProgress';
+import PaymentSplitCard from '@/app/myDetailing/components/PaymentSplitCard';
 import { setCategoryBudgetFrom } from '@/db/categoryBudgets';
 import { notifyDataChanged } from '@/db/events';
-import { useBudgetEntries, useCategories, useCategoryBudgets, useCategoryTotals, useTransactions } from '@/db/hooks';
+import { useBudgetEntries, useCards, useCategories, useCategoryBudgets, useTransactions } from '@/db/hooks';
+import { spendingByCategory, spendingByPayment } from '@/utils/spending';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { formatShortDate } from '@/utils/format';
@@ -44,25 +47,33 @@ export default function MyDetailing() {
   const { showToast } = useFeedback();
   const { month, isCurrent } = useSelectedMonth();
 
-  const { transactions, loading: loadingTransactions, error: transactionsError, refetch: refetchTransactions } = useTransactions({ month });
-  const { totals: categoryTotals, loading: loadingTotals, error: totalsError, refetch: refetchTotals } = useCategoryTotals({ month });
-  // The chart, the progress and the list all depend on the month's figures: until they come (or fail) none is drawn.
-  const detailError = transactionsError ?? totalsError;
-  const detailLoading = loadingTransactions || loadingTotals;
+  const { transactions, loading: detailLoading, error: detailError, refetch: refetchTransactions } = useTransactions({ month });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { categories } = useCategories();
+  const { cards } = useCards();
+  // "Todas", or one account: the chart, the spending, how it was paid and the list are all about what is picked.
+  const [pickedAccountId, setPickedAccountId] = useState<number | null>(null);
+  const accountId = cards.some((c) => c.id === pickedAccountId) ? pickedAccountId : null;
+  const scopeName = accountId !== null ? (cards.find((c) => c.id === accountId)?.name ?? null) : null;
+  const scoped = accountId === null ? transactions : transactions.filter((t) => t.cardId === accountId);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   // Inside the limit dialog: a toast would be drawn behind it.
   const [limitError, setLimitError] = useState<string | null>(null);
 
+  // The month's spending by category: the same sum the server makes, done here so one account can be looked at.
+  const categoryTotals = spendingByCategory(scoped);
   const totalGastos = categoryTotals.reduce((sum, c) => sum + c.total, 0);
   const pieData = categoryTotals.map((c) => ({
     value: totalGastos > 0 ? Math.round((c.total / totalGastos) * 100) : 0,
     color: c.color,
     label: c.categoryName,
   }));
+
+  // How the spending was paid: only worth showing when at least some of the expenses say how.
+  const split = spendingByPayment(scoped);
+  const showSplit = split.slices.some((slice) => slice.kind !== 'other');
 
   const budget = budgetForMonth(budgetEntries, month);
   const hasBudget = budget !== null && budget > 0;
@@ -116,7 +127,7 @@ export default function MyDetailing() {
     await saveLimit(null, LIMIT_REMOVED_TOAST);
   };
 
-  const displayTransactions = withoutTransfers(transactions)
+  const displayTransactions = withoutTransfers(scoped)
     .filter((t) => t.type === 'expense')
     .map((t) => ({
       id: t.id,
@@ -145,13 +156,20 @@ export default function MyDetailing() {
         </ScreenHeader>
 
         <View className="-mt-7">
+          {cards.length > 1 && (
+            <AccountFilter
+              accounts={cards.map((c) => ({ id: c.id, name: c.name }))}
+              selectedId={accountId}
+              onSelect={setPickedAccountId}
+            />
+          )}
+
           {detailError ? (
             <View className="mx-4 bg-card rounded-[24px]">
               <LoadError
                 error={detailError}
                 onRetry={() => {
                   refetchTransactions();
-                  refetchTotals();
                 }}
               />
             </View>
@@ -168,17 +186,23 @@ export default function MyDetailing() {
                 progress={progress}
                 percentage={percentage}
                 hasBudget={hasBudget}
+                scopeName={scopeName}
               />
 
-              <CategoryLimits
-                rows={limitRows}
-                canEdit={isCurrent}
-                onPressRow={(id) => {
-                  setLimitError(null);
-                  setEditingId(id);
-                }}
-                onAdd={() => setPicking(true)}
-              />
+              {showSplit && <PaymentSplitCard split={split} />}
+
+              {/* A limit is for a category in the whole account, so it only makes sense with all of them in view. */}
+              {accountId === null && (
+                <CategoryLimits
+                  rows={limitRows}
+                  canEdit={isCurrent}
+                  onPressRow={(id) => {
+                    setLimitError(null);
+                    setEditingId(id);
+                  }}
+                  onAdd={() => setPicking(true)}
+                />
+              )}
 
               <TransactionList
                 title="Seus Gastos"

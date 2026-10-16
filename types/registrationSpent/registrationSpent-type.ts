@@ -2,6 +2,7 @@ import { type ViewStyle } from 'react-native';
 
 import { palette, type Palette } from '@/constants/palette';
 import { type CardRecord } from '@/db/cards';
+import { type PaymentMethod } from '@/db/transactions';
 import { type RepeatMode } from '@/utils/recurrence-type';
 
 export type TxType = 'expense' | 'income';
@@ -74,6 +75,9 @@ export interface DetailsStepProps {
   setInstallments: (n: number) => void;
   currentInstallment: number;
   setCurrentInstallment: (n: number) => void;
+  /** How it was paid; only asked on an expense of an account that has a credit card. */
+  payment: PaymentMethod;
+  setPayment: (method: PaymentMethod) => void;
 }
 
 export interface RepeatSectionProps {
@@ -137,8 +141,8 @@ export const MAX_AMOUNT_DIGITS = 9;
 // Default categories that only make sense for one direction. Everything else
 // (including categories the user creates, and "Outros") shows for both.
 export const CATEGORY_IDS_HIDDEN_FOR: Record<TxType, string[]> = {
-  expense: ['salary', 'invest', 'transfer'],
-  income: ['food', 'transport', 'leisure', 'health', 'shopping', 'transfer'],
+  expense: ['salary', 'invest', 'transfer', 'invoice'],
+  income: ['food', 'transport', 'leisure', 'health', 'shopping', 'transfer', 'invoice'],
 };
 
 // The screen is a sheet over the screen it was opened from.
@@ -172,6 +176,7 @@ export const INSTALLMENT_SUMMARY_TITLE = (remaining: number, amount: string) =>
   remaining === 1 ? `1 parcela restante de ${amount}` : `${remaining} parcelas restantes de ${amount}`;
 export const INSTALLMENT_SUMMARY_TEXT = (total: string, lastMonth: string) =>
   `Total a pagar ${total} · a última em ${lastMonth}. As próximas aparecem nos meses seguintes como previstas.`;
+export const CREDIT_TOAST_SUFFIX = (invoice: string) => `na fatura de ${invoice}`;
 export const REPEATING_TOAST_SUFFIX = {
   monthly: 'repete todo mês',
   installments: 'parcelado',

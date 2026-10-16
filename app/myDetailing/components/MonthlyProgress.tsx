@@ -6,7 +6,7 @@ import * as Progress from 'react-native-progress';
 import { useColors } from '@/hooks/useColors';
 import { MonthlyProgressProps } from '@/types/myDetailing/myDetailing-type';
 
-export default function MonthlyProgress({ totalGastos, progress, percentage, hasBudget }: MonthlyProgressProps) {
+export default function MonthlyProgress({ totalGastos, progress, percentage, hasBudget, scopeName }: MonthlyProgressProps) {
   const colors = useColors();
   return (
     // LinearGradient ignores borderRadius on Android; the wrapper does the clipping.
@@ -18,23 +18,27 @@ export default function MonthlyProgress({ totalGastos, progress, percentage, has
         className="p-5"
       >
         <Text className="text-white/75 text-xs font-medium mb-1">
-          Gastos do Mês
+          Gastos do Mês{scopeName ? ` · ${scopeName}` : ''}
         </Text>
         <Text className="text-white text-[28px] font-extrabold mb-4">
           R$ {totalGastos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </Text>
-        <Progress.Bar
-          progress={progress}
-          width={null}
-          color="rgba(255,255,255,0.9)"
-          unfilledColor="rgba(255,255,255,0.25)"
-          borderWidth={0}
-          borderRadius={4}
-          height={6}
-        />
-        <Text className="text-white/65 text-[11px] mt-1.5">
-          {hasBudget ? `${percentage}% do orçamento utilizado` : 'Defina um orçamento mensal no seu perfil'}
-        </Text>
+        {!scopeName && (
+          <>
+            <Progress.Bar
+              progress={progress}
+              width={null}
+              color="rgba(255,255,255,0.9)"
+              unfilledColor="rgba(255,255,255,0.25)"
+              borderWidth={0}
+              borderRadius={4}
+              height={6}
+            />
+            <Text className="text-white/65 text-[11px] mt-1.5">
+              {hasBudget ? `${percentage}% do orçamento utilizado` : 'Defina um orçamento mensal no seu perfil'}
+            </Text>
+          </>
+        )}
       </LinearGradient>
     </View>
   );

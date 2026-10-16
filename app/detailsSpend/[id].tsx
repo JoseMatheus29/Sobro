@@ -15,6 +15,7 @@ import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import EditForm from '@/app/detailsSpend/components/EditForm';
 import RecurrenceCard from '@/app/detailsSpend/components/RecurrenceCard';
+import InvoicePaymentDetails from '@/app/detailsSpend/components/InvoicePaymentDetails';
 import TransferDetails from '@/app/detailsSpend/components/TransferDetails';
 import {
   APPLY_CONFIRM,
@@ -44,10 +45,11 @@ import { notifyDataChanged } from '@/db/events';
 import { useCards, useCategories, useRecurrence, useTransaction } from '@/db/hooks';
 import { endRecurrence } from '@/db/recurrences';
 import { refreshReminders } from '@/db/reminders';
-import { deleteTransaction, updateTransaction } from '@/db/transactions';
+import { deleteTransaction, updateTransaction, type PaymentMethod } from '@/db/transactions';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { nextOccurrence } from '@/utils/recurrence';
+import { isInvoicePayment } from '@/utils/transfer';
 import { tint } from '@/utils/color';
 import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
@@ -74,6 +76,7 @@ export default function DetailsSpend() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [cardId, setCardId] = useState<number | null>(null);
   const [date, setDate] = useState(new Date());
+  const [payment, setPayment] = useState<PaymentMethod | null>(null);
 
   const [sheet, setSheet] = useState<'category' | 'card' | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -88,6 +91,7 @@ export default function DetailsSpend() {
     setCategoryId(transaction.categoryId);
     setCardId(transaction.cardId);
     setDate(new Date(transaction.occurredAt));
+    setPayment(transaction.paymentMethod ?? null);
   }, [transaction]);
 
   // The tab bar would float above the keyboard and cover the form.
@@ -120,11 +124,20 @@ export default function DetailsSpend() {
 
   // The two legs of a transfer cannot be edited one by one: they are looked at, or undone together.
   if (transaction.transferId != null) return <TransferDetails transaction={transaction} />;
+  // Same for the payment of an invoice: it is undone, not edited.
+  if (isInvoicePayment(transaction)) return <InvoicePaymentDetails transaction={transaction} />;
 
   const cents = parseInt(amount || '0', 10) || 0;
   const typeColor = typeColors(colors)[type];
   const category = categories.find((c) => c.id === categoryId) ?? null;
   const card = cards.find((c) => c.id === cardId) ?? null;
+  // Only an expense says how it was paid. Credit needs an account with a credit card: moving the expense to one
+  // without it turns it into Pix, which is what the toggle then shows.
+  const showPayment = type === 'expense';
+  const creditAvailable = card?.credit != null;
+  const shownPayment: PaymentMethod | null = payment === 'credit' && !creditAvailable ? 'pix' : payment;
+  const effectivePayment: PaymentMethod | null = showPayment ? shownPayment : null;
+  const storedPayment = transaction.paymentMethod ?? null;
 
   const dirty =
     type !== transaction.type ||
@@ -133,6 +146,7 @@ export default function DetailsSpend() {
     description !== (transaction.description ?? '') ||
     categoryId !== transaction.categoryId ||
     cardId !== transaction.cardId ||
+    effectivePayment !== storedPayment ||
     // The date is a calendar day: picking the same day again (at another time of day) is no change.
     calendarDayAtNoonUtc(date) !== transaction.occurredAt;
   // What still blocks saving, by field name, so the screen can say it instead of just staying gray.
@@ -166,7 +180,8 @@ export default function DetailsSpend() {
       (cents !== Math.round(Math.abs(transaction.amount) * 100) ||
         name.trim() !== transaction.name ||
         categoryId !== transaction.categoryId ||
-        cardId !== transaction.cardId);
+        cardId !== transaction.cardId ||
+        effectivePayment !== storedPayment);
     const applyToNext = changedForNext ? await confirm(APPLY_CONFIRM) : false;
 
     setSaving(true);
@@ -181,6 +196,7 @@ export default function DetailsSpend() {
         amount: centsToAmount(cents),
         type,
         occurredAt: calendarDayAtNoonUtc(date),
+        ...(effectivePayment !== storedPayment ? { paymentMethod: effectivePayment } : {}),
         ...(applyToNext ? { applyToNext: true } : {}),
       });
     } catch (failure) {
@@ -265,6 +281,10 @@ export default function DetailsSpend() {
             onPickCategory={() => setSheet('category')}
             onPickCard={() => setSheet('card')}
             onPickDate={() => setShowDatePicker(true)}
+            showPayment={showPayment}
+            creditAvailable={creditAvailable}
+            payment={shownPayment}
+            setPayment={setPayment}
           />
 
           {recurrence && transaction.recurrence && (

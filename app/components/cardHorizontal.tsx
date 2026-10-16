@@ -16,6 +16,7 @@ const CardHorizontal: React.FC<CardHorizontalProps> = ({
   type = 'expense',
   iconColor: categoryColor,
   badge,
+  tag,
   planned = false,
   transfer = false,
   onPress,
@@ -51,6 +52,11 @@ const CardHorizontal: React.FC<CardHorizontalProps> = ({
         <View className="flex-row items-center gap-2 mb-1">
           <Text numberOfLines={1} className="shrink text-sm font-bold text-ink">{name}</Text>
           {badge && <RecurrenceBadge label={badge} />}
+          {tag && (
+            <View className="rounded-[7px] bg-surface px-[7px] py-[2px]">
+              <Text className="text-[11px] font-medium leading-[14px] text-muted">{tag}</Text>
+            </View>
+          )}
         </View>
         <Text className="text-xs text-subtle font-normal">
           {date}
