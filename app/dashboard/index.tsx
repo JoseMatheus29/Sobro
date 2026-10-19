@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SideBar from '@/app/components/sidebar';
 import AddTransactionFab from '@/app/components/AddTransactionFab';
@@ -39,6 +40,7 @@ import { buildSummary } from '@/utils/summary';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const { month, isCurrent, isFuture } = useSelectedMonth();
   const { current, previous, loading: loadingMonth, error: monthError, refetch: refetchMonth } = useMonthTransactions(month);
@@ -77,7 +79,7 @@ export default function DashboardScreen() {
   const [recentsTop, setRecentsTop] = useState(0);
 
   const listTop = headerHeight - SUMMARY_OVERLAP + recentsTop + RECENT_TITLE_HEIGHT;
-  const freeHeight = viewportHeight - SCROLL_PADDING_WITH_FAB - listTop - RECENT_LIST_BORDER;
+  const freeHeight = viewportHeight - SCROLL_PADDING_WITH_FAB - insets.bottom - listTop - RECENT_LIST_BORDER;
   const fitCount = Math.floor(freeHeight / RECENT_ROW_HEIGHT);
   const recentCount = Math.min(RECENT_MAX, Math.max(RECENT_MIN, fitCount));
 

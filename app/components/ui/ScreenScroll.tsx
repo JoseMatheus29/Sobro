@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ScrollView, View, type LayoutChangeEvent, type ScrollViewProps } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SCROLL_PADDING_WITH_FAB } from '@/types/components/sidebar-type';
 
@@ -19,11 +20,16 @@ export default function ScreenScroll({
   contentContainerStyle,
   ...rest
 }: ScreenScrollProps) {
+  const insets = useSafeAreaInsets();
   const [viewportHeight, setViewportHeight] = useState(0);
   // Measured without the bottom padding, so adding it never changes whether it is needed.
   const [contentHeight, setContentHeight] = useState(0);
 
-  const needsScroll = viewportHeight > 0 && contentHeight > viewportHeight - bottomPadding;
+  // The tab bar (and the floating button over it) is as tall as its own padding plus the inset of the system's
+  // navigation bar, which is taller with three buttons than with gestures: without it the end of the content
+  // (the save button of Perfil) stayed under the bar on phones with buttons.
+  const clearance = bottomPadding + insets.bottom;
+  const needsScroll = viewportHeight > 0 && contentHeight > viewportHeight - clearance;
 
   return (
     <ScrollView
@@ -37,7 +43,7 @@ export default function ScreenScroll({
         setViewportHeight(e.nativeEvent.layout.height);
         onLayout?.(e);
       }}
-      contentContainerStyle={[contentContainerStyle, { paddingBottom: needsScroll ? bottomPadding : 0 }]}
+      contentContainerStyle={[contentContainerStyle, { paddingBottom: needsScroll ? clearance : 0 }]}
     >
       <View onLayout={(e: LayoutChangeEvent) => setContentHeight(e.nativeEvent.layout.height)}>{children}</View>
     </ScrollView>
