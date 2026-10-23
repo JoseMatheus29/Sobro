@@ -1,5 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
-
+import { readToken, removeToken, writeToken } from '@/api/tokenStorage';
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/types/api/api-type';
 
 export interface Session {
@@ -8,11 +7,11 @@ export interface Session {
 }
 
 // The tokens are the only thing the app keeps on the device about the account, and only in the secure
-// store. A read that fails (a keystore that cannot be opened) counts as "no token": the next request then
-// ends in the login screen instead of crashing.
+// store (`tokenStorage`; the browser's version uses localStorage). A read that fails (a keystore that cannot
+// be opened) counts as "no token": the next request then ends in the login screen instead of crashing.
 async function read(key: string): Promise<string | null> {
   try {
-    return await SecureStore.getItemAsync(key);
+    return await readToken(key);
   } catch {
     return null;
   }
@@ -26,14 +25,14 @@ export async function hasSession(): Promise<boolean> {
 }
 
 export async function saveSession(session: Session): Promise<void> {
-  await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, session.accessToken);
-  await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, session.refreshToken);
+  await writeToken(ACCESS_TOKEN_KEY, session.accessToken);
+  await writeToken(REFRESH_TOKEN_KEY, session.refreshToken);
 }
 
 export async function clearSession(): Promise<void> {
   try {
-    await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-    await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    await removeToken(ACCESS_TOKEN_KEY);
+    await removeToken(REFRESH_TOKEN_KEY);
   } catch {
     // Nothing else to do: the next read will fail the same way and count as no session.
   }

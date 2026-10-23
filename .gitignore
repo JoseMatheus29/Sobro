@@ -41,3 +41,6 @@ app-example
 BACKLOG.md
 # local env (the example stays)
 .env
+
+# Cloudflare (wrangler) local state
+.wrangler/

@@ -1,0 +1,11 @@
+{
+  // Cloudflare: publishes the site that `npx expo export -p web` builds into dist/ (docs/projeto-web-desktop.md).
+  // "name" has to be the same as the project's name on Cloudflare.
+  "name": "sobro",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // The app is a single page: any address that is not a file (/wallet, /login…) answers index.html.
+    "not_found_handling": "single-page-application"
+  }
+}

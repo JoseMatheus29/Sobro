@@ -24,7 +24,10 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
+      "lang": "pt-BR",
+      "description": "Controle suas entradas, saídas e o saldo de cada conta em um só lugar.",
+      "themeColor": "#24498c",
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [

@@ -15,6 +15,7 @@ import QueryProvider from '@/app/components/QueryProvider';
 import RecurrenceSync from '@/app/components/RecurrenceSync';
 import { applyTheme } from '@/utils/applyTheme';
 import { ThemeProvider } from '@/app/components/theme/ThemeProvider';
+import WebFrame from '@/app/components/ui/WebFrame';
 
 // Before anything is drawn, applies the light/dark choice kept on the phone. It is not in the account: it has
 // to be right on the login screens too.
@@ -36,7 +37,9 @@ function useThemeReady(): boolean {
 export default function Layout() {
   return (
     <ThemeProvider>
-      <Root />
+      <WebFrame>
+        <Root />
+      </WebFrame>
     </ThemeProvider>
   );
 }
