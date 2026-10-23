@@ -113,7 +113,7 @@ Conferir, em `api/client.ts`, que a renovação de token (uma só para todas as 
 
 ### 5.4 Substituições por plataforma
 
-- **`DateField`**: `app/components/ui/DateField.tsx` (celular, envolve o `datetimepicker`) e `DateField.web.tsx` (`<input type="date">`). Trocar o uso nas 4 telas. Lembrar que a data do app é o **dia do calendário** enviado ao meio-dia UTC (`calendarDayAtNoonUtc`): o `<input type="date">` devolve `AAAA-MM-DD`, então converter com cuidado para o fuso.
+- **Seletor de data (feito)**: `app/components/ui/DatePicker.tsx` (celular, envolve o `datetimepicker`) e `DatePicker.web.tsx` (diálogo com `<input type="date">`, que aceita digitar ou escolher no calendário). As 4 telas usam o `DatePicker`. A data do app é o **dia do calendário** enviado ao meio-dia UTC (`calendarDayAtNoonUtc`): o `<input type="date">` devolve `AAAA-MM-DD`, e `utils/dateInput.ts` (com teste) converte nos dois sentidos pelo dia do celular, mantendo a hora.
 - **Backup**: `db/backupFile.web.ts` com download por `Blob` + `<a download>` e leitura por `<input type="file">`. Mesma interface do arquivo de celular.
 - **Lembretes**: `db/reminders.web.ts` com funções vazias, e esconder o interruptor "Lembretes de vencimento" em Perfil na web.
 - **Ícones**: no `metro.config.js`, resolver `react-native-vector-icons/*` para `@expo/vector-icons/*` quando a plataforma for `web`:
@@ -228,7 +228,7 @@ Depois de publicar: colocar o endereço do site em `CORS_ORIGINS` na API.
 3. [ ] API: `@fastify/cors`, `CORS_ORIGINS`, teste com `curl`; publicar no Heroku.
 4. [ ] Adaptador de armazenamento do login (`.web.ts`).
 5. [ ] Ícones (resolver no Metro).
-6. [ ] `DateField` e troca nas 4 telas.
+6. [x] Seletor de data (`DatePicker`) e troca nas 4 telas.
 7. [ ] Backup e lembretes (versões `.web`).
 8. [ ] Contêiner em coluna de celular no `_layout`.
 9. [ ] Build (`expo export`), teste local, publicação, endereço no `CORS_ORIGINS`.

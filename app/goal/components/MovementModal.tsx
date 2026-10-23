@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacit
 import { addGoalEntry } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
+import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { roundAmount } from '@/utils/apiInput';
 import { errorMessage } from '@/utils/apiErrors';
@@ -84,7 +85,7 @@ export default function MovementModal({ visible, kind, goal, onClose }: Movement
         className="flex-1 bg-black/40 items-center justify-center px-6"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View className="bg-card rounded-[24px] p-5 w-full">
+        <View className="bg-card rounded-[24px] p-5 w-full" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
           <Text className="text-[15px] font-bold text-ink mb-4" numberOfLines={2}>
             {deposit ? DEPOSIT_TITLE(goal.name) : WITHDRAW_TITLE(goal.name)}
           </Text>

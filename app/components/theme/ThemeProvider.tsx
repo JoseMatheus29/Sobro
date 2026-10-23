@@ -6,6 +6,7 @@ import * as SystemUI from 'expo-system-ui';
 
 import { colorVars, paletteFor } from '@/constants/palette';
 import { useScheme } from '@/hooks/useColors';
+import { useDocumentThemeVars } from '@/hooks/useDocumentThemeVars';
 import { useSystemBars } from '@/hooks/useSystemBars';
 
 // Sets the CSS variables behind every color class (`bg-canvas`, `text-ink`…) for the system's light or
@@ -19,6 +20,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // The status bar and the navigation bar of the phone follow the theme too.
   useSystemBars();
+  // In a browser, so the dialogs (drawn outside this view) get the colors as well.
+  useDocumentThemeVars(scheme);
 
   // The window behind the screens (shown during transitions and under the keyboard).
   useEffect(() => {

@@ -8,6 +8,7 @@ import {
   DEFAULT_CANCEL_LABEL,
   DEFAULT_CONFIRM_LABEL,
   DIALOG_DIM_COLOR,
+  DIALOG_MAX_WIDTH,
   feedbackStyles,
 } from '@/types/components/feedback/feedback-type';
 
@@ -20,7 +21,7 @@ export default function ConfirmDialog({ request, onAnswer }: ConfirmDialogProps)
   return (
     <Modal visible={!!request} transparent animationType="fade" onRequestClose={() => onAnswer(false)}>
       <View className="flex-1 items-center justify-center px-6" style={{ backgroundColor: DIALOG_DIM_COLOR }}>
-        <View className="w-full rounded-3xl bg-card p-6">
+        <View className="w-full rounded-3xl bg-card p-6" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
           <View className="w-12 h-12 rounded-[14px] items-center justify-center mb-4" style={{ backgroundColor: look.tint }}>
             <Icon name={destructive ? 'delete-outline' : 'help-outline'} size={24} color={look.color} />
           </View>

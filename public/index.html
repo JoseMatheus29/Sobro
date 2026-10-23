@@ -36,6 +36,12 @@
           background-color: #151a21;
         }
       }
+      /* The fields draw their own focus (the border of the box around them); the browser's ring on the input
+         itself was a second, white outline inside it. */
+      input:focus,
+      textarea:focus {
+        outline: none;
+      }
     </style>
   </head>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, View, Text, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from '@/app/components/ui/DatePicker';
 
 import { useColors } from '@/hooks/useColors';
 import { CHANGE_LABEL, DetailsStepProps } from '@/types/registrationSpent/registrationSpent-type';
@@ -146,12 +146,10 @@ export default function DetailsStep({
         />
       )}
       {showPicker && (
-        <DateTimePicker
+        <DatePicker
           value={date}
-          mode="date"
-          display="default"
           maximumDate={new Date()}
-          onChange={(_event, selected) => {
+          onChange={(selected) => {
             setShowPicker(false);
             if (selected) setDate(selected);
           }}

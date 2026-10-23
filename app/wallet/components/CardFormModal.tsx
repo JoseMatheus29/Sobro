@@ -6,6 +6,7 @@ import InlineError from '@/app/components/ui/InlineError';
 import Stepper from '@/app/components/ui/Stepper';
 import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
+import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { createCard, getCardUsage, updateCard, type CardCredit, type CardRecord } from '@/db/cards';
 import { roundAmount } from '@/utils/apiInput';
@@ -184,7 +185,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
-        <View className="bg-card rounded-[24px] p-5 w-full">
+        <View className="bg-card rounded-[24px] p-5 w-full" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
           <Text className="text-[15px] font-bold text-ink mb-4">
             {isEditing ? EDIT_ACCOUNT_TITLE : NEW_ACCOUNT_TITLE}
           </Text>

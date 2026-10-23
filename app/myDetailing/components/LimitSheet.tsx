@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import InlineError from '@/app/components/ui/InlineError';
 import { useColors } from '@/hooks/useColors';
-import { DIALOG_DIM_COLOR } from '@/types/components/feedback/feedback-type';
+import { DIALOG_DIM_COLOR, DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import {
   LIMIT_PLACEHOLDER,
   LIMIT_REMOVE_LABEL,
@@ -52,7 +52,11 @@ export default function LimitSheet({
         style={{ backgroundColor: DIALOG_DIM_COLOR, paddingBottom: keyboardHeight }}
         onPress={onClose}
       >
-        <Pressable className="bg-card rounded-[24px] p-5" onPress={() => undefined}>
+        <Pressable
+          className="bg-card rounded-[24px] p-5"
+          style={{ width: '100%', maxWidth: DIALOG_MAX_WIDTH, alignSelf: 'center' }}
+          onPress={() => undefined}
+        >
           <Text className="text-lg font-bold text-ink">{LIMIT_SHEET_TITLE(categoryName)}</Text>
 
           <View className="flex-row items-center bg-canvas rounded-2xl border-[1.5px] border-line px-3.5 h-[52px] mt-4">

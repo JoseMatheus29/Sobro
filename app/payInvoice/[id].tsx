@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from '@/app/components/ui/DatePicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -247,12 +247,10 @@ export default function PayInvoiceSheet() {
         {body()}
 
         {showPicker && (
-          <DateTimePicker
+          <DatePicker
             value={date}
-            mode="date"
-            display="default"
             maximumDate={new Date()}
-            onChange={(_event, selected) => {
+            onChange={(selected) => {
               setShowPicker(false);
               if (selected) setDate(selected);
             }}

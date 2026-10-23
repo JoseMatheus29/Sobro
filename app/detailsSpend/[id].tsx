@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Text, TouchableOpacity, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from '@/app/components/ui/DatePicker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -323,12 +323,10 @@ export default function DetailsSpend() {
       </ScreenScroll>
 
       {showDatePicker && (
-        <DateTimePicker
+        <DatePicker
           value={date}
-          mode="date"
-          display="default"
           maximumDate={new Date()}
-          onChange={(_event, selected) => {
+          onChange={(selected) => {
             setShowDatePicker(false);
             if (selected) setDate(selected);
           }}

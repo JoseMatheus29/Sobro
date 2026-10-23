@@ -65,6 +65,8 @@ export const TOAST_SHADOW: ViewStyle = {
 };
 
 export const DIALOG_DIM_COLOR = 'rgba(26,43,74,0.5)';
+// How wide a dialog gets: on a phone it is the screen minus its margins, on a computer's window it stays a card.
+export const DIALOG_MAX_WIDTH = 440;
 export const DEFAULT_CONFIRM_LABEL = 'Confirmar';
 export const DEFAULT_CANCEL_LABEL = 'Cancelar';
 export const FEEDBACK_HOOK_ERROR = 'useFeedback must be used inside <FeedbackProvider>';

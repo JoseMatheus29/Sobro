@@ -6,6 +6,7 @@ import { useAuth } from '@/app/components/auth/AuthProvider';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import Field from '@/app/components/ui/Field';
 import { useColors } from '@/hooks/useColors';
+import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import {
   ACCOUNT_DELETED_TOAST,
   DELETE_CANCEL_LABEL,
@@ -74,7 +75,7 @@ export default function DeleteAccountModal({ visible, onClose }: DeleteAccountMo
         className="flex-1 bg-black/40 items-center justify-center px-6"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View className="bg-card rounded-[24px] p-5 w-full">
+        <View className="bg-card rounded-[24px] p-5 w-full" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
           <Text className="text-[15px] font-bold text-ink mb-1.5">{DELETE_MODAL_TITLE}</Text>
           <Text className="text-[13px] leading-[19px] text-muted mb-4">{DELETE_MODAL_TEXT}</Text>
 

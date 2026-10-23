@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { createGoal, updateGoal } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useCategoryColor, useColors } from '@/hooks/useColors';
+import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { roundAmount } from '@/utils/apiInput';
 import { errorMessage } from '@/utils/apiErrors';
@@ -115,7 +116,10 @@ export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalF
         className="flex-1 bg-black/40 justify-center px-6"
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View className="bg-card rounded-[24px] w-full" style={{ maxHeight: '90%' }}>
+        <View
+          className="bg-card rounded-[24px] w-full"
+          style={{ maxHeight: '90%', maxWidth: DIALOG_MAX_WIDTH, alignSelf: 'center' }}
+        >
           <ScrollView contentContainerClassName="p-5" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <Text className="text-[15px] font-bold text-ink mb-4">{isEditing ? EDIT_GOAL_TITLE : NEW_GOAL_TITLE}</Text>
 

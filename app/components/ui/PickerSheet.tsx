@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useColors } from '@/hooks/useColors';
 import { DIALOG_DIM_COLOR } from '@/types/components/feedback/feedback-type';
 import { PICKER_CLOSE_LABEL, PICKER_MAX_HEIGHT, PickerSheetProps } from '@/types/components/ui/pickerSheet-type';
+import { WEB_COLUMN_MAX_WIDTH } from '@/types/components/ui/webFrame-type';
 
 // Bottom sheet with a list of choices (category, account...). Picking one closes it.
 export default function PickerSheet({ visible, title, options, selectedId, onSelect, onClose }: PickerSheetProps) {
@@ -18,7 +19,13 @@ export default function PickerSheet({ visible, title, options, selectedId, onSel
         <Pressable className="flex-1" onPress={onClose} accessibilityLabel={PICKER_CLOSE_LABEL} />
         <View
           className="bg-card rounded-t-[28px] px-5 pt-2.5"
-          style={{ paddingBottom: insets.bottom + 20, maxHeight: PICKER_MAX_HEIGHT }}
+          style={{
+            paddingBottom: insets.bottom + 20,
+            maxHeight: PICKER_MAX_HEIGHT,
+            width: '100%',
+            maxWidth: WEB_COLUMN_MAX_WIDTH,
+            alignSelf: 'center',
+          }}
         >
           <View className="items-center">
             <View className="w-10 h-1 rounded-full bg-surface-dark" />

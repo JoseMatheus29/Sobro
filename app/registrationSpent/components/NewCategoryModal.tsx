@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import InlineError from '@/app/components/ui/InlineError';
 import { useColors } from '@/hooks/useColors';
+import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { createCategory } from '@/db/categories';
 import { notifyDataChanged } from '@/db/events';
@@ -75,7 +76,7 @@ export default function NewCategoryModal({ visible, onClose, onCreated }: NewCat
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View className="flex-1 bg-black/40 items-center justify-center px-6">
-        <View className="bg-card rounded-[20px] p-5 w-full">
+        <View className="bg-card rounded-[20px] p-5 w-full" style={{ maxWidth: DIALOG_MAX_WIDTH }}>
           <Text className="text-[15px] font-semibold text-ink mb-4">Nova categoria</Text>
 
           <TextInput
