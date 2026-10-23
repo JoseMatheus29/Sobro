@@ -14,7 +14,9 @@ import { notifyDataChanged } from '@/db/events';
 import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
 import { createTransaction, type PaymentMethod } from '@/db/transactions';
 import { DEFAULT_PAYMENT_METHOD } from '@/types/components/ui/payment-type';
-import { invoiceMonthOf, localDay } from '@/utils/invoice';
+import { fromDateInputValue } from '@/utils/dateInput';
+import { installmentLabels, installmentPlan } from '@/utils/installments';
+import { invoiceMonthOf, localDay, todayKey } from '@/utils/invoice';
 import { monthNameOf } from '@/utils/month';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
@@ -33,6 +35,8 @@ import {
   CLOSE_LABEL,
   CREDIT_TOAST_SUFFIX,
   FlowStep,
+  INSTALLMENT_NOT_YET_MESSAGE,
+  INSTALLMENT_NOT_YET_TITLE,
   SAVE_LABELS,
   REPEATING_TOAST_SUFFIX,
   SAVE_FAILED_TITLE,
@@ -145,6 +149,27 @@ export default function RegistrationSpent() {
         ? { mode: 'installments', total: installments, current: currentInstallment }
         : { mode: 'monthly' };
 
+    // A plan in installments is registered from the installment the person is on: the date they gave is the one of the
+    // purchase, and the transaction made is that installment, on its own day (the server makes the following ones).
+    const plan =
+      repeating && repeat === 'installments'
+        ? installmentPlan({
+            purchaseDay: localDay(date),
+            total: installments,
+            current: currentInstallment,
+            rules: paymentMethod === 'credit' ? creditRules : null,
+            today: todayKey(),
+          })
+        : null;
+    if (plan?.notYet) {
+      return showToast({
+        type: 'error',
+        title: INSTALLMENT_NOT_YET_TITLE,
+        message: INSTALLMENT_NOT_YET_MESSAGE(plan.current, installmentLabels(plan).first, plan.onCredit),
+      });
+    }
+    const registeredDate = plan ? (fromDateInputValue(plan.firstDay, date) ?? date) : date;
+
     const input = {
       cardId: selectedCardId,
       categoryId: selectedCat,
@@ -153,7 +178,7 @@ export default function RegistrationSpent() {
       amount: centsToAmount(parseInt(amount, 10)),
       type,
       // The day on the phone's calendar, not an instant: at 22h in Brazil it is already tomorrow in UTC.
-      occurredAt: calendarDayAtNoonUtc(date),
+      occurredAt: calendarDayAtNoonUtc(registeredDate),
       ...(repeatInput ? { repeat: repeatInput } : {}),
       ...(paymentMethod ? { paymentMethod } : {}),
     };
@@ -183,7 +208,7 @@ export default function RegistrationSpent() {
       title: SAVED_TITLES[type],
       message: `R$ ${amountText} em ${category?.name ?? ''}${repeating ? ` · ${REPEATING_TOAST_SUFFIX[repeat as 'monthly' | 'installments']}` : ''}${
         paymentMethod === 'credit' && creditRules
-          ? ` · ${CREDIT_TOAST_SUFFIX(monthNameOf(invoiceMonthOf(localDay(date), creditRules)))}`
+          ? ` · ${CREDIT_TOAST_SUFFIX(monthNameOf(invoiceMonthOf(localDay(registeredDate), creditRules)))}`
           : ''
       }`.trim(),
       icon: category?.icon,

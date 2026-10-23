@@ -6,11 +6,14 @@ import Stepper from '@/app/components/ui/Stepper';
 import { useColors } from '@/hooks/useColors';
 import { tint } from '@/utils/color';
 import { formatMoney } from '@/utils/format';
-import { monthKey, monthKeyWithYear } from '@/utils/month';
+import { installmentLabels } from '@/utils/installments';
 import { installmentSummary } from '@/utils/recurrence';
 import { MAX_INSTALLMENTS, MIN_INSTALLMENTS } from '@/utils/recurrence-type';
 import {
   CURRENT_INSTALLMENT_LABEL,
+  INSTALLMENT_NOT_YET_MESSAGE,
+  INSTALLMENT_SCHEDULE_TEXT,
+  INSTALLMENT_SKIPPED_TEXT,
   INSTALLMENT_SUMMARY_TEXT,
   INSTALLMENT_SUMMARY_TITLE,
   INSTALLMENTS_LABEL,
@@ -26,6 +29,7 @@ import {
 export default function RepeatSection({
   amountValue,
   date,
+  plan,
   repeat,
   setRepeat,
   installments,
@@ -34,10 +38,12 @@ export default function RepeatSection({
   setCurrentInstallment,
 }: RepeatSectionProps) {
   const colors = useColors();
+  // The plan starts at the installment the person is on, on its own day (not on the day of the purchase).
   const summary =
-    repeat === 'installments'
-      ? installmentSummary({ total: installments, current: currentInstallment, amount: amountValue, startMonth: monthKey(date) })
+    repeat === 'installments' && plan
+      ? installmentSummary({ total: installments, current: currentInstallment, amount: amountValue, startMonth: plan.firstDay.slice(0, 7) })
       : null;
+  const labels = plan ? installmentLabels(plan) : null;
 
   return (
     <View>
@@ -103,12 +109,30 @@ export default function RepeatSection({
                 : MONTHLY_SUMMARY_TITLE(date.getUTCDate())}
             </Text>
             <Text className="text-xs text-muted mt-0.5">
-              {summary
-                ? INSTALLMENT_SUMMARY_TEXT(formatMoney(summary.remainingTotal), monthKeyWithYear(summary.lastMonth))
+              {summary && plan && labels
+                ? INSTALLMENT_SUMMARY_TEXT(
+                    formatMoney(summary.remainingTotal),
+                    INSTALLMENT_SCHEDULE_TEXT({
+                      current: plan.current,
+                      total: plan.total,
+                      first: labels.first,
+                      last: labels.last,
+                      onCredit: plan.onCredit,
+                    })
+                  )
                 : MONTHLY_SUMMARY_TEXT}
             </Text>
           </View>
         </View>
+      )}
+
+      {repeat === 'installments' && plan && plan.skipped > 0 && (
+        <Text className="text-xs leading-[17px] text-muted mt-2 ml-1">{INSTALLMENT_SKIPPED_TEXT(plan.skipped)}</Text>
+      )}
+      {repeat === 'installments' && plan && labels && plan.notYet && (
+        <Text className="text-xs leading-[17px] mt-2 ml-1" style={{ color: colors.expense }}>
+          {INSTALLMENT_NOT_YET_MESSAGE(plan.current, labels.first, plan.onCredit)}
+        </Text>
       )}
     </View>
   );

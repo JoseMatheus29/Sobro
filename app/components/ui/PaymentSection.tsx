@@ -31,7 +31,7 @@ export default function PaymentSection({ method, onChange, rules, date, installm
   if (method === 'credit' && rules) {
     const invoice = invoiceMonthOf(localDay(date), rules);
     hint = installments
-      ? PAYMENT_CREDIT_INSTALLMENTS_HINT(monthNameOf(invoice))
+      ? PAYMENT_CREDIT_INSTALLMENTS_HINT
       : PAYMENT_CREDIT_HINT(
           monthNameOf(invoice),
           formatCalendarDay(closesOn(invoice, rules)),

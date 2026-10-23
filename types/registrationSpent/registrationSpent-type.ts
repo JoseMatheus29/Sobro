@@ -3,6 +3,7 @@ import { type ViewStyle } from 'react-native';
 import { palette, type Palette } from '@/constants/palette';
 import { type CardRecord } from '@/db/cards';
 import { type PaymentMethod } from '@/db/transactions';
+import { type InstallmentPlan } from '@/utils/installments-type';
 import { type RepeatMode } from '@/utils/recurrence-type';
 
 export type TxType = 'expense' | 'income';
@@ -83,6 +84,8 @@ export interface DetailsStepProps {
 export interface RepeatSectionProps {
   amountValue: number;
   date: Date;
+  /** Where the installments land, worked out from the day of the purchase; null unless it is an installment plan. */
+  plan: InstallmentPlan | null;
   repeat: RepeatMode;
   setRepeat: (mode: RepeatMode) => void;
   installments: number;
@@ -174,8 +177,28 @@ export const MONTHLY_SUMMARY_TITLE = (day: number) => `Todo mês, no dia ${day}`
 export const MONTHLY_SUMMARY_TEXT = 'Sem data para acabar. Você pode encerrar quando quiser, nos detalhes da transação.';
 export const INSTALLMENT_SUMMARY_TITLE = (remaining: number, amount: string) =>
   remaining === 1 ? `1 parcela restante de ${amount}` : `${remaining} parcelas restantes de ${amount}`;
-export const INSTALLMENT_SUMMARY_TEXT = (total: string, lastMonth: string) =>
-  `Total a pagar ${total} · a última em ${lastMonth}. As próximas aparecem nos meses seguintes como previstas.`;
+export const INSTALLMENT_SUMMARY_TEXT = (total: string, schedule: string) =>
+  `Total a pagar ${total}. ${schedule} As próximas aparecem como previstas.`;
+// With a plan, the date is the one of the purchase: the app works out the day of the installment the person is on.
+export const INSTALLMENT_DATE_LABEL = 'Data da compra';
+// Where the installment the person is on and the last one land: in invoices on credit, in months otherwise.
+export const INSTALLMENT_SCHEDULE_TEXT = (p: {
+  current: number;
+  total: number;
+  first: string;
+  last: string;
+  onCredit: boolean;
+}) => {
+  const where = (name: string) => (p.onCredit ? `na fatura de ${name}` : `em ${name}`);
+  return p.current === p.total
+    ? `A parcela ${p.current}/${p.total}, a última, cai ${where(p.first)}.`
+    : `A parcela ${p.current}/${p.total} cai ${where(p.first)} e a última (${p.total}/${p.total}), ${p.onCredit ? 'na de' : 'em'} ${p.last}.`;
+};
+export const INSTALLMENT_SKIPPED_TEXT = (skipped: number) =>
+  skipped === 1 ? 'A parcela 1 já passou e não entra no app.' : `As parcelas 1 a ${skipped} já passaram e não entram no app.`;
+export const INSTALLMENT_NOT_YET_TITLE = 'Essa parcela ainda não chegou';
+export const INSTALLMENT_NOT_YET_MESSAGE = (current: number, first: string, onCredit: boolean) =>
+  `A parcela ${current} só cai ${onCredit ? `na fatura de ${first}, que ainda não abriu` : `em ${first}`}. Confira a data da compra e a parcela em que você está.`;
 export const CREDIT_TOAST_SUFFIX = (invoice: string) => `na fatura de ${invoice}`;
 export const REPEATING_TOAST_SUFFIX = {
   monthly: 'repete todo mês',

@@ -4,7 +4,9 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import DatePicker from '@/app/components/ui/DatePicker';
 
 import { useColors } from '@/hooks/useColors';
-import { CHANGE_LABEL, DetailsStepProps } from '@/types/registrationSpent/registrationSpent-type';
+import { CHANGE_LABEL, DetailsStepProps, INSTALLMENT_DATE_LABEL } from '@/types/registrationSpent/registrationSpent-type';
+import { installmentPlan } from '@/utils/installments';
+import { localDay, todayKey } from '@/utils/invoice';
 import PaymentSection from '@/app/components/ui/PaymentSection';
 import { DEFAULT_PAYMENT_METHOD } from '@/types/components/ui/payment-type';
 import RepeatSection from '@/app/registrationSpent/components/RepeatSection';
@@ -20,6 +22,18 @@ export default function DetailsStep({
   const creditRules = cards.find((card) => card.id === selectedCardId)?.credit ?? null;
   const shownPayment = payment === 'credit' && !creditRules ? DEFAULT_PAYMENT_METHOD : payment;
   const [showPicker, setShowPicker] = useState(false);
+  // An installment plan is registered from the installment the person is on: the date above is the one of the
+  // purchase, and the plan works out the day, and the invoice, of that installment.
+  const plan =
+    type === 'expense' && repeat === 'installments'
+      ? installmentPlan({
+          purchaseDay: localDay(date),
+          total: installments,
+          current: currentInstallment,
+          rules: shownPayment === 'credit' ? creditRules : null,
+          today: todayKey(),
+        })
+      : null;
 
   return (
     <ScrollView
@@ -117,7 +131,7 @@ export default function DetailsStep({
           <Icon name="event" size={20} color={colors.primary.DEFAULT} />
         </View>
         <View className="flex-1">
-          <Text className="text-xs text-muted">Data</Text>
+          <Text className="text-xs text-muted">{plan ? INSTALLMENT_DATE_LABEL : 'Data'}</Text>
           <Text className="text-base font-medium text-ink">
             {date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
           </Text>
@@ -137,6 +151,7 @@ export default function DetailsStep({
         <RepeatSection
           amountValue={amountValue}
           date={date}
+          plan={plan}
           repeat={repeat}
           setRepeat={setRepeat}
           installments={installments}

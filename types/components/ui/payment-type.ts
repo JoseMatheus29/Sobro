@@ -16,8 +16,9 @@ export const DEFAULT_PAYMENT_METHOD: PaymentMethod = 'pix';
 export const PAYMENT_BALANCE_HINT = 'Sai do saldo da conta na hora.';
 export const PAYMENT_CREDIT_HINT = (invoice: string, closes: string, due: string) =>
   `Entra na fatura de ${invoice}, que fecha em ${closes} e vence em ${due}. O saldo da conta não muda agora.`;
-export const PAYMENT_CREDIT_INSTALLMENTS_HINT = (invoice: string) =>
-  `A 1ª parcela entra na fatura de ${invoice} e cada parcela cai numa fatura. O saldo da conta não muda agora.`;
+// Which invoice each installment goes into is told by the summary of the repetition, which knows the installment the
+// person is on.
+export const PAYMENT_CREDIT_INSTALLMENTS_HINT = 'Cada parcela cai numa fatura. O saldo da conta não muda agora.';
 // Shown in the edit form, where the expense may already be in an invoice.
 export const PAYMENT_EDIT_HINT = 'Mudar para Pix ou débito tira a compra da fatura e passa a descontar do saldo.';
 

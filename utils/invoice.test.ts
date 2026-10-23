@@ -275,3 +275,33 @@ describe('days', () => {
     expect(daysBetween('2026-11-10', '2026-11-03')).toBe(-7);
   });
 });
+
+// A card that closes on the 11th: the case a tester reported. Bought on 23 Oct, after the invoice of October
+// closed, the purchase belongs to the invoice of November, not to the one that is already closed.
+describe('a card that closes on the 11th', () => {
+  const rules = { closingDay: 11, dueDay: 18 };
+
+  it('sends a purchase made after the closing day to the next month\'s invoice', () => {
+    expect(invoiceMonthOf('2026-10-23', rules)).toBe('2026-11');
+    expect(openInvoiceMonth('2026-10-23', rules)).toBe('2026-11');
+  });
+
+  it('keeps it out of the invoice that already closed and puts it in the open one', () => {
+    const bought = purchase('2026-10-23', 80);
+    const today = '2026-10-23';
+    const october = buildInvoice({ month: '2026-10', rules, purchases: [bought], payments: [], today });
+    const november = buildInvoice({ month: '2026-11', rules, purchases: [bought], payments: [], today });
+
+    expect(october.purchases).toHaveLength(0);
+    expect(october.status).not.toBe('open');
+    expect(november.purchases.map((t) => t.id)).toEqual([bought.id]);
+    expect(november.total).toBe(80);
+    expect(november.status).toBe('open');
+    expect(november.opensOn).toBe('2026-10-12');
+    expect(november.closesOn).toBe('2026-11-11');
+  });
+
+  it('reads both calendar months of the cycle, so a purchase of October is found for the invoice of November', () => {
+    expect(cycleMonths('2026-11', rules)).toEqual(['2026-10', '2026-11']);
+  });
+});
