@@ -16,8 +16,7 @@ import { createTransaction, type PaymentMethod } from '@/db/transactions';
 import { DEFAULT_PAYMENT_METHOD } from '@/types/components/ui/payment-type';
 import { fromDateInputValue } from '@/utils/dateInput';
 import { installmentLabels, installmentPlan } from '@/utils/installments';
-import { invoiceMonthOf, localDay, todayKey } from '@/utils/invoice';
-import { monthNameOf } from '@/utils/month';
+import { invoiceNameOf, localDay, todayKey } from '@/utils/invoice';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { useSaveKey } from '@/hooks/useSaveKey';
@@ -208,7 +207,7 @@ export default function RegistrationSpent() {
       title: SAVED_TITLES[type],
       message: `R$ ${amountText} em ${category?.name ?? ''}${repeating ? ` · ${REPEATING_TOAST_SUFFIX[repeat as 'monthly' | 'installments']}` : ''}${
         paymentMethod === 'credit' && creditRules
-          ? ` · ${CREDIT_TOAST_SUFFIX(monthNameOf(invoiceMonthOf(localDay(registeredDate), creditRules)))}`
+          ? ` · ${CREDIT_TOAST_SUFFIX(invoiceNameOf(localDay(registeredDate), creditRules))}`
           : ''
       }`.trim(),
       icon: category?.icon,

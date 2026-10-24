@@ -72,7 +72,7 @@ export default function InvoiceCard({ card, onOpen, onPay }: InvoiceCardProps) {
   return (
     <View className="mx-4 mb-7 bg-card rounded-[20px] p-5 border border-surface">
       <View className="flex-row items-center justify-between">
-        <Text className="text-[15px] font-bold text-ink">{invoiceTitle(monthNameOf(invoice.month))}</Text>
+        <Text className="text-[15px] font-bold text-ink">{invoiceTitle(monthNameOf(invoice.dueOn.slice(0, 7)))}</Text>
         <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: tint(color) }}>
           <Text className="text-[11px] font-bold" style={{ color }}>{INVOICE_STATUS_LABEL[invoice.status]}</Text>
         </View>
@@ -125,7 +125,7 @@ export default function InvoiceCard({ card, onOpen, onPay }: InvoiceCardProps) {
             color={previous.status === 'overdue' ? colors.expense : colors.warning}
           />
           <Text className="flex-1 text-[13px] font-semibold text-ink">
-            {PREVIOUS_UNPAID(monthNameOf(previous.month), formatMoney(previous.remaining))}
+            {PREVIOUS_UNPAID(monthNameOf(previous.dueOn.slice(0, 7)), formatMoney(previous.remaining))}
           </Text>
           <Icon name="chevron-right" size={20} color={colors.subtle} />
         </TouchableOpacity>

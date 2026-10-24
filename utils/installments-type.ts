@@ -19,7 +19,7 @@ export interface InstallmentPlan {
   firstDay: string;
   /** The day of the last installment. */
   lastDay: string;
-  /** 'YYYY-MM' of the invoice (on credit) or of the month (otherwise) where the installment registered falls. */
+  /** 'YYYY-MM' of the month the invoice is due in (on credit; how it is called) or of the month (otherwise). */
   firstPeriod: string;
   /** The same for the last installment. */
   lastPeriod: string;

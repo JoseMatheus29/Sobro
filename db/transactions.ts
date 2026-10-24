@@ -52,12 +52,18 @@ export interface TransactionRecord {
   paymentMethod?: PaymentMethod | null;
   /** 'YYYY-MM' of the invoice it pays; only on the payment of an invoice. */
   invoiceMonth?: string | null;
+  /** 'YYYY-MM' of the month it counts in: on credit, the month its invoice is due in; otherwise the month of its day. */
+  spendingMonth?: string;
+  /** The day of the month its money leaves (see `spendingDayOf`): set by the hooks that read a month's spending. */
+  spendingDay?: number;
 }
 
 export interface TransactionFilters {
   cardId?: number;
   /** 'YYYY-MM', matches transactions occurring in that month */
   month?: string;
+  /** 'YYYY-MM', matches the transactions that count in that month (a purchase on credit counts when its invoice is due). */
+  spendingMonth?: string;
   categoryId?: string;
   type?: TransactionType;
   paymentMethod?: PaymentMethod;
@@ -90,6 +96,7 @@ function toRecord(t: ApiTransaction): TransactionRecord {
     transferId: t.transferId,
     paymentMethod: t.paymentMethod ?? null,
     invoiceMonth: t.invoiceMonth ?? null,
+    spendingMonth: t.spendingMonth,
   };
 }
 
@@ -185,8 +192,9 @@ export async function getTransferLegs(transferId: number, month: string): Promis
 export const deleteTransfer = deleteTransaction;
 
 // What each month with transactions took in and put out, for the history. Transfers between accounts are neither.
+// Grouped by the month each one counts in (a purchase on credit counts when its invoice is due), not by its day.
 export function getMonthlyTotals(): Promise<MonthTotals[]> {
-  return api<ApiMonthlyTotal[]>('GET', '/v1/reports/monthly-totals');
+  return api<ApiMonthlyTotal[]>('GET', `/v1/reports/monthly-totals${buildQuery({ by: 'spending' })}`);
 }
 
 export interface CategoryTotal {
@@ -198,7 +206,10 @@ export interface CategoryTotal {
   total: number; // positive magnitude of expenses
 }
 
-// The expenses of a month by category, the biggest first (no transfers).
+// The expenses of a month by category, the biggest first (no transfers), by the month they count in.
 export function getCategoryTotals(filters: { month: string }): Promise<CategoryTotal[]> {
-  return api<ApiCategoryTotal[]>('GET', `/v1/reports/category-totals${buildQuery({ month: filters.month })}`);
+  return api<ApiCategoryTotal[]>(
+    'GET',
+    `/v1/reports/category-totals${buildQuery({ month: filters.month, by: 'spending' })}`
+  );
 }

@@ -28,8 +28,7 @@ import { formatShortDate } from '@/utils/format';
 import { monthNameOf } from '@/utils/month';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { isMoneyMove } from '@/utils/transfer';
-import { dayOf, invoiceMonthOf, shortMonthName } from '@/utils/invoice';
-import { INVOICE_TAG } from '@/types/components/ui/payment-type';
+import { invoiceTagOf } from '@/utils/invoiceTag';
 import {
   ACCOUNT_DELETED_TOAST,
   CAROUSEL_GAP,
@@ -97,11 +96,6 @@ export default function WalletScreen() {
     );
   }
 
-  const invoiceTag = (t: (typeof transactions)[number]) => {
-    const rules = t.paymentMethod === 'credit' ? cards.find((c) => c.id === t.cardId)?.credit : null;
-    return rules ? INVOICE_TAG(shortMonthName(invoiceMonthOf(dayOf(t.occurredAt), rules))) : undefined;
-  };
-
   const displayTransactions = transactions.map((t) => ({
     id: t.id,
     name: t.name,
@@ -115,7 +109,7 @@ export default function WalletScreen() {
     planned: t.planned,
     transfer: isMoneyMove(t),
     // The invoice a purchase on credit went into.
-    tag: invoiceTag(t),
+    tag: invoiceTagOf(t, cards),
   }));
 
   return (

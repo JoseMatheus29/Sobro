@@ -44,7 +44,7 @@ export default function DashboardScreen() {
 
   const { month, isCurrent, isFuture } = useSelectedMonth();
   const { current, previous, loading: loadingMonth, error: monthError, refetch: refetchMonth } = useMonthTransactions(month);
-  const { transactions: recent } = useTransactions({ month, limit: RECENT_MAX });
+  const { transactions: recent } = useTransactions({ spendingMonth: month, limit: RECENT_MAX });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { profile } = useProfile();

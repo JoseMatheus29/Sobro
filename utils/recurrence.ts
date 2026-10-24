@@ -73,27 +73,32 @@ export function plannedTransactions(
     if (filters.cardId !== undefined && r.cardId !== filters.cardId) continue;
     const occurrence = occurrenceIn(r, month);
     if (!occurrence) continue;
-    planned.push({
-      id: -(r.id * PLANNED_ID_BASE + occurrence.installment),
-      cardId: r.cardId,
-      cardName: r.cardName,
-      categoryId: r.categoryId,
-      categoryName: r.categoryName,
-      categoryIcon: r.categoryIcon,
-      categoryColor: r.categoryColor,
-      name: r.name,
-      description: r.description,
-      amount: -r.amount,
-      type: 'expense',
-      occurredAt: occurrence.date,
-      createdAt: occurrence.date,
-      planned: true,
-      recurrence: { id: r.id, installment: occurrence.installment, total: r.total },
-      paymentMethod: r.paymentMethod ?? null,
-    });
+    planned.push(plannedRow(r, occurrence));
   }
   // The nearest first: it is a list of what is coming.
   return planned.sort((a, b) => (a.occurredAt < b.occurredAt ? -1 : a.occurredAt > b.occurredAt ? 1 : 0));
+}
+
+// One occurrence that is only planned, as a row shaped like a transaction (marked `planned`, with a negative id).
+export function plannedRow(r: RecurrenceRecord, occurrence: Occurrence): TransactionRecord {
+  return {
+    id: -(r.id * PLANNED_ID_BASE + occurrence.installment),
+    cardId: r.cardId,
+    cardName: r.cardName,
+    categoryId: r.categoryId,
+    categoryName: r.categoryName,
+    categoryIcon: r.categoryIcon,
+    categoryColor: r.categoryColor,
+    name: r.name,
+    description: r.description,
+    amount: -r.amount,
+    type: 'expense',
+    occurredAt: occurrence.date,
+    createdAt: occurrence.date,
+    planned: true,
+    recurrence: { id: r.id, installment: occurrence.installment, total: r.total },
+    paymentMethod: r.paymentMethod ?? null,
+  };
 }
 
 // The months ahead that have something planned, with what they add up to.

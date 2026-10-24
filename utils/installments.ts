@@ -1,4 +1,4 @@
-import { invoiceMonthOf, openInvoiceMonth } from './invoice';
+import { invoiceDueMonth, invoiceMonthOf, openInvoiceMonth } from './invoice';
 import { type InstallmentPlan, type InstallmentPlanInput } from './installments-type';
 import { addMonths, monthKeyWithYear, monthNameOf } from './month';
 import { occurrenceDate } from './recurrence';
@@ -19,11 +19,12 @@ export function installmentDay(purchaseDay: string, number: number): string {
 // and whether the installment registered has not arrived yet.
 export function installmentPlan(input: InstallmentPlanInput): InstallmentPlan {
   const { purchaseDay, total, current, rules, today } = input;
-  const periodOf = (day: string) => (rules ? invoiceMonthOf(day, rules) : day.slice(0, 7));
+  // On credit the period is the month the invoice is due in, which is how it is called and where it counts.
+  const periodOf = (day: string) => (rules ? invoiceDueMonth(invoiceMonthOf(day, rules), rules) : day.slice(0, 7));
   const firstDay = installmentDay(purchaseDay, current);
   const lastDay = installmentDay(purchaseDay, total);
   const firstPeriod = periodOf(firstDay);
-  const openPeriod = rules ? openInvoiceMonth(today, rules) : today.slice(0, 7);
+  const openPeriod = rules ? invoiceDueMonth(openInvoiceMonth(today, rules), rules) : today.slice(0, 7);
   return {
     current,
     total,

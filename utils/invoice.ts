@@ -1,12 +1,14 @@
-import { type TransactionRecord } from '@/db/transactions';
+import { type PaymentMethod, type TransactionRecord } from '@/db/transactions';
 import { INVOICE_EPSILON, type Invoice, type InvoiceRules, type InvoiceStatus } from './invoice-type';
-import { addMonths, MONTH_NAMES } from './month';
+import { addMonths, MONTH_NAMES, monthKeyWithYear, monthNameOf } from './month';
 import { lastMonthOf, occurrenceDate, occurrenceIn } from './recurrence';
 import { PLANNED_ID_BASE, type RecurrenceRecord } from './recurrence-type';
 
 // The credit card invoice is not stored: it is worked out from the purchases made on credit and from the payments.
-// The rules are the ones of the API guide (docs/api-cartao-credito.md): an invoice is named after the month it
-// closes in; a purchase made up to the closing day goes into that month's invoice, a later one into the next.
+// The rules are the ones of the API guide (docs/api-cartao-credito.md): the KEY of an invoice is the month it closes
+// in; a purchase made up to the closing day goes into that month's invoice, a later one into the next. What the
+// person SEES is the month it is due in (`invoiceName`...), the way the bank calls it, which is also the month what
+// is bought on credit counts in (docs/api-mes-do-gasto.md).
 // Days are calendar days ('YYYY-MM-DD'), so no time zone moves a purchase to another invoice.
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -66,6 +68,53 @@ export function invoiceMonthOf(day: string, rules: InvoiceRules): string {
 // The invoice that is taking purchases today.
 export function openInvoiceMonth(today: string, rules: InvoiceRules): string {
   return invoiceMonthOf(today, rules);
+}
+
+// The month an invoice is due in (the key of the invoice is the month it closes in). The invoice is called by this
+// month, the way the bank calls it, and what is bought on credit counts in it: it is when the money leaves.
+export function invoiceDueMonth(month: string, rules: InvoiceRules): string {
+  return dueOn(month, rules).slice(0, 7);
+}
+
+// The name of an invoice, by the month it is due in: "dezembro" for the one that closes on 25/11 and is due on 05/12.
+export function invoiceName(month: string, rules: InvoiceRules): string {
+  return monthNameOf(invoiceDueMonth(month, rules));
+}
+
+// The same with the year: "dezembro 2026".
+export function invoiceNameWithYear(month: string, rules: InvoiceRules): string {
+  return monthKeyWithYear(invoiceDueMonth(month, rules));
+}
+
+// The name of the invoice a purchase of that day goes into.
+export function invoiceNameOf(day: string, rules: InvoiceRules): string {
+  return invoiceName(invoiceMonthOf(day, rules), rules);
+}
+
+// The short name ("dez") of the invoice a purchase of that day goes into, for the tag on a list.
+export function invoiceShortNameOf(day: string, rules: InvoiceRules): string {
+  return shortMonthName(invoiceDueMonth(invoiceMonthOf(day, rules), rules));
+}
+
+// The month an expense counts in, the same as the API's `spendingMonth`: on credit, the month the invoice that
+// receives it is due in; anything else, the month of its day.
+export function spendingMonthOf(
+  day: string,
+  paymentMethod: PaymentMethod | null | undefined,
+  rules: InvoiceRules | null
+): string {
+  return paymentMethod === 'credit' && rules ? invoiceDueMonth(invoiceMonthOf(day, rules), rules) : day.slice(0, 7);
+}
+
+// The day of its spending month on which the money of an expense leaves: the due day on credit, its own day otherwise.
+// It is what puts an expense "so far" in a month when two months are compared up to the same day.
+export function spendingDayOf(
+  day: string,
+  paymentMethod: PaymentMethod | null | undefined,
+  rules: InvoiceRules | null
+): number {
+  if (paymentMethod === 'credit' && rules) return Number(dueOn(invoiceMonthOf(day, rules), rules).slice(8, 10));
+  return Number(day.slice(8, 10));
 }
 
 // The calendar months a cycle touches (one or two): where its purchases have to be read from.

@@ -35,7 +35,14 @@ import {
 } from '@/types/invoice/invoice-type';
 import { tint } from '@/utils/color';
 import { formatMoney, formatShortDate } from '@/utils/format';
-import { daysBetween, formatCalendarDay, lastPlannedInvoice, openInvoiceMonth, todayKey } from '@/utils/invoice';
+import {
+  daysBetween,
+  formatCalendarDay,
+  invoiceNameWithYear,
+  lastPlannedInvoice,
+  openInvoiceMonth,
+  todayKey,
+} from '@/utils/invoice';
 import { INVOICE_MONTHS_AHEAD, type InvoiceStatus } from '@/utils/invoice-type';
 import { addMonths, monthKeyWithYear, monthNameOf } from '@/utils/month';
 import { recurrenceBadge } from '@/utils/recurrence';
@@ -100,7 +107,7 @@ export default function InvoiceScreen() {
             >
               <Icon name="chevron-left" size={26} color={colors.headerInk} />
             </TouchableOpacity>
-            <Text className="min-w-[150px] text-center text-lg font-bold text-headerInk">{monthKeyWithYear(month)}</Text>
+            <Text className="min-w-[150px] text-center text-lg font-bold text-headerInk">{card?.credit ? invoiceNameWithYear(month, card.credit) : monthKeyWithYear(month)}</Text>
             <TouchableOpacity
               onPress={() => setPicked(addMonths(month, 1))}
               disabled={atLastInvoice}
@@ -144,7 +151,7 @@ export default function InvoiceScreen() {
               <View className="bg-card rounded-[24px] p-5 mb-5 shadow-lg shadow-primary/10 elevation-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-[11px] font-bold tracking-[0.8px] uppercase text-primary-lighter">
-                    {invoiceTitle(monthNameOf(invoice.month))}
+                    {invoiceTitle(monthNameOf(invoice.dueOn.slice(0, 7)))}
                   </Text>
                   <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: tint(color) }}>
                     <Text className="text-[11px] font-bold" style={{ color }}>{INVOICE_STATUS_LABEL[invoice.status]}</Text>

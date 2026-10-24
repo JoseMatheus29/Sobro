@@ -44,8 +44,11 @@ export type RepeatMode = 'none' | 'monthly' | 'installments';
 /** A month ahead that has something planned in it, for the history. */
 export interface FutureMonth {
   month: string;
-  /** Sum of what is planned to go out. */
+  /** Sum of what is committed to go out: what is registered already plus what is planned. */
   total: number;
+  /** The part of `total` that is already registered (purchases on credit whose invoice falls due in this month). */
+  registered?: number;
+  /** How many planned rows there are (the registered ones are not counted). */
   count: number;
   /** How many of them are installments. */
   installments: number;

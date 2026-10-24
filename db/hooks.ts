@@ -3,12 +3,13 @@ import { keepPreviousData } from '@tanstack/react-query';
 
 import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
-import { buildInvoice, openInvoiceMonth, plannedPurchases, todayKey } from '@/utils/invoice';
-import { type Invoice } from '@/utils/invoice-type';
+import { buildInvoice, dayOf, openInvoiceMonth, plannedPurchases, spendingDayOf, todayKey } from '@/utils/invoice';
+import { type Invoice, type InvoiceRules } from '@/utils/invoice-type';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
 import { addMonths, currentMonthKey, localNow } from '@/utils/month';
-import { futureMonths, plannedTransactions } from '@/utils/recurrence';
+import { futureSpendingMonths, plannedBySpendingMonth } from '@/utils/plannedSpending';
+import { plannedTransactions } from '@/utils/recurrence';
 
 import { getBudgetEntries } from './budgets';
 import { getCards, type CardRecord } from './cards';
@@ -113,40 +114,68 @@ export function useRecurrence(id: number | undefined) {
   };
 }
 
-// A month that has not started has no transactions yet: what shows in it is what the recurring
+// The card days of each account, to tell which invoice a purchase on credit goes into (null: no credit card).
+function useRulesOf(): (cardId: number) => InvoiceRules | null {
+  const { cards } = useCards();
+  return useMemo(() => {
+    const byId = new Map(cards.map((c) => [c.id, c.credit ? { closingDay: c.credit.closingDay, dueDay: c.credit.dueDay } : null]));
+    return (cardId: number) => byId.get(cardId) ?? null;
+  }, [cards]);
+}
+
+// A month that has not started has no transactions on its day yet: what shows in it is what the recurring
 // expenses plan for it, as rows marked `planned` (see utils/recurrence.ts).
+//
+// `month` is by the day of each transaction (an account's statement). `spendingMonth` is by the month each one counts
+// in: a purchase on credit counts in the month its invoice is due in, so it can already be registered in a month
+// that has not started, and the recurring expenses planned for it are added to it. That one is what the Dashboard,
+// the Detalhamento and the insights show, and each row comes with `spendingDay`, the day its money leaves.
 export function useTransactions(filters: TransactionFilters = {}) {
-  const { cardId, month, limit, categoryId, type, q } = filters;
+  const { cardId, month, spendingMonth, limit, categoryId, type, q } = filters;
 
-  const future = month !== undefined && month > currentMonthKey();
+  const bySpending = spendingMonth !== undefined;
+  const shownMonth = bySpending ? spendingMonth : month;
+  const future = shownMonth !== undefined && shownMonth > currentMonthKey();
+  const rulesOf = useRulesOf();
   const { recurrences } = useRecurrences(future);
-  const planned = useMemo(
-    () => (future && month ? plannedTransactions(recurrences, month, new Date(), { cardId }) : []),
-    [future, month, recurrences, cardId]
-  );
+  const planned = useMemo(() => {
+    if (!future || !shownMonth) return [];
+    return bySpending
+      ? plannedBySpendingMonth(recurrences, shownMonth, new Date(), rulesOf, { cardId })
+      : plannedTransactions(recurrences, shownMonth, new Date(), { cardId });
+  }, [future, bySpending, shownMonth, recurrences, rulesOf, cardId]);
 
+  // By the day, a month that has not started has nothing registered to ask the server for.
+  const reads = bySpending || !future;
   const query = useScreenQuery({
-    queryKey: queryKeys.transactions({ cardId, month, limit, categoryId, type, q }),
-    queryFn: () => getTransactions({ cardId, month, limit, categoryId, type, q }),
-    enabled: !future,
+    queryKey: queryKeys.transactions({ cardId, month, spendingMonth, limit, categoryId, type, q }),
+    queryFn: () => getTransactions({ cardId, month, spendingMonth, limit, categoryId, type, q }),
+    enabled: reads,
     // Moving to another month keeps showing the last one until the new one arrives.
     placeholderData: keepPreviousData,
   });
   const { refetch: refetchQuery } = query;
   const refetch = useCallback(async () => {
-    if (!future) await refetchQuery();
-  }, [future, refetchQuery]);
+    if (reads) await refetchQuery();
+  }, [reads, refetchQuery]);
 
   // The category colors are drawn softened on the dark theme (see utils/color.ts), so every screen gets them that way.
   const recolor = useCategoryColor();
   const { data } = query;
   const shown = useMemo(() => {
-    const rows = future ? (limit !== undefined ? planned.slice(0, limit) : planned) : (data ?? NONE);
-    return rows.map((t) => ({ ...t, categoryColor: recolor(t.categoryColor) }));
-  }, [future, limit, planned, data, recolor]);
+    const rows = bySpending ? [...(data ?? NONE), ...planned] : future ? planned : (data ?? NONE);
+    const limited = limit !== undefined ? rows.slice(0, limit) : rows;
+    return limited.map((t) => ({
+      ...t,
+      categoryColor: recolor(t.categoryColor),
+      ...(bySpending
+        ? { spendingDay: t.spendingDay ?? spendingDayOf(dayOf(t.occurredAt), t.paymentMethod, rulesOf(t.cardId)) }
+        : {}),
+    }));
+  }, [bySpending, future, limit, planned, data, recolor, rulesOf]);
   return {
     transactions: shown,
-    loading: !future && (query.isLoading || query.isPlaceholderData),
+    loading: reads && (query.isLoading || query.isPlaceholderData),
     error: loadError(query),
     refetch,
   };
@@ -168,10 +197,11 @@ export function useTransferLegs(transferId: number | null | undefined, month: st
   return { legs: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
-// A month's transactions and the month before it: what the Dashboard and the insights compare.
+// What counts in a month and in the month before it (by the month each one counts in): what the Dashboard and the
+// insights compare.
 export function useMonthTransactions(month: string) {
-  const currentQuery = useTransactions({ month });
-  const previousQuery = useTransactions({ month: addMonths(month, -1) });
+  const currentQuery = useTransactions({ spendingMonth: month });
+  const previousQuery = useTransactions({ spendingMonth: addMonths(month, -1) });
 
   const { refetch: refetchCurrent } = currentQuery;
   const { refetch: refetchPrevious } = previousQuery;
@@ -258,11 +288,20 @@ export function useMonthlyHistory() {
   return { history, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
-// The months ahead that have something planned in them, for the history.
+// The months ahead that have something committed in them, for the history: the purchases on credit whose invoice
+// falls due then (read from the same totals as the history) plus what the recurring expenses plan.
 export function useFutureMonths() {
   const { recurrences } = useRecurrences();
   const { entries: budgets } = useBudgetEntries();
-  return useMemo(() => futureMonths(recurrences, budgets, new Date()), [recurrences, budgets]);
+  const rulesOf = useRulesOf();
+  const query = useScreenQuery({ queryKey: queryKeys.monthlyTotals, queryFn: getMonthlyTotals });
+  const totals = query.data ?? NONE;
+
+  return useMemo(() => {
+    const current = currentMonthKey();
+    const registered = new Map(totals.filter((t) => t.month > current).map((t) => [t.month, t.expense]));
+    return futureSpendingMonths(recurrences, budgets, registered, new Date(), rulesOf);
+  }, [recurrences, budgets, totals, rulesOf]);
 }
 
 export function useCategoryTotals(filters: { month?: string } = {}) {

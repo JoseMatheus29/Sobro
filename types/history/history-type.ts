@@ -35,7 +35,10 @@ export const SHEET_MAX_HEIGHT = '90%';
 export const FUTURE_SECTION = 'Próximos meses';
 export const PAST_SECTION = 'Até agora';
 export const COMMITTED_LABEL = 'comprometido';
+// What a month ahead is made of: purchases on credit already registered (their invoice falls due then) and what the
+// recurring expenses plan.
+export const FUTURE_REGISTERED_LABEL = (amount: string) => `${amount} já lançados`;
 export const FUTURE_COUNT_LABEL = (count: number, installments: number) =>
   installments > 0
-    ? `${count} ${count === 1 ? 'lançamento' : 'lançamentos'} · ${installments} ${installments === 1 ? 'parcelado' : 'parcelados'}`
-    : `${count} ${count === 1 ? 'lançamento' : 'lançamentos'}`;
+    ? `${count} ${count === 1 ? 'previsto' : 'previstos'} · ${installments} ${installments === 1 ? 'parcelado' : 'parcelados'}`
+    : `${count} ${count === 1 ? 'previsto' : 'previstos'}`;

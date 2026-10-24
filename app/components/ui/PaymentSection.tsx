@@ -9,9 +9,8 @@ import {
   PAYMENT_CREDIT_INSTALLMENTS_HINT,
   PAYMENT_TITLE,
 } from '@/types/components/ui/payment-type';
-import { closesOn, dueOn, formatCalendarDay, invoiceMonthOf, localDay } from '@/utils/invoice';
+import { closesOn, dueOn, formatCalendarDay, invoiceMonthOf, invoiceName, localDay } from '@/utils/invoice';
 import { type InvoiceRules } from '@/utils/invoice-type';
-import { monthNameOf } from '@/utils/month';
 
 interface PaymentSectionProps {
   method: PaymentMethod;
@@ -33,7 +32,7 @@ export default function PaymentSection({ method, onChange, rules, date, installm
     hint = installments
       ? PAYMENT_CREDIT_INSTALLMENTS_HINT
       : PAYMENT_CREDIT_HINT(
-          monthNameOf(invoice),
+          invoiceName(invoice, rules),
           formatCalendarDay(closesOn(invoice, rules)),
           formatCalendarDay(dueOn(invoice, rules))
         );

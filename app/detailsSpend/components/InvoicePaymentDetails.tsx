@@ -5,9 +5,11 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
+import { useCards } from '@/db/hooks';
 import { deleteTransaction, type TransactionRecord } from '@/db/transactions';
 import { errorToast } from '@/utils/apiErrors';
 import { formatLongDate, formatMoney } from '@/utils/format';
+import { invoiceNameWithYear } from '@/utils/invoice';
 import { monthKeyWithYear } from '@/utils/month';
 import ArrowBack from '@/app/components/arrowBack';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
@@ -31,6 +33,7 @@ export default function InvoicePaymentDetails({ transaction }: { transaction: Tr
   const colors = useColors();
   const router = useRouter();
   const { confirm, showToast } = useFeedback();
+  const { cards } = useCards();
 
   const handleDelete = async () => {
     if (!(await confirm(INVOICE_PAYMENT_DELETE_CONFIRM))) return;
@@ -45,10 +48,16 @@ export default function InvoicePaymentDetails({ transaction }: { transaction: Tr
     router.back();
   };
 
+  // The invoice is called by the month it is due in, which only the card's days can tell.
+  const credit = cards.find((c) => c.id === transaction.cardId)?.credit ?? null;
   const rows = [
     {
       label: INVOICE_PAYMENT_INVOICE_LABEL,
-      value: transaction.invoiceMonth ? monthKeyWithYear(transaction.invoiceMonth) : '—',
+      value: transaction.invoiceMonth
+        ? credit
+          ? invoiceNameWithYear(transaction.invoiceMonth, credit)
+          : monthKeyWithYear(transaction.invoiceMonth)
+        : '—',
       icon: 'receipt-long',
     },
     { label: INVOICE_PAYMENT_FROM_LABEL, value: transaction.cardName, icon: 'north-east' },

@@ -97,7 +97,7 @@ export default function PayInvoiceSheet() {
       return;
     }
     notifyDataChanged();
-    showToast(PAID_TOAST(formatMoney(value).replace('R$ ', ''), monthNameOf(invoice.month)));
+    showToast(PAID_TOAST(formatMoney(value).replace('R$ ', ''), monthNameOf(invoice.dueOn.slice(0, 7))));
     router.back();
   };
 

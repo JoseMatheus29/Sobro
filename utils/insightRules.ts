@@ -18,6 +18,7 @@ import {
   type InsightTone,
 } from './insightRules-type';
 import { daysInMonth, MONTH_NAMES } from './month';
+import { spendingDayInMonth } from './spendingDay';
 import { withoutTransfers } from './transfer';
 
 interface CategorySum {
@@ -65,9 +66,7 @@ export function generateInsights({ current: allCurrent, previous: allPrevious, n
   const spent = sumAbs(expenses);
   const received = sumAbs(current.filter((t) => t.type === 'income'));
   // Only the days that already happened this month: the first week of a month is not "below" a whole one.
-  const previousExpenses = previous.filter(
-    (t) => t.type === 'expense' && new Date(t.occurredAt).getUTCDate() <= day
-  );
+  const previousExpenses = previous.filter((t) => t.type === 'expense' && spendingDayInMonth(t) <= day);
   const previousSpent = sumAbs(previousExpenses);
 
   const found: Insight[] = [];

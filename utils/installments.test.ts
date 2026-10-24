@@ -44,7 +44,7 @@ describe('installmentPlan', () => {
     expect(plan).toMatchObject({ firstDay: '2026-10-23', firstPeriod: '2026-11', lastPeriod: '2027-04', skipped: 0, notYet: false });
   });
 
-  it('depends on the closing day: a card closing on the 25th puts the same installment in October', () => {
+  it('a card closing on the 25th and due on the 5th names the invoice by its due month: 3rd in November, last in December', () => {
     const plan = installmentPlan({
       purchaseDay: '2026-08-24',
       total: 4,
@@ -52,7 +52,8 @@ describe('installmentPlan', () => {
       rules: { closingDay: 25, dueDay: 5 },
       today: '2026-10-23',
     });
-    expect(plan).toMatchObject({ firstDay: '2026-10-24', firstPeriod: '2026-10', lastPeriod: '2026-11', notYet: false });
+    // 24/10 is still in the invoice that closes on 25/10, due on 05/11; 24/11, in the one due on 05/12.
+    expect(plan).toMatchObject({ firstDay: '2026-10-24', firstPeriod: '2026-11', lastPeriod: '2026-12', notYet: false });
   });
 
   it('an installment that is in a later invoice than the open one has not arrived', () => {

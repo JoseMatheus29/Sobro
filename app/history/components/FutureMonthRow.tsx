@@ -10,6 +10,7 @@ import {
   BUDGET_USE_LABEL,
   COMMITTED_LABEL,
   FUTURE_COUNT_LABEL,
+  FUTURE_REGISTERED_LABEL,
   FutureMonthRowProps,
   NO_BUDGET_LABEL,
 } from '@/types/history/history-type';
@@ -44,7 +45,14 @@ export default function FutureMonthRow({ entry, selected, onPress }: FutureMonth
         </View>
       </View>
 
-      <Text className="text-xs text-muted mt-1">{FUTURE_COUNT_LABEL(entry.count, entry.installments)}</Text>
+      <Text className="text-xs text-muted mt-1">
+        {[
+          entry.registered ? FUTURE_REGISTERED_LABEL(formatMoney(entry.registered)) : null,
+          entry.count > 0 ? FUTURE_COUNT_LABEL(entry.count, entry.installments) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </Text>
 
       <View className="flex-row items-center gap-2.5 mt-2.5">
         <View className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: colors.surface.DEFAULT }}>

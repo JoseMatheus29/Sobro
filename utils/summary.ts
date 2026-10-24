@@ -1,5 +1,6 @@
 import { type TransactionRecord } from '@/db/transactions';
 import { type MonthSummary, type SummaryInput } from './summary-type';
+import { spendingDayInMonth } from './spendingDay';
 import { withoutTransfers } from './transfer';
 
 const sumAbs = (list: TransactionRecord[]) => list.reduce((sum, t) => sum + Math.abs(t.amount), 0);
@@ -18,7 +19,7 @@ export function buildSummary({ current: allCurrent, previous: allPrevious, budge
 
   // Only the days that already happened this month: a full previous month would always look bigger.
   const day = now.getUTCDate();
-  const previousSoFar = previous.filter((t) => new Date(t.occurredAt).getUTCDate() <= day);
+  const previousSoFar = previous.filter((t) => spendingDayInMonth(t) <= day);
   const previousIncome = totalOf(previousSoFar, 'income');
   const previousNet = previousIncome - totalOf(previousSoFar, 'expense');
 

@@ -26,6 +26,15 @@ describe('buildHistory', () => {
     expect(history).toHaveLength(2);
   });
 
+  it('leaves the months after the current one out: they are what is committed ahead', () => {
+    const history = buildHistory({
+      totals: [...totals, { month: '2026-11', income: 0, expense: 800 }],
+      budgets,
+      currentMonth: '2026-10',
+    });
+    expect(history.map((h) => h.month)).toEqual(['2026-10', '2026-09', '2026-08']);
+  });
+
   it('judges each month by the budget it had', () => {
     const changing = [
       { month: '0000-00', amount: 3000 },

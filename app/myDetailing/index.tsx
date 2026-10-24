@@ -30,6 +30,7 @@ import { formatShortDate } from '@/utils/format';
 import { currentMonthKey } from '@/utils/month';
 import { errorMessage } from '@/utils/apiErrors';
 import { type ToastOptions } from '@/types/components/feedback/feedback-type';
+import { invoiceTagOf } from '@/utils/invoiceTag';
 import { recurrenceBadge } from '@/utils/recurrence';
 import { withoutTransfers } from '@/utils/transfer';
 import {
@@ -47,7 +48,7 @@ export default function MyDetailing() {
   const { showToast } = useFeedback();
   const { month, isCurrent } = useSelectedMonth();
 
-  const { transactions, loading: detailLoading, error: detailError, refetch: refetchTransactions } = useTransactions({ month });
+  const { transactions, loading: detailLoading, error: detailError, refetch: refetchTransactions } = useTransactions({ spendingMonth: month });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { categories } = useCategories();
@@ -140,6 +141,8 @@ export default function MyDetailing() {
       type: t.type,
       badge: t.recurrence ? recurrenceBadge(t.recurrence) : undefined,
       planned: t.planned,
+      // The invoice a purchase on credit goes into: the date is the purchase's, and the month it counts in is the invoice's.
+      tag: invoiceTagOf(t, cards),
     }));
 
   return (

@@ -137,6 +137,8 @@ export interface ApiTransaction {
   paymentMethod?: ApiPaymentMethod | null;
   /** 'YYYY-MM' of the invoice, only on the payment of an invoice. */
   invoiceMonth?: string | null;
+  /** 'YYYY-MM' of the month it counts in: on credit, the month the invoice is due in; otherwise the month of its day. */
+  spendingMonth?: string;
 }
 
 export interface TransactionPage {
@@ -146,7 +148,10 @@ export interface TransactionPage {
 }
 
 export interface TransactionQuery {
+  /** By the day of the transaction. */
   month?: string;
+  /** By the month it counts in (see ApiTransaction.spendingMonth). */
+  spendingMonth?: string;
   cardId?: number;
   categoryId?: string;
   type?: ApiTransactionType;

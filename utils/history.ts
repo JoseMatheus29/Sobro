@@ -1,9 +1,10 @@
 import { budgetForMonth } from './budget';
 import { SUMMARY_MONTHS, type HistoryEntry, type HistoryInput } from './history-type';
 
-// One entry per month that has transactions, plus the current one, newest first.
+// One entry per month that has transactions, plus the current one, newest first. The months after the current one
+// are not here: a purchase on credit can already count in them, and they are listed as what is committed ahead.
 export function buildHistory({ totals, budgets, currentMonth }: HistoryInput): HistoryEntry[] {
-  const byMonth = new Map(totals.map((t) => [t.month, t]));
+  const byMonth = new Map(totals.filter((t) => t.month <= currentMonth).map((t) => [t.month, t]));
   if (!byMonth.has(currentMonth)) byMonth.set(currentMonth, { month: currentMonth, income: 0, expense: 0 });
 
   return [...byMonth.values()]
