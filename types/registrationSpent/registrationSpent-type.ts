@@ -21,6 +21,8 @@ export interface FlowHeaderProps {
   title: string;
   step: FlowStep;
   onBack: () => void;
+  /** The profile of someone else this is being registered in; absent for the person's own. */
+  forName?: string;
 }
 
 export interface FlowButtonProps {

@@ -15,6 +15,11 @@ export const REFRESH_TOKEN_KEY = 'refreshToken';
 // password when deleting the account) is a different answer and must not renew the session.
 export const UNAUTHORIZED_CODE = 'unauthorized';
 
+// Whose data a call is about: the header names a managed profile the person cares for, and a profile they do not
+// manage (or that is gone) is refused with this code. Without the header the data is the person's own.
+export const PROFILE_HEADER = 'X-Profile-Id';
+export const PROFILE_FORBIDDEN_CODE = 'profile_forbidden';
+
 export const APP_VERSION_FALLBACK = '0.0.0';
 
 // The in-memory cache (api/queryClient.ts): how long what was read counts as fresh, and how long a screen's

@@ -19,6 +19,7 @@ import { installmentLabels, installmentPlan } from '@/utils/installments';
 import { invoiceNameOf, localDay, todayKey } from '@/utils/invoice';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
+import { useProfiles } from '@/hooks/useProfiles';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { type RepeatInput } from '@/api/types';
 import { type RepeatMode } from '@/utils/recurrence-type';
@@ -56,6 +57,8 @@ export default function RegistrationSpent() {
   const insets = useSafeAreaInsets();
   const { showToast } = useFeedback();
   const saveKey = useSaveKey();
+  // Registered in the profile of someone else when one is open: the header says so, and so does the toast.
+  const { active: forProfile } = useProfiles();
 
   const { categories, loading: loadingCategories, error: categoriesError, refetch: refetchCategories } = useCategories();
   const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
@@ -196,7 +199,8 @@ export default function RegistrationSpent() {
 
     notifyDataChanged();
     // The first recurrence is the moment to ask to notify, in context; the reminders follow what is planned.
-    if (repeating) {
+    // They are about the person's own expenses, so a recurrence in the profile of someone else has none.
+    if (repeating && !forProfile) {
       await ensureReminderPermission();
       await refreshReminders();
     }
@@ -209,7 +213,7 @@ export default function RegistrationSpent() {
         paymentMethod === 'credit' && creditRules
           ? ` · ${CREDIT_TOAST_SUFFIX(invoiceNameOf(localDay(registeredDate), creditRules))}`
           : ''
-      }`.trim(),
+      }${forProfile ? ` · ${forProfile.name}` : ''}`.trim(),
       icon: category?.icon,
     });
     router.back();
@@ -227,7 +231,7 @@ export default function RegistrationSpent() {
         className="flex-1 bg-canvas rounded-t-[28px] overflow-hidden"
         behavior={KEYBOARD_AVOIDING_BEHAVIOR}
       >
-        <FlowHeader title={TITLES[type]} step={step} onBack={handleBack} />
+        <FlowHeader title={TITLES[type]} step={step} onBack={handleBack} forName={forProfile?.name} />
 
         {step === 1 && (
           <AmountStep

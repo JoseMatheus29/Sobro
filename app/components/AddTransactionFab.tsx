@@ -13,20 +13,25 @@ import {
   fabStyle,
   SIDEBAR_HEIGHT,
 } from '@/types/components/sidebar-type';
+import { useCards } from '@/db/hooks';
 import { useColors } from '@/hooks/useColors';
 import { useTutorialTarget } from '@/hooks/useTutorialTarget';
 
 // Opens the new-transaction sheet. Render it next to <SideBar /> on screens where
-// registering a transaction makes sense; it positions itself above the bar.
+// registering a transaction makes sense; it positions itself above the bar. Without an account (a profile just made)
+// there is nowhere to register anything, so it is not drawn.
 export default function AddTransactionFab() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const tutorialRef = useTutorialTarget('fab');
+  const { cards, loaded } = useCards();
 
   const handlePress = () => {
     router.push(FAB_ROUTE as any);
   };
+
+  if (loaded && cards.length === 0) return null;
 
   return (
     <TouchableOpacity

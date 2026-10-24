@@ -25,6 +25,8 @@ export interface Palette {
   expense: string;
   /** Between green and red: a budget close to its ceiling. */
   warning: string;
+  /** What belongs to someone else's finances (a managed profile): its banner, its avatar. Tinted for fills. */
+  managed: string;
   /** Title, greeting and icons on the header: white on the blue band, ink on the dark canvas. */
   headerInk: string;
   /** Behind the title of the tab screens, darkest end first: a blue band in light, the canvas itself in dark. */
@@ -60,6 +62,7 @@ export const lightPalette: Palette = {
   income: '#277F2B',
   expense: '#A83636',
   warning: '#A8680A',
+  managed: '#6A5A9E',
   headerInk: '#FFFFFF',
   headerGradient: ['#1E3F7A', '#3161B2', '#4A74BB'],
   buttonGradient: ['#3161B2', '#4A74BB'],
@@ -94,6 +97,7 @@ export const darkPalette: Palette = {
   income: '#8CB369',
   expense: '#E07560',
   warning: '#D2A94A',
+  managed: '#C3B8DD',
   headerInk: '#E6EAF0',
   headerGradient: ['#151A21', '#151A21', '#151A21'],
   buttonGradient: ['#3A5FA3', '#4569AE'],

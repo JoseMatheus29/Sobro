@@ -11,6 +11,8 @@ export interface ProfileRecord {
   currency: string;
   /** Reminders, the day before, of the recurring expenses about to fall due. */
   remindersEnabled: boolean;
+  /** How many profiles of other people the account manages (deleting the account deletes them too). */
+  managedProfiles: number;
   /** Follow the phone's light/dark setting, or force one. Kept on the phone, not on the server. */
   theme: ThemePreference;
 }
@@ -24,6 +26,7 @@ export async function getProfile(): Promise<ProfileRecord> {
     name: me.name,
     currency: me.currency,
     remindersEnabled: me.remindersEnabled,
+    managedProfiles: me.managedProfiles ?? 0,
     theme,
   };
 }

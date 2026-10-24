@@ -19,5 +19,7 @@ export const queryKeys = {
   goalEntries: (id: number) => ['goalEntries', id] as const,
   monthlyTotals: ['reports', 'monthly'] as const,
   categoryTotals: (month: string | undefined) => ['reports', 'categories', month ?? 'all'] as const,
+  // The two reads of the account itself, the same whatever profile is open (see useScreenQuery's `account`).
   profile: ['profile'] as const,
+  managedProfiles: ['profiles'] as const,
 };

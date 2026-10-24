@@ -1,11 +1,12 @@
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
+import { OWN_SCOPE } from '@/api/activeProfile';
 import { queryClient } from '@/api/queryClient';
 import { buildReminders } from '@/utils/reminders';
 import { getProfile } from './profile';
 import { queryKeys } from './queryKeys';
-import { getRecurrences } from './recurrences';
+import { getOwnRecurrences } from './recurrences';
 
 const CHANNEL_ID = 'due-dates';
 const CHANNEL_NAME = 'Vencimentos';
@@ -38,7 +39,8 @@ export async function clearReminders(): Promise<void> {
   }
 }
 
-// Schedules again, from scratch, the reminders of what is about to fall due: the morning before.
+// Schedules again, from scratch, the reminders of what is about to fall due: the morning before. They are the
+// person's own: a profile they care for has none (the phone's notifications are theirs).
 // The app only schedules these, so clearing them all first keeps the list exactly what the recurring
 // expenses ask for right now. Safe to call whenever something changes, and never throws: a reminder
 // that fails to schedule must not break the screen that asked for it.
@@ -58,7 +60,12 @@ export async function refreshReminders(): Promise<void> {
       });
     }
 
-    const recurrences = await queryClient.fetchQuery({ queryKey: queryKeys.recurrences, queryFn: getRecurrences });
+    // Always the person's own expenses, even while the screens show a profile they care for (its key is the one
+    // the screens use for the person's own data, so they share what was read).
+    const recurrences = await queryClient.fetchQuery({
+      queryKey: [OWN_SCOPE, ...queryKeys.recurrences],
+      queryFn: getOwnRecurrences,
+    });
     const reminders = buildReminders(recurrences, new Date());
     for (const reminder of reminders) {
       await Notifications.scheduleNotificationAsync({

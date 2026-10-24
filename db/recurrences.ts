@@ -11,6 +11,11 @@ export function getRecurrences(): Promise<RecurrenceRecord[]> {
   return api<ApiRecurrence[]>('GET', '/v1/recurrences');
 }
 
+// The person's own, whatever profile is open: the reminders are always about their own expenses.
+export function getOwnRecurrences(): Promise<RecurrenceRecord[]> {
+  return api<ApiRecurrence[]>('GET', '/v1/recurrences', { profileId: null });
+}
+
 // Null when it does not exist (anymore), or is not the person's.
 export async function getRecurrenceById(id: number): Promise<RecurrenceRecord | null> {
   try {

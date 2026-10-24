@@ -1,3 +1,4 @@
+import { setActiveProfileId, setOnProfileForbidden } from './activeProfile';
 import { api, newIdempotencyKey } from './client';
 import { ApiError, NetworkError } from './errors';
 import { getAccessToken, getRefreshToken, saveSession, setOnSessionExpired, setOnUpgradeRequired } from './session';
@@ -23,6 +24,7 @@ jest.mock('./config', () => ({ apiBaseUrl: () => 'https://api.test', appVersion:
 const fetchMock = jest.fn();
 const onExpired = jest.fn();
 const onUpgrade = jest.fn();
+const onForbidden = jest.fn();
 
 function reply(status: number, body?: unknown) {
   return { status, ok: status >= 200 && status < 300, json: async () => body };
@@ -39,9 +41,12 @@ beforeEach(async () => {
   fetchMock.mockReset();
   onExpired.mockReset();
   onUpgrade.mockReset();
+  onForbidden.mockReset();
   (globalThis as { fetch: unknown }).fetch = fetchMock;
   setOnSessionExpired(onExpired);
   setOnUpgradeRequired(onUpgrade);
+  setOnProfileForbidden(onForbidden);
+  setActiveProfileId(null);
   await saveSession({ accessToken: 'access-1', refreshToken: 'refresh-1' });
 });
 
@@ -81,6 +86,90 @@ describe('request', () => {
     await api('POST', '/v1/transactions', { body: {}, idempotencyKey: newIdempotencyKey() });
 
     expect(header(0, 'Idempotency-Key')).toBe('a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d');
+  });
+});
+
+describe('managed profiles', () => {
+  const MAE = '0b1c2d3e-4f50-4a61-8b72-93a4b5c6d7e8';
+
+  it('sends no profile header for the person\'s own data', async () => {
+    fetchMock.mockResolvedValue(reply(200, []));
+
+    await api('GET', '/v1/cards');
+
+    expect(header(0, 'X-Profile-Id')).toBeUndefined();
+  });
+
+  it('names the profile being looked at on the routes of data', async () => {
+    fetchMock.mockResolvedValue(reply(200, []));
+    setActiveProfileId(MAE);
+
+    await api('GET', '/v1/cards');
+    await api('GET', '/v1/transactions?month=2026-10');
+    await api('PUT', '/v1/backup', { body: {} });
+
+    expect([0, 1, 2].map((call) => header(call, 'X-Profile-Id'))).toEqual([MAE, MAE, MAE]);
+  });
+
+  it('leaves the header off the routes of the account, whatever profile is chosen', async () => {
+    fetchMock.mockResolvedValue(reply(200, {}));
+    setActiveProfileId(MAE);
+
+    await api('GET', '/v1/me');
+    await api('DELETE', '/v1/me', { body: { password: 'x' } });
+    await api('GET', '/v1/profiles');
+    await api('DELETE', `/v1/profiles/${MAE}`, { body: { password: 'x' } });
+    await api('POST', '/v1/auth/logout', { body: { refreshToken: 'r' }, auth: false });
+
+    for (let call = 0; call < 5; call += 1) expect(header(call, 'X-Profile-Id')).toBeUndefined();
+  });
+
+  it('can ask for the person\'s own data, or another profile, whatever is being looked at', async () => {
+    fetchMock.mockResolvedValue(reply(200, []));
+    setActiveProfileId(MAE);
+
+    await api('GET', '/v1/recurrences', { profileId: null });
+    await api('GET', '/v1/recurrences', { profileId: 'other-profile' });
+
+    expect(header(0, 'X-Profile-Id')).toBeUndefined();
+    expect(header(1, 'X-Profile-Id')).toBe('other-profile');
+  });
+
+  it('tells the app, with the profile the call was for, when the server refuses it', async () => {
+    fetchMock.mockResolvedValue(reply(403, { error: { code: 'profile_forbidden', message: 'Sem acesso a este perfil.' } }));
+    setActiveProfileId(MAE);
+
+    await expect(api('GET', '/v1/cards')).rejects.toMatchObject({ status: 403, code: 'profile_forbidden' });
+
+    expect(onForbidden).toHaveBeenCalledWith(MAE);
+  });
+
+  it('does not take any other 403 for a refused profile', async () => {
+    fetchMock.mockResolvedValue(reply(403, { error: { code: 'forbidden', message: 'Não permitido.' } }));
+    setActiveProfileId(MAE);
+
+    await expect(api('GET', '/v1/cards')).rejects.toMatchObject({ status: 403 });
+
+    expect(onForbidden).not.toHaveBeenCalled();
+  });
+
+  it('sends a call again for the profile it started with, even if another was chosen meanwhile', async () => {
+    setActiveProfileId(MAE);
+    let calls = 0;
+    fetchMock.mockImplementation(async (url: string) => {
+      if (url.endsWith('/v1/auth/refresh')) {
+        // The person switches back to their own data while the token is being renewed.
+        setActiveProfileId(null);
+        return reply(200, { accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
+      }
+      calls += 1;
+      return calls === 1 ? unauthorized() : reply(200, { ok: true });
+    });
+
+    await api('GET', '/v1/cards');
+
+    const sent = fetchMock.mock.calls.filter(([url]) => url.endsWith('/v1/cards'));
+    expect(sent.map(([, init]) => init.headers['X-Profile-Id'])).toEqual([MAE, MAE]);
   });
 });
 

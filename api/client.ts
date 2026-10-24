@@ -1,6 +1,14 @@
 import * as Crypto from 'expo-crypto';
 
-import { REFRESH_FAILED_MESSAGE, REQUEST_TIMEOUT_MS, UNAUTHORIZED_CODE, UNKNOWN_ERROR_MESSAGE } from '@/types/api/api-type';
+import {
+  PROFILE_FORBIDDEN_CODE,
+  PROFILE_HEADER,
+  REFRESH_FAILED_MESSAGE,
+  REQUEST_TIMEOUT_MS,
+  UNAUTHORIZED_CODE,
+  UNKNOWN_ERROR_MESSAGE,
+} from '@/types/api/api-type';
+import { getActiveProfileId, isAccountPath, notifyProfileForbidden } from './activeProfile';
 import { appVersion, apiBaseUrl } from './config';
 import { ApiError, NetworkError, type FieldIssue } from './errors';
 import {
@@ -20,6 +28,11 @@ export interface ApiOptions {
   idempotencyKey?: string;
   /** False for /auth/*: no token is sent and a 401 there never renews the session. */
   auth?: boolean;
+  /**
+   * Whose data: left out, the profile being looked at; `null`, the person's own whatever is being looked at (the
+   * reminders are always the person's own); an id, that managed profile. The routes of the account never carry it.
+   */
+  profileId?: string | null;
 }
 
 interface ErrorBody {
@@ -29,10 +42,17 @@ interface ErrorBody {
 // A new key per attempt to save. Create it when the person taps Save and keep it for the retries.
 export const newIdempotencyKey = () => Crypto.randomUUID();
 
+// The managed profile a call is about, null for the person's own data (and always for the routes of the account).
+function profileFor(path: string, opts: ApiOptions): string | null {
+  if (isAccountPath(path)) return null;
+  return opts.profileId === undefined ? getActiveProfileId() : opts.profileId;
+}
+
 async function send(method: HttpMethod, path: string, opts: ApiOptions, token: string | null): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const hasBody = opts.body !== undefined;
+  const profileId = profileFor(path, opts);
   // Read outside the try: a missing address is a bug in the build, not a network failure.
   const url = `${apiBaseUrl()}${path}`;
   try {
@@ -45,6 +65,7 @@ async function send(method: HttpMethod, path: string, opts: ApiOptions, token: s
         ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(opts.idempotencyKey ? { 'Idempotency-Key': opts.idempotencyKey } : {}),
+        ...(profileId ? { [PROFILE_HEADER]: profileId } : {}),
       },
       ...(hasBody ? { body: JSON.stringify(opts.body) } : {}),
     });
@@ -88,7 +109,9 @@ function refreshSession(): Promise<boolean> {
 async function request<T>(method: HttpMethod, path: string, opts: ApiOptions, retried: boolean): Promise<T> {
   const auth = opts.auth ?? true;
   const token = auth ? await getAccessToken() : null;
-  const res = await send(method, path, opts, token);
+  // Read once: a call sent again after a renewal is still about the profile it was started for.
+  const sentFor = profileFor(path, opts);
+  const res = await send(method, path, { ...opts, profileId: sentFor }, token);
 
   const json: unknown = res.status === 204 ? undefined : await res.json().catch(() => null);
   const failure = (json as ErrorBody | null | undefined)?.error;
@@ -98,10 +121,11 @@ async function request<T>(method: HttpMethod, path: string, opts: ApiOptions, re
     // Another call may already have renewed it while this one was on its way: just send it again.
     const current = await getAccessToken();
     if ((current !== null && current !== token) || (await refreshSession())) {
-      return request<T>(method, path, opts, true);
+      return request<T>(method, path, { ...opts, profileId: sentFor }, true);
     }
   }
   if (res.status === 426) notifyUpgradeRequired();
+  if (res.status === 403 && failure?.code === PROFILE_FORBIDDEN_CODE && sentFor) notifyProfileForbidden(sentFor);
 
   if (!res.ok) {
     throw new ApiError(res.status, failure?.code ?? 'unknown', failure?.message ?? UNKNOWN_ERROR_MESSAGE, failure?.fields);

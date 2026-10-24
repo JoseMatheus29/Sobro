@@ -26,6 +26,14 @@ export const PROFILE_SAVED_TOAST: ToastOptions = {
   message: 'Nome, moeda e orçamento salvos.',
   icon: 'person',
 };
+// The page of a profile of someone else has its own budget card.
+export const BUDGET_CARD_TITLE = 'Orçamento mensal';
+export const BUDGET_SAVE_LABEL = 'Salvar orçamento';
+export const BUDGET_SAVED_TOAST: ToastOptions = {
+  type: 'success',
+  title: 'Orçamento salvo',
+  icon: 'account-balance-wallet',
+};
 // The budget applies from the current month on; the months already over keep the one they had.
 export const BUDGET_HINT = 'Vale a partir deste mês. Os meses anteriores mantêm o orçamento que tinham.';
 
@@ -33,6 +41,10 @@ export const BUDGET_HINT = 'Vale a partir deste mês. Os meses anteriores mantê
 export const BACKUP_TITLE = 'Seus dados';
 export const BACKUP_TEXT =
   'Seus dados ficam na sua conta, em qualquer aparelho. Exporte uma cópia para guardar em outro lugar, ou importe um backup para trocar tudo o que está na conta.';
+// The same card on the page of a profile of someone else: the backup is of that profile alone.
+export const BACKUP_TITLE_OF = (name: string) => `Dados de ${name}`;
+export const BACKUP_TEXT_OF = (name: string) =>
+  `Os dados de ${name} ficam na sua conta, em qualquer aparelho. Exporte uma cópia para guardar em outro lugar, ou importe um backup para trocar tudo o que está neste perfil.`;
 export const EXPORT_LABEL = 'Exportar backup';
 export const IMPORT_LABEL = 'Importar backup';
 export const EXPORT_UNAVAILABLE_TOAST: ToastOptions = {
@@ -60,11 +72,12 @@ export const IMPORT_DONE_TOAST: ToastOptions = {
   message: 'Seus dados foram restaurados.',
   icon: 'backup',
 };
-export const IMPORT_CONFIRM = (summary: BackupSummary, date: string): ConfirmOptions => ({
-  title: 'Substituir seus dados?',
+// `profileName` is given when the backup goes into a profile of someone else instead of the person's own account.
+export const IMPORT_CONFIRM = (summary: BackupSummary, date: string, profileName?: string): ConfirmOptions => ({
+  title: profileName ? `Substituir os dados de ${profileName}?` : 'Substituir seus dados?',
   message:
     `Backup de ${date}: ${summary.transactions} transações, ${summary.cards} contas, ${summary.categories} categorias` +
-    ` e ${summary.recurrences} recorrências. Tudo o que está na sua conta agora será substituído. ` +
+    ` e ${summary.recurrences} recorrências. Tudo o que está ${profileName ? `no perfil de ${profileName}` : 'na sua conta'} agora será substituído. ` +
     'Exporte antes se quiser guardar os dados atuais.',
   confirmLabel: 'Substituir',
   destructive: true,
@@ -92,6 +105,13 @@ export const REMINDERS_DENIED_TOAST: ToastOptions = {
 // The account: leaving this phone, or deleting everything.
 export const ACCOUNT_TITLE = 'Conta';
 export const ACCOUNT_TEXT = 'Saia deste aparelho ou apague a conta com todos os dados.';
+// Deleting the account takes the profiles of other people it cares for along; the person is told how many.
+export const ACCOUNT_PROFILES_TEXT = (count: number) =>
+  count === 1 ? ' O perfil que você cuida é apagado junto.' : ` Os ${count} perfis que você cuida são apagados juntos.`;
+export const DELETE_ACCOUNT_PROFILES_NOTE = (count: number) =>
+  count === 1
+    ? ' O perfil que você cuida também será apagado, com todos os dados dele.'
+    : ` Os ${count} perfis que você cuida também serão apagados, com todos os dados deles.`;
 export const SIGN_OUT_LABEL = 'Sair da conta';
 export const SIGN_OUT_CONFIRM: ConfirmOptions = {
   title: 'Sair da conta?',

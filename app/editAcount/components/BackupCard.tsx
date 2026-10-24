@@ -13,9 +13,12 @@ import { BACKUP_REASONS } from '@/utils/backup-type';
 import { formatShortDate } from '@/utils/format';
 import { errorToast } from '@/utils/apiErrors';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
+import { useProfiles } from '@/hooks/useProfiles';
 import {
   BACKUP_TEXT,
+  BACKUP_TEXT_OF,
   BACKUP_TITLE,
+  BACKUP_TITLE_OF,
   EXPORT_FAILED_TOAST,
   EXPORT_LABEL,
   EXPORT_UNAVAILABLE_TOAST,
@@ -27,10 +30,12 @@ import {
 } from '@/types/editAcount/editAcount-type';
 
 // Save everything in the account to a file, or bring it back from one. Restoring replaces all the data, so the file
-// is checked first and the person confirms with what is in it.
+// is checked first and the person confirms with what is in it. With a profile of someone else open it is that profile's
+// data (the server reads the profile from the header of the call).
 export default function BackupCard() {
   const colors = useColors();
   const { showToast, confirm } = useFeedback();
+  const { active } = useProfiles();
   const [busy, setBusy] = useState<'export' | 'import' | null>(null);
 
   const handleExport = async () => {
@@ -68,7 +73,7 @@ export default function BackupCard() {
 
       const summary = summarizeBackup(result.backup);
       const date = summary.exportedAt ? formatShortDate(summary.exportedAt) : '—';
-      if (!(await confirm(IMPORT_CONFIRM(summary, date)))) return;
+      if (!(await confirm(IMPORT_CONFIRM(summary, date, active?.name)))) return;
 
       try {
         await restoreBackup(parsed);
@@ -99,10 +104,10 @@ export default function BackupCard() {
         <View className="w-8 h-8 rounded-xl bg-primary/10 items-center justify-center">
           <Icon name="backup" size={16} color={colors.primary.DEFAULT} />
         </View>
-        <Text className="text-[15px] font-bold text-ink">{BACKUP_TITLE}</Text>
+        <Text className="text-[15px] font-bold text-ink">{active ? BACKUP_TITLE_OF(active.name) : BACKUP_TITLE}</Text>
       </View>
 
-      <Text className="text-[13px] leading-[19px] text-muted">{BACKUP_TEXT}</Text>
+      <Text className="text-[13px] leading-[19px] text-muted">{active ? BACKUP_TEXT_OF(active.name) : BACKUP_TEXT}</Text>
 
       <View className="flex-row gap-2.5 mt-4">
         {options.map((option) => (

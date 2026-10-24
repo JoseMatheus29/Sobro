@@ -39,6 +39,18 @@ export interface ApiProfile {
   name: string;
   currency: string;
   remindersEnabled: boolean;
+  /** How many managed profiles the person cares for. Absent from a server that does not know them yet. */
+  managedProfiles?: number;
+}
+
+/** A profile of `GET /profiles`: the person's own first, then the ones they manage (a person with no login). */
+export interface ApiManagedProfile {
+  id: string;
+  kind: 'self' | 'managed';
+  name: string;
+  currency: string;
+  remindersEnabled: boolean;
+  createdAt?: string;
 }
 
 export interface ProfilePatch {

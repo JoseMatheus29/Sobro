@@ -3,10 +3,13 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
+import { TRANSACTION_FOR_LABEL } from '@/types/profiles/profiles-type';
 import { FlowHeaderProps, STEP_COUNT, STEP_NAMES } from '@/types/registrationSpent/registrationSpent-type';
+import { tint } from '@/utils/color';
 
-// Light header; the brand blue shows up in the button icon, the progress and the step name.
-export default function FlowHeader({ title, step, onBack }: FlowHeaderProps) {
+// Light header; the brand blue shows up in the button icon, the progress and the step name. When it is being registered
+// in the profile of someone else, a purple tag says whose it is.
+export default function FlowHeader({ title, step, onBack, forName }: FlowHeaderProps) {
   const colors = useColors();
   return (
     <View>
@@ -35,9 +38,22 @@ export default function FlowHeader({ title, step, onBack }: FlowHeaderProps) {
           />
         ))}
       </View>
-      <Text className="px-5 pt-3 text-[13px] text-muted">
-        Passo {step} de {STEP_COUNT} · <Text className="font-bold text-primary">{STEP_NAMES[step - 1]}</Text>
-      </Text>
+      <View className="flex-row items-center justify-between gap-3 px-5 pt-3">
+        <Text className="text-[13px] text-muted">
+          Passo {step} de {STEP_COUNT} · <Text className="font-bold text-primary">{STEP_NAMES[step - 1]}</Text>
+        </Text>
+        {forName ? (
+          <View
+            className="shrink flex-row items-center gap-1.5 h-7 pl-2 pr-3 rounded-full"
+            style={{ backgroundColor: tint(colors.managed) }}
+          >
+            <Icon name="person" size={14} color={colors.managed} />
+            <Text numberOfLines={1} className="shrink text-xs font-bold" style={{ color: colors.managed }}>
+              {TRANSACTION_FOR_LABEL(forName)}
+            </Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }

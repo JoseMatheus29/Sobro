@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
+import { useProfiles } from '@/hooks/useProfiles';
 import { budgetColor } from '@/utils/budget';
 import { tint } from '@/utils/color';
 import { formatMoney, formatSignedMoney } from '@/utils/format';
@@ -24,6 +25,8 @@ import {
 // The balance of the month, how it compares with the last one, and how much of the budget is spent.
 export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPressBudget }) => {
   const colors = useColors();
+  // The label takes the purple of "someone else's finances" while a profile of someone else is open.
+  const { active } = useProfiles();
   const { net, netChange } = summary;
   const better = netChange !== null && netChange >= 0;
   const changeColor = better ? colors.income : colors.expense;
@@ -39,7 +42,10 @@ export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPre
     // Plain white: the gray-blue gradient the card used to have read as gray once it got taller.
     <View className="bg-card rounded-[24px] p-6 border border-surface-dark shadow-sm shadow-black/5 elevation-2">
       {/* Saldo principal */}
-      <Text className="text-xs text-primary-lighter font-semibold tracking-[0.8px] uppercase mb-1">
+      <Text
+        className="text-xs text-primary-lighter font-semibold tracking-[0.8px] uppercase mb-1"
+        style={active ? { color: colors.managed } : undefined}
+      >
         {BALANCE_LABEL}
       </Text>
       <Text className="text-[32px] font-extrabold text-ink tracking-tight">

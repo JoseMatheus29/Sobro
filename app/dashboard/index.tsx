@@ -17,6 +17,7 @@ import CardBalance from '@/app/dashboard/components/CardBalance';
 import DashboardHeader from '@/app/dashboard/components/DashboardHeader';
 import FlowSection from '@/app/dashboard/components/FlowSection';
 import InsightHighlight from '@/app/dashboard/components/InsightHighlight';
+import NoAccountsCard from '@/app/dashboard/components/NoAccountsCard';
 import PlannedCard from '@/app/dashboard/components/PlannedCard';
 import RecentTransactions from '@/app/dashboard/components/RecentTransactions';
 import {
@@ -31,7 +32,8 @@ import {
   SECTION_GAP,
   SUMMARY_OVERLAP,
 } from '@/types/dashboard/dashboard-type';
-import { useBudgetEntries, useCategoryBudgets, useMonthTransactions, useProfile, useTransactions } from '@/db/hooks';
+import { useBudgetEntries, useCards, useCategoryBudgets, useMonthTransactions, useProfile, useTransactions } from '@/db/hooks';
+import { useProfiles } from '@/hooks/useProfiles';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { generateInsights } from '@/utils/insightRules';
@@ -48,12 +50,18 @@ export default function DashboardScreen() {
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
   const { profile } = useProfile();
+  const { cards, loaded: cardsLoaded } = useCards();
+  const { active } = useProfiles();
+  // A profile that was just made has no accounts, so there is nothing to add up yet. (Accounts that were not read, or
+  // could not be, are not "none".)
+  const noAccounts = cardsLoaded && cards.length === 0;
 
   // The first-run tutorial starts once the month is on screen (and only on the current month, where the balance card is).
+  // It is the person's own: a profile they care for does not repeat it.
   const balanceRef = useTutorialTarget('balance');
   const tutorial = useTutorial({
-    userId: profile?.id,
-    ready: !loadingMonth && !monthError && isCurrent && profile !== null,
+    userId: active ? undefined : profile?.id,
+    ready: !loadingMonth && !monthError && isCurrent && profile !== null && !noAccounts,
   });
 
   // The budget that applied to the month shown, and, for a month that is over, "today" is its last
@@ -93,7 +101,13 @@ export default function DashboardScreen() {
         </View>
 
         <View className="px-5" style={{ marginTop: -SUMMARY_OVERLAP }}>
-          {monthError && current.length === 0 ? (
+          {noAccounts ? (
+            <NoAccountsCard
+              name={active?.name ?? profile?.name ?? ''}
+              onCreate={() => router.push({ pathname: '/wallet', params: { newAccount: '1' } })}
+              onImport={() => router.push('/editAcount')}
+            />
+          ) : monthError && current.length === 0 ? (
             // The month could not be read: nothing is shown as if it had loaded (a balance of zero would be a lie).
             <View className="bg-card rounded-[24px]">
               <LoadError error={monthError} onRetry={() => refetchMonth()} />

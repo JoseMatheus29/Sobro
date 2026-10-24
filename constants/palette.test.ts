@@ -55,7 +55,7 @@ describe('palette', () => {
     });
 
     it.each(grounds)('keeps the colored text and icons readable on %s', (ground) => {
-      for (const color of [p.primary.DEFAULT, p.income, p.expense, p.warning]) {
+      for (const color of [p.primary.DEFAULT, p.income, p.expense, p.warning, p.managed]) {
         expect(contrast(color, ground)).toBeGreaterThanOrEqual(4);
       }
     });

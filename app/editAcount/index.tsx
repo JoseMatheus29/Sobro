@@ -13,8 +13,11 @@ import ProfileHeader from '@/app/editAcount/components/ProfileHeader';
 import BasicInfoForm from '@/app/editAcount/components/BasicInfoForm';
 import PreferencesForm from '@/app/editAcount/components/PreferencesForm';
 import BackupCard from '@/app/editAcount/components/BackupCard';
+import ManagedProfileView from '@/app/editAcount/components/ManagedProfileView';
+import ProfilesCard from '@/app/editAcount/components/ProfilesCard';
 import TutorialCard from '@/app/editAcount/components/TutorialCard';
 import AccountCard from '@/app/editAcount/components/AccountCard';
+import { useProfiles } from '@/hooks/useProfiles';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import { PROFILE_SAVED_TOAST, PROFILE_SAVE_FAILED_TITLE, REMINDERS_DENIED_TOAST } from '@/types/editAcount/editAcount-type';
 import LoadError from '@/app/components/ui/LoadError';
@@ -32,7 +35,13 @@ import { currentMonthKey } from '@/utils/month';
 import { useColors } from '@/hooks/useColors';
 import { KEYBOARD_AVOIDING_BEHAVIOR } from '@/types/components/ui/keyboard-type';
 
+// The person's own page, or the page of the profile of someone else that is open.
 export default function EditAcount() {
+  const { active } = useProfiles();
+  return active ? <ManagedProfileView /> : <OwnProfile />;
+}
+
+function OwnProfile() {
   const colors = useColors();
   const { showToast } = useFeedback();
   const { profile, loading, error, refetch } = useProfile();
@@ -130,6 +139,8 @@ export default function EditAcount() {
           <TutorialCard />
 
           <BackupCard />
+
+          <ProfilesCard />
 
           <AccountCard />
 

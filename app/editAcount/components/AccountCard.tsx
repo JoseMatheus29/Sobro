@@ -5,12 +5,15 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '@/app/components/auth/AuthProvider';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import DeleteAccountModal from '@/app/editAcount/components/DeleteAccountModal';
+import { useProfile } from '@/db/hooks';
 import { useColors } from '@/hooks/useColors';
 import {
+  ACCOUNT_PROFILES_TEXT,
   ACCOUNT_TEXT,
   ACCOUNT_TITLE,
   DELETE_ACCOUNT_CONFIRM,
   DELETE_ACCOUNT_LABEL,
+  DELETE_ACCOUNT_PROFILES_NOTE,
   SIGN_OUT_CONFIRM,
   SIGN_OUT_LABEL,
 } from '@/types/editAcount/editAcount-type';
@@ -21,6 +24,9 @@ export default function AccountCard() {
   const colors = useColors();
   const { signOut } = useAuth();
   const { confirm } = useFeedback();
+  const { profile } = useProfile();
+  // Deleting the account also deletes the profiles of other people it cares for, so the person is told before.
+  const managed = profile?.managedProfiles ?? 0;
   const [askingPassword, setAskingPassword] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -36,7 +42,11 @@ export default function AccountCard() {
   };
 
   const handleDelete = async () => {
-    if (await confirm(DELETE_ACCOUNT_CONFIRM)) setAskingPassword(true);
+    const options =
+      managed > 0
+        ? { ...DELETE_ACCOUNT_CONFIRM, message: `${DELETE_ACCOUNT_CONFIRM.message}${DELETE_ACCOUNT_PROFILES_NOTE(managed)}` }
+        : DELETE_ACCOUNT_CONFIRM;
+    if (await confirm(options)) setAskingPassword(true);
   };
 
   return (
@@ -48,7 +58,10 @@ export default function AccountCard() {
         <Text className="text-[15px] font-bold text-ink">{ACCOUNT_TITLE}</Text>
       </View>
 
-      <Text className="text-[13px] leading-[19px] text-muted">{ACCOUNT_TEXT}</Text>
+      <Text className="text-[13px] leading-[19px] text-muted">
+        {ACCOUNT_TEXT}
+        {managed > 0 ? ACCOUNT_PROFILES_TEXT(managed) : ''}
+      </Text>
 
       <View className="gap-2.5 mt-4">
         <TouchableOpacity

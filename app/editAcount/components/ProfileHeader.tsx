@@ -7,9 +7,11 @@ import { useColors } from '@/hooks/useColors';
 
 interface ProfileHeaderProps {
   name: string;
+  /** The title on top; "Meu Perfil" unless the page is another profile's. */
+  title?: string;
 }
 
-export default function ProfileHeader({ name }: ProfileHeaderProps) {
+export default function ProfileHeader({ name, title = 'Meu Perfil' }: ProfileHeaderProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -22,7 +24,7 @@ export default function ProfileHeader({ name }: ProfileHeaderProps) {
       style={{ paddingTop: insets.top + 16 }}
     >
       <View className="flex-row items-center justify-center min-h-9 mb-6">
-        <Text className="text-headerInk text-xl font-bold">Meu Perfil</Text>
+        <Text numberOfLines={1} className="text-headerInk text-xl font-bold">{title}</Text>
       </View>
 
       <View className="items-center">

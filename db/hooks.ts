@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { keepPreviousData } from '@tanstack/react-query';
 
 import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
@@ -36,10 +35,17 @@ import {
 // A query only runs while its screen is the one in front (db/query.ts), and `notifyDataChanged` (db/events.ts)
 // marks everything old after a save, so a screen shows what was last read at once and then what is current.
 
-// The accounts, each with its current balance (worked out by the server).
+// The accounts, each with its current balance (worked out by the server). `loaded` is true once they were read: an
+// empty list before that is not "no accounts".
 export function useCards() {
   const query = useScreenQuery({ queryKey: queryKeys.cards, queryFn: getCards });
-  return { cards: query.data ?? NONE, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
+  return {
+    cards: query.data ?? NONE,
+    loading: query.isLoading,
+    loaded: query.isSuccess,
+    error: loadError(query),
+    refetch: query.refetch,
+  };
 }
 
 // One invoice (by the month it closes in) of the credit card of an account: what was bought in its cycle, what was
@@ -152,7 +158,7 @@ export function useTransactions(filters: TransactionFilters = {}) {
     queryFn: () => getTransactions({ cardId, month, spendingMonth, limit, categoryId, type, q }),
     enabled: reads,
     // Moving to another month keeps showing the last one until the new one arrives.
-    placeholderData: keepPreviousData,
+    keepPrevious: true,
   });
   const { refetch: refetchQuery } = query;
   const refetch = useCallback(async () => {
@@ -331,7 +337,7 @@ export function useCategoryTotals(filters: { month?: string } = {}) {
     queryKey: queryKeys.categoryTotals(month),
     queryFn: () => getCategoryTotals({ month: month as string }),
     enabled: !future && month !== undefined,
-    placeholderData: keepPreviousData,
+    keepPrevious: true,
   });
   const { refetch: refetchQuery } = query;
   const refetch = useCallback(async () => {
@@ -372,8 +378,8 @@ export function useCategories() {
   return { categories: shown, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
-// The account's profile, with the light/dark choice of this phone.
+// The account's profile (the person's own, whatever managed profile is open), with the light/dark choice of this phone.
 export function useProfile() {
-  const query = useScreenQuery({ queryKey: queryKeys.profile, queryFn: getProfile });
+  const query = useScreenQuery({ queryKey: queryKeys.profile, queryFn: getProfile, account: true });
   return { profile: query.data ?? null, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }

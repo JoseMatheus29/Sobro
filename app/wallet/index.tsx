@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, FlatList, Dimensions, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import SideBar from '@/app/components/sidebar';
 import AddTransactionFab from '@/app/components/AddTransactionFab';
@@ -51,6 +51,15 @@ export default function WalletScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingCard, setEditingCard] = useState<CardRecord | null>(null);
   const [goalFormVisible, setGoalFormVisible] = useState(false);
+
+  // The Home sends a profile with no accounts here to make the first one: the form opens by itself, once.
+  const { newAccount } = useLocalSearchParams<{ newAccount?: string }>();
+  useEffect(() => {
+    if (newAccount !== '1') return;
+    setEditingCard(null);
+    setModalVisible(true);
+    router.setParams({ newAccount: undefined });
+  }, [newAccount, router]);
 
   const { confirm, showToast } = useFeedback();
   const { month } = useSelectedMonth();
