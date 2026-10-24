@@ -37,6 +37,14 @@ export const ADD_CARD_HINT = 'Cadastre uma nova conta';
 export const EMPTY_TRANSACTIONS_MESSAGE = 'As transações desta conta aparecem aqui';
 export const SEARCH_LABEL = 'Buscar';
 
+// Under the receitas, despesas and saldo: where the despesas of the month went, since a purchase on credit is an
+// expense of the month but does not touch the saldo (it goes into an invoice, which adds up another period).
+export const CREDIT_SPLIT_TEXT = (onCredit: string, fromBalance: string | null) =>
+  fromBalance === null
+    ? `Todas as despesas do mês foram no crédito (${onCredit}): entram na fatura, não no saldo.`
+    : `Das despesas, ${onCredit} foram no crédito (entram na fatura, não no saldo) e ${fromBalance} saíram do saldo.`;
+export const CREDIT_INVOICE_NOTE = 'A fatura soma as compras do ciclo dela, que não coincide com o mês.';
+
 // An account is a place where the money is: a bank, a card, cash.
 export const EDIT_ACCOUNT_ACTION = 'Editar conta';
 export const TRANSFER_ACTION = 'Transferir';

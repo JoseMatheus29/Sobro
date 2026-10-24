@@ -3,7 +3,13 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useColors } from '@/hooks/useColors';
 import { withoutTransfers } from '@/utils/transfer';
-import { EDIT_ACCOUNT_ACTION, TRANSFER_ACTION, WalletSummaryProps } from '@/types/wallet/wallet-type';
+import {
+  CREDIT_INVOICE_NOTE,
+  CREDIT_SPLIT_TEXT,
+  EDIT_ACCOUNT_ACTION,
+  TRANSFER_ACTION,
+  WalletSummaryProps,
+} from '@/types/wallet/wallet-type';
 import { tint } from '@/utils/color';
 
 export default function WalletSummary({ activeCard, transactions, onEditCard, onTransfer }: WalletSummaryProps) {
@@ -12,6 +18,11 @@ export default function WalletSummary({ activeCard, transactions, onEditCard, on
   const real = withoutTransfers(transactions);
   const income = real.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const expense = real.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  // A purchase on credit is an expense of the month, but it does not leave the saldo: it goes into an invoice.
+  const onCredit = real
+    .filter((t) => t.type === 'expense' && t.paymentMethod === 'credit')
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const fromBalance = expense - onCredit;
 
   const formatCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
 
@@ -32,6 +43,15 @@ export default function WalletSummary({ activeCard, transactions, onEditCard, on
           </View>
         ))}
       </View>
+
+      {onCredit > 0 && (
+        <View className="mt-4 rounded-2xl bg-surface px-3.5 py-3">
+          <Text className="text-xs leading-[17px] text-muted">
+            {CREDIT_SPLIT_TEXT(formatCurrency(onCredit), fromBalance > 0 ? formatCurrency(fromBalance) : null)}
+          </Text>
+          <Text className="text-xs leading-[17px] text-subtle mt-1">{CREDIT_INVOICE_NOTE}</Text>
+        </View>
+      )}
 
       <View className="flex-row items-center justify-center gap-6 mt-5 pt-4 border-t border-surface">
         <TouchableOpacity onPress={onEditCard} className="flex-row items-center gap-1.5">
