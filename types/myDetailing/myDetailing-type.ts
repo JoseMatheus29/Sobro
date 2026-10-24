@@ -7,16 +7,13 @@ export interface PieDataItem {
   label: string;
 }
 
-export interface ExpenseChartProps {
-  pieData: PieDataItem[];
-  totalGastos: number;
-}
-
 export interface MonthlyProgressProps {
   totalGastos: number;
   progress: number;
   percentage: number;
   hasBudget: boolean;
+  /** The month's budget ceiling, when there is one. */
+  budget: number | null;
   /** The account being looked at, when it is not all of them: the budget is for the whole account, so it is left out. */
   scopeName?: string | null;
 }
@@ -39,7 +36,12 @@ export const EMPTY_CHART_TITLE = 'Nenhum gasto neste mês';
 export const EMPTY_CHART_HINT = 'Toque em + para registrar seu primeiro gasto.';
 export const EMPTY_TRANSACTIONS_MESSAGE = 'Seus gastos do mês aparecem aqui';
 
-// The account filter and how the month's spending was paid.
+// What the month's budget has left, in one line under the total.
+export const BUDGET_PASSED = (over: string, budget: string) => `Passou ${over} do teto de ${budget}`;
+export const BUDGET_USED = (percent: number, budget: string) => `${percent}% do teto de ${budget}`;
+export const NO_BUDGET_HINT = 'Defina um orçamento mensal no seu perfil';
+
+// The account filter and how the month's spending was paid (a line that opens into the figures).
 export const ALL_ACCOUNTS_LABEL = 'Todas';
 export const PAYMENT_SPLIT_TITLE = 'Como você pagou';
 export const PAYMENT_SPLIT_LABELS: Record<PaymentKind, string> = {
@@ -58,25 +60,72 @@ export const paymentColors = (colors: Palette): Record<PaymentKind, string> => (
   other: colors.subtle,
 });
 
-// Spending limits per category.
-export interface LimitRow {
+// The spending of the month by category, with the limit of each in force in the month shown.
+export interface CategoryRow {
   categoryId: string;
   name: string;
-  icon: string;
   color: string;
   spent: number;
   /** The limit in force in the month shown; null when there is none. */
   limit: number | null;
 }
 
-export interface CategoryLimitsProps {
-  rows: LimitRow[];
+export interface CategorySectionProps {
+  rows: CategoryRow[];
+  /** What was spent in all of them: the donut and the percentages are shares of it. */
+  total: number;
+  /** A limit is for a category in the whole account, so it only shows (and is set) with every account in view. */
+  showLimits: boolean;
   /** Limits are set from the current month on, so only the current month can be edited. */
   canEdit: boolean;
   onPressRow: (categoryId: string) => void;
-  onAdd: () => void;
+  onAddLimit: () => void;
 }
 
+// How many of the biggest categories the legend names before "mais N".
+export const LEGEND_SHOWN = 3;
+
+export const CATEGORY_SECTION_TITLE = 'Por categoria';
+export const LEGEND_MORE = (count: number) => `mais ${count}`;
+export const LIMIT_ALERT_ONE = (name: string) => `${name} passou do limite`;
+export const LIMIT_ALERT_MANY = (count: number) => `${count} categorias passaram do limite`;
+export const EXPAND_CATEGORIES = (count: number) => (count > 1 ? `Ver as ${count} categorias` : 'Ver detalhes');
+export const COLLAPSE_LABEL = 'Mostrar menos';
+export const LIMIT_LEFT = (left: string, limit: string) => `Sobram ${left} do limite de ${limit}`;
+export const LIMIT_OVER = (over: string, limit: string) => `Passou ${over} do limite de ${limit}`;
+export const EDIT_LIMIT_HINT = 'Toque para definir ou mudar o limite';
+
+// The month's spending, one day at a time.
+export const TRANSACTIONS_TITLE = 'Seus gastos';
+export const SHOW_MORE_TRANSACTIONS = 'Mostrar mais lançamentos';
+export const SHOW_LESS_TRANSACTIONS = 'Mostrar menos';
+// How many entries the list shows before "Mostrar mais".
+export const TRANSACTIONS_INITIAL = 5;
+
+export interface DayListItem {
+  id: number;
+  name: string;
+  /** 'YYYY-MM-DD': the day it was made, which the list groups by. */
+  day: string;
+  amount: number;
+  category: string;
+  categoryColor?: string;
+  type: 'income' | 'expense';
+  /** "4/10" or "Todo mês", when it comes from a recurring expense. */
+  badge?: string;
+  /** The invoice a purchase on credit goes into: "Fatura nov". */
+  tag?: string;
+  /** Planned for a month that has not started: muted, and not pressable. */
+  planned?: boolean;
+}
+
+export interface DayGroupedListProps {
+  transactions: DayListItem[];
+  emptyMessage: string;
+  onPressItem: (id: number) => void;
+}
+
+// Spending limits per category: the sheet that sets one.
 export interface LimitSheetProps {
   visible: boolean;
   categoryName: string;
@@ -90,12 +139,7 @@ export interface LimitSheetProps {
   onClose: () => void;
 }
 
-export const LIMITS_TITLE = 'Limites por categoria';
-export const LIMITS_EMPTY = 'Defina um teto para uma categoria e acompanhe o quanto já foi gasto nela.';
 export const ADD_LIMIT_LABEL = 'Definir limite';
-export const NO_LIMIT_LABEL = 'Sem limite · toque para definir';
-export const LIMIT_PROGRESS = (spent: string, limit: string) => `${spent} de ${limit}`;
-export const LIMIT_PASSED = (over: string) => `Passou ${over}`;
 export const LIMIT_PICKER_TITLE = 'Limite para qual categoria?';
 export const LIMIT_SHEET_TITLE = (name: string) => `Limite de ${name}`;
 export const LIMIT_SHEET_HINT = 'Vale a partir deste mês. Os meses anteriores mantêm o limite que tinham.';

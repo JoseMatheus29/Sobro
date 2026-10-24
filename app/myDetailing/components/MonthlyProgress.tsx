@@ -4,13 +4,34 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Progress from 'react-native-progress';
 
 import { useColors } from '@/hooks/useColors';
-import { MonthlyProgressProps } from '@/types/myDetailing/myDetailing-type';
+import { formatMoney } from '@/utils/format';
+import {
+  BUDGET_PASSED,
+  BUDGET_USED,
+  MonthlyProgressProps,
+  NO_BUDGET_HINT,
+} from '@/types/myDetailing/myDetailing-type';
 
-export default function MonthlyProgress({ totalGastos, progress, percentage, hasBudget, scopeName }: MonthlyProgressProps) {
+// The month's spending against its budget, with one line that says where it stands.
+export default function MonthlyProgress({
+  totalGastos,
+  progress,
+  percentage,
+  hasBudget,
+  budget,
+  scopeName,
+}: MonthlyProgressProps) {
   const colors = useColors();
+  const ceiling = budget ?? 0;
+  const caption = !hasBudget
+    ? NO_BUDGET_HINT
+    : totalGastos > ceiling
+      ? BUDGET_PASSED(formatMoney(totalGastos - ceiling), formatMoney(ceiling))
+      : BUDGET_USED(percentage, formatMoney(ceiling));
+
   return (
     // LinearGradient ignores borderRadius on Android; the wrapper does the clipping.
-    <View className="mx-4 mb-5 rounded-3xl overflow-hidden">
+    <View className="mx-4 mb-4 rounded-3xl overflow-hidden">
       <LinearGradient
         colors={colors.buttonGradient}
         start={{ x: 0, y: 0 }}
@@ -34,9 +55,7 @@ export default function MonthlyProgress({ totalGastos, progress, percentage, has
               borderRadius={4}
               height={6}
             />
-            <Text className="text-white/65 text-[11px] mt-1.5">
-              {hasBudget ? `${percentage}% do orçamento utilizado` : 'Defina um orçamento mensal no seu perfil'}
-            </Text>
+            <Text className="text-white text-xs font-bold mt-2">{caption}</Text>
           </>
         )}
       </LinearGradient>
