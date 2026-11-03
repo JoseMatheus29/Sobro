@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +32,15 @@ import {
   SECTION_GAP,
   SUMMARY_OVERLAP,
 } from '@/types/dashboard/dashboard-type';
-import { useBudgetEntries, useCards, useCategoryBudgets, useMonthTransactions, useProfile, useTransactions } from '@/db/hooks';
+import {
+  useBudgetEntries,
+  useCards,
+  useCarryOver,
+  useCategoryBudgets,
+  useMonthTransactions,
+  useProfile,
+  useTransactions,
+} from '@/db/hooks';
 import { useProfiles } from '@/hooks/useProfiles';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
@@ -45,7 +53,14 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
 
   const { month, isCurrent, isFuture } = useSelectedMonth();
-  const { current, previous, loading: loadingMonth, error: monthError, refetch: refetchMonth } = useMonthTransactions(month);
+  const { current, previous, loading: loadingMonthOnly, error: monthOnlyError, refetch: refetchMonthOnly } = useMonthTransactions(month);
+  // What was kept before the month: the balance starts from it, so it has to be known before a balance is drawn.
+  const { carry, loading: loadingCarry, error: carryError, refetch: refetchCarry } = useCarryOver(month);
+  const loadingMonth = loadingMonthOnly || loadingCarry;
+  const monthError = monthOnlyError ?? carryError;
+  const refetchMonth = useCallback(async () => {
+    await Promise.all([refetchMonthOnly(), refetchCarry()]);
+  }, [refetchMonthOnly, refetchCarry]);
   const { transactions: recent } = useTransactions({ spendingMonth: month, limit: RECENT_MAX });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
@@ -107,7 +122,8 @@ export default function DashboardScreen() {
               onCreate={() => router.push({ pathname: '/wallet', params: { newAccount: '1' } })}
               onImport={() => router.push('/editAcount')}
             />
-          ) : monthError && current.length === 0 ? (
+          ) : monthError && (carryError !== null || current.length === 0) ? (
+            // Without what was kept before the month the balance would be wrong, so that alone is an error too.
             // The month could not be read: nothing is shown as if it had loaded (a balance of zero would be a lie).
             <View className="bg-card rounded-[24px]">
               <LoadError error={monthError} onRetry={() => refetchMonth()} />
@@ -124,6 +140,7 @@ export default function DashboardScreen() {
                 <View ref={balanceRef} collapsable={false}>
                   <CardBalance
                     summary={summary}
+                    carry={carry}
                     budget={budget}
                     onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
                   />

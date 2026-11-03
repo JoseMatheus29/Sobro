@@ -22,6 +22,7 @@ import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import { PROFILE_SAVED_TOAST, PROFILE_SAVE_FAILED_TITLE, REMINDERS_DENIED_TOAST } from '@/types/editAcount/editAcount-type';
 import LoadError from '@/app/components/ui/LoadError';
 import { roundAmount } from '@/utils/apiInput';
+import { amountToMoneyText, parseMoneyText } from '@/utils/money';
 import { errorToast } from '@/utils/apiErrors';
 import { useBudgetEntries, useProfile } from '@/db/hooks';
 import { setBudgetFrom } from '@/db/budgets';
@@ -64,7 +65,7 @@ function OwnProfile() {
   }, [profile]);
 
   useEffect(() => {
-    setMonthlyBudget(currentBudget !== null ? String(currentBudget) : '');
+    setMonthlyBudget(currentBudget !== null ? amountToMoneyText(currentBudget) : '');
   }, [currentBudget]);
 
   // Turning the reminders on asks for the permission to notify; without it they stay off.
@@ -85,7 +86,7 @@ function OwnProfile() {
   };
 
   const handleSalvar = async () => {
-    const typed = monthlyBudget ? Number(monthlyBudget.replace(',', '.')) : null;
+    const typed = monthlyBudget ? parseMoneyText(monthlyBudget) : null;
     const nextBudget = typed !== null && Number.isFinite(typed) && typed > 0 ? roundAmount(typed) : null;
     try {
       await updateProfile({

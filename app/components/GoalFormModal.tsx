@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import { createGoal, updateGoal } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useCategoryColor, useColors } from '@/hooks/useColors';
@@ -10,6 +11,7 @@ import { useSaveKey } from '@/hooks/useSaveKey';
 import { roundAmount } from '@/utils/apiInput';
 import { errorMessage } from '@/utils/apiErrors';
 import { GOAL_DEFAULT_MONTHS_AHEAD, GOAL_MAX_MONTHS_AHEAD, GOAL_NAME_MAX_LENGTH } from '@/utils/goals-type';
+import { amountToMoneyText, parseMoneyText } from '@/utils/money';
 import { addMonths, currentMonthKey, monthsBetween, monthTitle } from '@/utils/month';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import {
@@ -63,7 +65,7 @@ export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalF
     if (!visible) return;
     setError(null);
     setName(goal?.name ?? '');
-    setTarget(goal ? String(goal.targetAmount).replace('.', ',') : '');
+    setTarget(goal ? amountToMoneyText(goal.targetAmount) : '');
     setTargetMonth(goal?.targetMonth ?? null);
     setColor(goal?.color ?? GOAL_COLORS[0]);
     setIcon(goal?.icon ?? GOAL_ICONS[0]);
@@ -79,7 +81,7 @@ export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalF
   const handleSave = async () => {
     if (saving) return;
     const trimmed = name.trim();
-    const amount = Number(target.replace(',', '.'));
+    const amount = parseMoneyText(target);
     if (!trimmed) return setError(NAME_REQUIRED);
     if (!Number.isFinite(amount) || amount <= 0) return setError(TARGET_REQUIRED);
 
@@ -134,13 +136,12 @@ export default function GoalFormModal({ visible, goal, onClose, onSaved }: GoalF
             />
 
             <Text className={LABEL_CLASS}>{GOAL_TARGET_LABEL}</Text>
-            <TextInput
+            <MoneyInput
               className={INPUT_CLASS}
               placeholder={GOAL_TARGET_PLACEHOLDER}
               placeholderTextColor={colors.placeholder}
               value={target}
               onChangeText={setTarget}
-              keyboardType="numeric"
             />
 
             <Text className={LABEL_CLASS}>{GOAL_DEADLINE_LABEL}</Text>

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, TouchableOpacity, Switch } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import { useColors } from '@/hooks/useColors';
 import { type ThemePreference } from '@/utils/theme-type';
 import { BUDGET_HINT, REMINDERS_HINT, REMINDERS_LABEL, THEME_HINT, THEME_LABEL, THEME_OPTIONS } from '@/types/editAcount/editAcount-type';
@@ -74,13 +75,12 @@ export default function PreferencesForm({
       </Text>
       <View className="flex-row items-center bg-canvas rounded-2xl border-[1.5px] border-line px-3.5 h-[52px]">
         <Icon name="account-balance-wallet" size={18} color={colors.subtle} />
-        <TextInput
+        <MoneyInput
           className="flex-1 ml-2.5 text-[15px] text-ink"
           placeholder="0,00"
           placeholderTextColor={colors.placeholder}
           value={monthlyBudget}
           onChangeText={setMonthlyBudget}
-          keyboardType="numeric"
         />
       </View>
       <Text className="text-xs text-muted mt-2">{BUDGET_HINT}</Text>

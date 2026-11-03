@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Text, TouchableOpacity, View } from 'react-native';
 
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import { addGoalEntry } from '@/db/goals';
 import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
@@ -10,6 +11,7 @@ import { roundAmount } from '@/utils/apiInput';
 import { errorMessage } from '@/utils/apiErrors';
 import { formatMoney } from '@/utils/format';
 import { movementProblem } from '@/utils/goals';
+import { parseMoneyText } from '@/utils/money';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import {
   AVAILABLE_LABEL,
@@ -46,7 +48,7 @@ export default function MovementModal({ visible, kind, goal, onClose }: Movement
     setError(null);
   }, [visible]);
 
-  const value = Number(amount.replace(',', '.'));
+  const value = parseMoneyText(amount);
   const valid = Number.isFinite(value) && value > 0;
   const shown = valid ? formatMoney(value).replace('R$ ', '') : '';
 
@@ -93,7 +95,7 @@ export default function MovementModal({ visible, kind, goal, onClose }: Movement
           <Text className="text-[11px] font-bold text-primary-lighter tracking-[0.8px] uppercase mb-1.5">{MOVEMENT_AMOUNT_LABEL}</Text>
           <View className="flex-row items-center bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5">
             <Text className="text-[22px] font-extrabold text-ink mr-2">R$</Text>
-            <TextInput
+            <MoneyInput
               className="flex-1 text-[22px] font-extrabold text-ink py-2"
               placeholder={MOVEMENT_PLACEHOLDER}
               placeholderTextColor={colors.placeholder}
@@ -102,7 +104,6 @@ export default function MovementModal({ visible, kind, goal, onClose }: Movement
                 setAmount(text);
                 setError(null);
               }}
-              keyboardType="numeric"
               autoFocus
             />
           </View>

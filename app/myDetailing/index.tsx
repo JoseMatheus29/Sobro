@@ -27,6 +27,7 @@ import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { buildCategoryRows } from '@/utils/categoryRows';
 import { dayOf } from '@/utils/invoice';
+import { amountToMoneyText } from '@/utils/money';
 import { currentMonthKey } from '@/utils/month';
 import { errorMessage } from '@/utils/apiErrors';
 import { type ToastOptions } from '@/types/components/feedback/feedback-type';
@@ -202,7 +203,7 @@ export default function MyDetailing() {
       <LimitSheet
         visible={editing !== null}
         categoryName={editing?.name ?? ''}
-        initialValue={editingLimit !== undefined ? String(editingLimit) : ''}
+        initialValue={editingLimit !== undefined ? amountToMoneyText(editingLimit) : ''}
         hasLimit={editingLimit !== undefined}
         error={limitError}
         onSave={handleSaveLimit}

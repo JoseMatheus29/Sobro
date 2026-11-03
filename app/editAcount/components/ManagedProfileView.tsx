@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAvoidingView, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
 import ProfileFormModal from '@/app/components/profile/ProfileFormModal';
 import SideBar from '@/app/components/sidebar';
 import GradientButton from '@/app/components/ui/GradientButton';
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import BackupCard from '@/app/editAcount/components/BackupCard';
 import DeleteProfileModal from '@/app/editAcount/components/DeleteProfileModal';
@@ -34,6 +35,7 @@ import {
 } from '@/types/profiles/profiles-type';
 import { errorToast } from '@/utils/apiErrors';
 import { roundAmount } from '@/utils/apiInput';
+import { amountToMoneyText, parseMoneyText } from '@/utils/money';
 import { budgetForMonth } from '@/utils/budget';
 import { tint } from '@/utils/color';
 import { currentMonthKey } from '@/utils/month';
@@ -53,13 +55,13 @@ export default function ManagedProfileView() {
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    setBudget(currentBudget !== null ? String(currentBudget) : '');
+    setBudget(currentBudget !== null ? amountToMoneyText(currentBudget) : '');
   }, [currentBudget]);
 
   if (!active) return null;
 
   const handleSaveBudget = async () => {
-    const typed = budget ? Number(budget.replace(',', '.')) : null;
+    const typed = budget ? parseMoneyText(budget) : null;
     const next = typed !== null && Number.isFinite(typed) && typed > 0 ? roundAmount(typed) : null;
     // Only a real change starts a new budget.
     if (next === currentBudget) return;
@@ -88,13 +90,12 @@ export default function ManagedProfileView() {
             </View>
             <View className="flex-row items-center bg-canvas rounded-2xl border-[1.5px] border-line px-3.5 h-[52px]">
               <Icon name="flag" size={18} color={colors.subtle} />
-              <TextInput
+              <MoneyInput
                 className="flex-1 ml-2.5 text-[15px] text-ink"
                 placeholder="0,00"
                 placeholderTextColor={colors.placeholder}
                 value={budget}
                 onChangeText={setBudget}
-                keyboardType="numeric"
                 accessibilityLabel={BUDGET_CARD_TITLE}
               />
             </View>

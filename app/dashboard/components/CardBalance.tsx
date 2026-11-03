@@ -16,19 +16,20 @@ import {
   BUDGET_OVER_LABEL,
   BUDGET_REMAINING_LABEL,
   BUDGET_SPENT_LABEL,
-  COMPARED_LABEL,
+  MONTH_RESULT_LABEL,
+  MONTH_START_LABEL,
   NO_BUDGET_LABEL,
   NO_BUDGET_PAST_LABEL,
-  TRANSACTION_COUNT_LABEL,
 } from '@/types/dashboard/cardBalance-type';
 
-// The balance of the month, how it compares with the last one, and how much of the budget is spent.
-export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPressBudget }) => {
+// The balance: what the person had when the month started plus what the month added or took, so nothing kept in a
+// month is lost in the next. Under it, how the month is going and how much of the budget is spent.
+export const CardBalance: React.FC<BalanceCardProps> = ({ summary, carry, budget, onPressBudget }) => {
   const colors = useColors();
   // The label takes the purple of "someone else's finances" while a profile of someone else is open.
   const { active } = useProfiles();
-  const { net, netChange } = summary;
-  const better = netChange !== null && netChange >= 0;
+  const { net } = summary;
+  const better = net >= 0;
   const changeColor = better ? colors.income : colors.expense;
 
   const use = summary.budgetUse;
@@ -49,22 +50,20 @@ export const CardBalance: React.FC<BalanceCardProps> = ({ summary, budget, onPre
         {BALANCE_LABEL}
       </Text>
       <Text className="text-[32px] font-extrabold text-ink tracking-tight">
-        {formatMoney(net)}
+        {formatMoney(carry + net)}
       </Text>
 
       <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-2.5">
-        {netChange !== null && (
-          <View
-            className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
-            style={{ backgroundColor: tint(changeColor) }}
-          >
-            <Icon name={better ? 'arrow-upward' : 'arrow-downward'} size={12} color={changeColor} />
-            <Text className="text-xs font-bold" style={{ color: changeColor }}>
-              {formatSignedMoney(netChange)} {COMPARED_LABEL}
-            </Text>
-          </View>
-        )}
-        <Text className="text-xs text-muted">{TRANSACTION_COUNT_LABEL(summary.transactionCount)}</Text>
+        <View
+          className="flex-row items-center gap-1 rounded-full px-2.5 py-1"
+          style={{ backgroundColor: tint(changeColor) }}
+        >
+          <Icon name={better ? 'arrow-upward' : 'arrow-downward'} size={12} color={changeColor} />
+          <Text className="text-xs font-bold" style={{ color: changeColor }}>
+            {formatSignedMoney(net)} {MONTH_RESULT_LABEL}
+          </Text>
+        </View>
+        <Text className="text-xs text-muted">{MONTH_START_LABEL}: {formatMoney(carry)}</Text>
       </View>
 
       {/* Divisor */}

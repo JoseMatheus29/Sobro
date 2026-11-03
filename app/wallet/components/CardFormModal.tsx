@@ -3,6 +3,7 @@ import { Modal, ScrollView, Switch, View, Text, TextInput, TouchableOpacity, use
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import InlineError from '@/app/components/ui/InlineError';
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import Stepper from '@/app/components/ui/Stepper';
 import { notifyDataChanged } from '@/db/events';
 import { useColors } from '@/hooks/useColors';
@@ -10,6 +11,7 @@ import { DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import { useSaveKey } from '@/hooks/useSaveKey';
 import { createCard, getCardUsage, updateCard, type CardCredit, type CardRecord } from '@/db/cards';
 import { roundAmount } from '@/utils/apiInput';
+import { amountToMoneyText, parseMoneyText } from '@/utils/money';
 import { errorMessage } from '@/utils/apiErrors';
 import { tint } from '@/utils/color';
 import {
@@ -111,7 +113,7 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
       setName(initialCard.name);
       setNumber(initialCard.number);
       setHasCredit(initialCard.credit !== null);
-      setLimit(initialCard.credit?.limit != null ? String(initialCard.credit.limit).replace('.', ',') : '');
+      setLimit(initialCard.credit?.limit != null ? amountToMoneyText(initialCard.credit.limit) : '');
       setClosingDay(initialCard.credit?.closingDay ?? DEFAULT_CLOSING_DAY);
       setDueDay(initialCard.credit?.dueDay ?? DEFAULT_DUE_DAY);
       setCardTheme(
@@ -136,12 +138,12 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
 
   const handleSave = async () => {
     if (!canSave) return;
-    const balance = startingBalance.trim() ? Number(startingBalance.replace(',', '.')) : 0;
+    const balance = parseMoneyText(startingBalance);
     if (!isEditing && !Number.isFinite(balance)) {
       setError(INVALID_BALANCE_MESSAGE);
       return;
     }
-    const creditLimit = limit.trim() ? Number(limit.replace(',', '.')) : null;
+    const creditLimit = limit.trim() ? parseMoneyText(limit) : null;
     if (hasCredit && creditLimit !== null && (!Number.isFinite(creditLimit) || creditLimit < 0)) {
       setError(INVALID_LIMIT_MESSAGE);
       return;
@@ -223,13 +225,14 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
               <Text className="text-[11px] font-bold text-primary-lighter tracking-[0.8px] uppercase mb-1.5">
                 {STARTING_BALANCE_LABEL}
               </Text>
-              <TextInput
+              <MoneyInput
                 className="bg-canvas rounded-[14px] border-[1.5px] border-line px-3.5 h-[50px] text-[14px] text-ink mb-3.5"
                 placeholder={STARTING_BALANCE_PLACEHOLDER}
                 placeholderTextColor={colors.subtle}
                 value={startingBalance}
                 onChangeText={setStartingBalance}
-                keyboardType="numeric"
+                // An account can start below zero (an overdraft).
+                allowNegative
               />
             </>
           )}
@@ -253,13 +256,12 @@ export default function CardFormModal({ visible, initialCard, canDelete, onClose
               <Text className="text-[11px] font-bold text-primary-lighter tracking-[0.8px] uppercase mb-1.5">
                 {CREDIT_LIMIT_LABEL}
               </Text>
-              <TextInput
+              <MoneyInput
                 className="bg-card rounded-[14px] border-[1.5px] border-line px-3.5 h-[46px] text-[14px] text-ink mb-3"
                 placeholder={CREDIT_LIMIT_PLACEHOLDER}
                 placeholderTextColor={colors.subtle}
                 value={limit}
                 onChangeText={setLimit}
-                keyboardType="numeric"
               />
               <View className="flex-row gap-2.5">
                 <Stepper label={CREDIT_CLOSING_LABEL} value={closingDay} min={MIN_CARD_DAY} max={MAX_CARD_DAY} onChange={setClosingDay} />

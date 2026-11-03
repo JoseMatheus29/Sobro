@@ -26,7 +26,9 @@ import EmptyState from '@/app/components/ui/EmptyState';
 import LoadError from '@/app/components/ui/LoadError';
 import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import GradientButton from '@/app/components/ui/GradientButton';
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import PickerSheet from '@/app/components/ui/PickerSheet';
+import { parseMoneyText } from '@/utils/money';
 import { CLOSE_LABEL, SHEET_DIM_COLOR, SHEET_TOP_GAP } from '@/types/registrationSpent/registrationSpent-type';
 import {
   AMOUNT_LABEL,
@@ -81,7 +83,7 @@ export default function TransferSheet() {
 
   const fromCard = cards.find((c) => c.id === fromId) ?? null;
   const toCard = cards.find((c) => c.id === toId) ?? null;
-  const value = Number(amount.replace(',', '.'));
+  const value = parseMoneyText(amount);
   const valid = Number.isFinite(value) && value > 0;
   const canSubmit = valid && fromCard !== null && toCard !== null && !saving;
 
@@ -171,13 +173,12 @@ export default function TransferSheet() {
               <Text className="text-xs text-muted">{AMOUNT_LABEL}</Text>
               <View className="flex-row items-center">
                 <Text className="text-[28px] font-extrabold text-ink mr-2">R$</Text>
-                <TextInput
+                <MoneyInput
                   className="flex-1 text-[28px] font-extrabold text-ink py-1"
                   placeholder={AMOUNT_PLACEHOLDER}
                   placeholderTextColor={colors.subtle}
                   value={amount}
                   onChangeText={setAmount}
-                  keyboardType="numeric"
                   autoFocus
                 />
               </View>

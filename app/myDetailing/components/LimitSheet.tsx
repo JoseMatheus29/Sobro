@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Keyboard, Modal, Pressable, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Keyboard, Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import InlineError from '@/app/components/ui/InlineError';
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import { useColors } from '@/hooks/useColors';
+import { parseMoneyText } from '@/utils/money';
 import { DIALOG_DIM_COLOR, DIALOG_MAX_WIDTH } from '@/types/components/feedback/feedback-type';
 import {
   LIMIT_PLACEHOLDER,
@@ -43,7 +45,7 @@ export default function LimitSheet({
     };
   }, []);
 
-  const amount = Number(value.replace(',', '.'));
+  const amount = parseMoneyText(value);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} statusBarTranslucent>
@@ -61,13 +63,12 @@ export default function LimitSheet({
 
           <View className="flex-row items-center bg-canvas rounded-2xl border-[1.5px] border-line px-3.5 h-[52px] mt-4">
             <Icon name="flag" size={18} color={colors.subtle} />
-            <TextInput
+            <MoneyInput
               className="flex-1 ml-2.5 text-[15px] text-ink"
               placeholder={LIMIT_PLACEHOLDER}
               placeholderTextColor={colors.subtle}
               value={value}
               onChangeText={setValue}
-              keyboardType="numeric"
               autoFocus
             />
           </View>

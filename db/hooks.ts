@@ -4,6 +4,7 @@ import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { buildInvoice, dayOf, openInvoiceMonth, plannedPurchases, spendingDayOf, todayKey } from '@/utils/invoice';
 import { type Invoice, type InvoiceRules } from '@/utils/invoice-type';
+import { carryOver } from '@/utils/carryOver';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
 import { addMonths, currentMonthKey, localNow } from '@/utils/month';
@@ -292,6 +293,26 @@ export function useMonthlyHistory() {
   const history = useMemo(() => buildHistory({ totals, budgets, currentMonth: currentMonthKey() }), [totals, budgets]);
 
   return { history, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
+}
+
+// The money the person has when `month` starts (see utils/carryOver.ts): what the accounts began with plus what was
+// left of every month before it. The Início adds the month to it, so a new month starts from what was kept.
+export function useCarryOver(month: string) {
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
+  const query = useScreenQuery({ queryKey: queryKeys.monthlyTotals, queryFn: getMonthlyTotals });
+  const totals = query.data ?? NONE;
+
+  const carry = useMemo(() => {
+    const startingBalance = cards.reduce((sum, card) => sum + card.startingBalance, 0);
+    return carryOver(totals, month, startingBalance);
+  }, [cards, totals, month]);
+
+  const { refetch: refetchTotals } = query;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchTotals(), refetchCards()]);
+  }, [refetchTotals, refetchCards]);
+
+  return { carry, loading: query.isLoading || loadingCards, error: loadError(query) ?? cardsError, refetch };
 }
 
 // The months ahead that have something committed in them, for the history: the purchases on credit whose invoice

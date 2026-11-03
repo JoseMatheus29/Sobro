@@ -37,7 +37,7 @@ export default function EditForm({
         <TextInput
           className={INPUT_CLASS}
           style={{ paddingVertical: 0 }}
-          keyboardType="numeric"
+          keyboardType="number-pad"
           placeholder={AMOUNT_PLACEHOLDER}
           placeholderTextColor={colors.placeholder}
           value={cents > 0 ? formatCents(cents) : ''}

@@ -4,7 +4,6 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,6 +17,7 @@ import EmptyState from '@/app/components/ui/EmptyState';
 import GradientButton from '@/app/components/ui/GradientButton';
 import LoadError from '@/app/components/ui/LoadError';
 import LoadingBlock from '@/app/components/ui/LoadingBlock';
+import MoneyInput from '@/app/components/ui/MoneyInput';
 import { notifyDataChanged } from '@/db/events';
 import { useCards, useInvoice } from '@/db/hooks';
 import { payInvoice } from '@/db/transactions';
@@ -47,6 +47,7 @@ import { calendarDayAtNoonUtc, roundAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { formatMoney } from '@/utils/format';
 import { INVOICE_EPSILON } from '@/utils/invoice-type';
+import { amountToMoneyText, parseMoneyText } from '@/utils/money';
 import { monthNameOf } from '@/utils/month';
 
 // A sheet to pay (all or part of) an invoice with the balance of the account that has the card. It is not a
@@ -72,10 +73,10 @@ export default function PayInvoiceSheet() {
   // "Valor total" follows what is left; "Outro valor" is typed.
   const remaining = invoice?.remaining ?? 0;
   useEffect(() => {
-    if (full) setAmount(remaining > 0 ? String(roundAmount(remaining)).replace('.', ',') : '');
+    if (full) setAmount(remaining > 0 ? amountToMoneyText(roundAmount(remaining)) : '');
   }, [full, remaining]);
 
-  const value = Number(amount.replace(',', '.'));
+  const value = parseMoneyText(amount);
   const valid = Number.isFinite(value) && value > 0;
   const canSubmit = valid && invoice !== null && remaining > INVOICE_EPSILON && !saving;
   const balanceAfter = card ? card.balance - (valid ? value : 0) : 0;
@@ -131,7 +132,7 @@ export default function PayInvoiceSheet() {
           <Text className="text-xs text-muted">{AMOUNT_LABEL}</Text>
           <View className="flex-row items-center">
             <Text className="text-[28px] font-extrabold text-ink mr-2">R$</Text>
-            <TextInput
+            <MoneyInput
               className="flex-1 text-[28px] font-extrabold text-ink py-1"
               placeholder={AMOUNT_PLACEHOLDER}
               placeholderTextColor={colors.subtle}
@@ -140,7 +141,6 @@ export default function PayInvoiceSheet() {
                 setFull(false);
                 setAmount(text);
               }}
-              keyboardType="numeric"
               editable={!full}
             />
           </View>
