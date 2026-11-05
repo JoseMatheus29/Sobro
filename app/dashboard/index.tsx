@@ -39,13 +39,14 @@ import {
   useCategoryBudgets,
   useMonthTransactions,
   useProfile,
+  usePurchaseView,
   useTransactions,
 } from '@/db/hooks';
 import { useProfiles } from '@/hooks/useProfiles';
 import { budgetForMonth } from '@/utils/budget';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { generateInsights } from '@/utils/insightRules';
-import { localNow, monthEnd, monthKeyWithYear, monthNameOf } from '@/utils/month';
+import { currentMonthKey, localNow, monthEnd, monthKeyWithYear, monthNameOf } from '@/utils/month';
 import { buildSummary } from '@/utils/summary';
 
 export default function DashboardScreen() {
@@ -86,13 +87,23 @@ export default function DashboardScreen() {
     () => buildSummary({ current, previous, budget, now: isCurrent ? localNow() : monthEnd(month) }),
     [current, previous, budget, isCurrent, month]
   );
-  // The tips are about the month in progress.
+  // The tips are about the month in progress. Some are drawn by the day of each purchase, so they wait for that to be
+  // read (and give none if it could not be) instead of being drawn from the invoice view, where they make no sense.
+  const purchases = usePurchaseView(currentMonthKey());
+  const purchasesReady = !purchases.loading && !purchases.error;
   const insights = useMemo(
     () =>
-      isCurrent
-        ? generateInsights({ current, previous, now: localNow(), limits: limitsForMonth(limitEntries, month) })
+      isCurrent && purchasesReady
+        ? generateInsights({
+            current,
+            previous,
+            byPurchase: purchases.byPurchase,
+            recurrences: purchases.recurrences,
+            now: localNow(),
+            limits: limitsForMonth(limitEntries, month),
+          })
         : [],
-    [current, previous, isCurrent, limitEntries, month]
+    [current, previous, isCurrent, purchasesReady, purchases.byPurchase, purchases.recurrences, limitEntries, month]
   );
 
   // How many recent rows fit between the list's top and the floating button, measured from the

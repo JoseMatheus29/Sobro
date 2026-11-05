@@ -1,4 +1,5 @@
 import { type TransactionRecord } from '@/db/transactions';
+import { type RecurrenceRecord } from './recurrence-type';
 
 export type InsightTone = 'positive' | 'warning' | 'neutral';
 
@@ -11,10 +12,23 @@ export interface Insight {
 }
 
 export interface InsightInput {
-  /** Transactions of the month being looked at. */
+  /**
+   * Transactions of the month being looked at, by the month each one counts in: a purchase on credit counts when its
+   * invoice is due, so it is the same view as the Início and the Detalhamento. What the balance, the biggest category
+   * and the limits are drawn from.
+   */
   current: TransactionRecord[];
-  /** Transactions of the month before it. */
+  /** Transactions of the month before it, in the same view. */
   previous: TransactionRecord[];
+  /**
+   * The same two months by the day each purchase was made (a purchase on credit counts the day it was bought, not the
+   * day its invoice is due): what the person did, which is what the trend, the category that grew and the pace of the
+   * month are drawn from. An invoice falls on one day as a lump, so reading those from `current` and `previous` made the
+   * first days of a month look like a spree. Without it they are drawn from `current` and `previous`.
+   */
+  byPurchase?: { current: TransactionRecord[]; previous: TransactionRecord[] };
+  /** The recurring expenses, to add to the pace of the month what is still to fall due in it. */
+  recurrences?: RecurrenceRecord[];
   now: Date;
   /** The spending limit of each category in force this month, by category id (see utils/categoryBudget.ts). */
   limits?: Record<string, number>;
@@ -113,9 +127,11 @@ export const INSIGHT_COPY = {
     tip: `Restam ${left} até o fim do mês nessa categoria.`,
   }),
 
-  paceNeutral: (month: string, projected: string, perDay: string): InsightCopy => ({
+  paceNeutral: (month: string, projected: string, perDay: string, withFixed = false): InsightCopy => ({
     title: `No ritmo atual, você fecha ${month} com ${projected} em saídas`,
-    tip: `Sua média é ${perDay} por dia.`,
+    tip: withFixed
+      ? `Sua média é ${perDay} por dia, fora as contas fixas e as parcelas, que já estão somadas.`
+      : `Sua média é ${perDay} por dia.`,
   }),
   paceOverIncome: (month: string, projected: string, received: string): InsightCopy => ({
     title: `No ritmo atual, você fecha ${month} com ${projected} em saídas`,

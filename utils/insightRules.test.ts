@@ -1,6 +1,7 @@
 import { type TransactionRecord } from '@/db/transactions';
 import { CATEGORY_TIPS, DEFAULT_CATEGORY_TIP } from './insightRules-type';
 import { generateInsights } from './insightRules';
+import { type RecurrenceRecord } from './recurrence-type';
 
 // Friday, 9 October 2026: day 9 of a 31-day month, with September (30 days) before it.
 const NOW = new Date('2026-10-09T12:00:00.000Z');
@@ -250,6 +251,157 @@ describe('generateInsights', () => {
         now: new Date('2026-10-02T12:00:00.000Z'),
       });
       expect(find(result, 'pace')).toBeUndefined();
+    });
+  });
+
+  // The tips about behavior (trend, the category that grew, the pace) are read by the day of each purchase; the ones
+  // about what the month comes to (balance, biggest category, limits) by the month a spending counts in.
+  describe('by the day of the purchase', () => {
+    const october = (day: number) => `2026-10-${String(day).padStart(2, '0')}T12:00:00.000Z`;
+    // The whole invoice of the cycle before, falling due on day 5 as one lump.
+    const invoiceLump = (amount: number) =>
+      expense(amount, { paymentMethod: 'credit', occurredAt: september(20), spendingMonth: '2026-10', spendingDay: 5 });
+    const bill = (amount: number, day: number) =>
+      expense(amount, { occurredAt: october(day), recurrence: { id: 1, installment: null, total: null } });
+    const monthly = (overrides: Partial<RecurrenceRecord> = {}): RecurrenceRecord => ({
+      id: 1,
+      cardId: 1,
+      cardName: 'Cartão Principal',
+      categoryId: 'food',
+      categoryName: 'Alimentação',
+      categoryIcon: 'restaurant',
+      categoryColor: '#E67E22',
+      name: 'Internet',
+      description: null,
+      amount: 120,
+      day: 20,
+      startMonth: '2026-06',
+      firstInstallment: 1,
+      total: null,
+      endMonth: null,
+      generatedUntil: '2026-09',
+      ...overrides,
+    });
+
+    it('does not read an invoice that falls due as a lump as a jump in spending', () => {
+      const result = generateInsights({
+        current: [invoiceLump(1500), expense(60, { occurredAt: october(3) }), expense(60)],
+        previous: [],
+        byPurchase: { current: [expense(60, { occurredAt: october(3) }), expense(60)], previous: [expense(100, { occurredAt: september(4) })] },
+        now: NOW,
+      });
+      expect(find(result, 'trend')?.title).toBe('Seus gastos estão 20% acima de setembro');
+    });
+
+    it('projects the month from what was bought, not from the lump of an invoice', () => {
+      const result = generateInsights({
+        current: [income(5000), invoiceLump(3000), expense(90)],
+        previous: [],
+        byPurchase: { current: [expense(90)], previous: [] },
+        now: NOW,
+      });
+      const pace = find(result, 'pace');
+      expect(pace?.tone).toBe('neutral');
+      expect(pace?.title).toBe('No ritmo atual, você fecha outubro com R$ 310,00 em saídas');
+    });
+
+    it('adds the bills and installments as they are instead of stretching them over the days', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: { current: [expense(90), bill(200, 2)], previous: [] },
+        now: NOW,
+      });
+      const pace = find(result, 'pace');
+      // 90 / 9 days * 31 days + the 200 bill, once
+      expect(pace?.title).toBe('No ritmo atual, você fecha outubro com R$ 510,00 em saídas');
+      expect(pace?.tip).toContain('fora as contas fixas');
+    });
+
+    it('adds what a recurring expense still has to put in the month', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: { current: [expense(90)], previous: [] },
+        recurrences: [monthly()],
+        now: NOW,
+      });
+      // 310 + the 120 that falls due on the 20th
+      expect(find(result, 'pace')?.title).toBe('No ritmo atual, você fecha outubro com R$ 430,00 em saídas');
+    });
+
+    it('does not add a recurring expense twice: the one already made, or already past, is in the purchases', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: { current: [expense(90), bill(120, 2)], previous: [] },
+        recurrences: [monthly({ day: 2, generatedUntil: '2026-10' }), monthly({ id: 2, day: 4, generatedUntil: '2026-09' })],
+        now: NOW,
+      });
+      // 310 + the 120 bill that is already in the month; the other one fell due on the 4th and the server makes it on read
+      expect(find(result, 'pace')?.title).toBe('No ritmo atual, você fecha outubro com R$ 430,00 em saídas');
+    });
+
+    it('leaves out a recurring expense that ended', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: { current: [expense(90)], previous: [] },
+        recurrences: [monthly({ endMonth: '2026-09' })],
+        now: NOW,
+      });
+      expect(find(result, 'pace')?.title).toBe('No ritmo atual, você fecha outubro com R$ 310,00 em saídas');
+    });
+
+    it('finds the category that grew by what was bought', () => {
+      const leisure = (amount: number, overrides: Partial<TransactionRecord> = {}) =>
+        expense(amount, { categoryId: 'leisure', categoryName: 'Lazer', categoryIcon: 'sports-esports', ...overrides });
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: {
+          current: [leisure(300), expense(100), expense(100)],
+          previous: [leisure(100, { occurredAt: september(2) })],
+        },
+        now: NOW,
+      });
+      expect(find(result, 'category-spike')?.title).toBe('Lazer subiu 200% em relação a setembro');
+    });
+
+    it('ignores a purchase dated after today, and last month after the same day', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: {
+          current: [expense(100, { occurredAt: october(5) }), expense(900, { occurredAt: october(20) })],
+          previous: [expense(100, { occurredAt: september(3) }), expense(900, { occurredAt: september(20) })],
+        },
+        now: NOW,
+      });
+      expect(find(result, 'trend')?.tone).toBe('neutral');
+    });
+
+    it('does not say the month is empty when there are only purchases on credit', () => {
+      const result = generateInsights({
+        current: [],
+        previous: [],
+        byPurchase: { current: [expense(50, { paymentMethod: 'credit', occurredAt: october(3) })], previous: [] },
+        now: NOW,
+      });
+      expect(ids(result)).not.toContain('empty-month');
+    });
+
+    it('keeps the balance, the biggest category and the limits on the month the spending counts in', () => {
+      const result = generateInsights({
+        current: [income(1000), expense(500), expense(200), expense(100)],
+        previous: [],
+        byPurchase: { current: [expense(50)], previous: [] },
+        now: NOW,
+        limits: { food: 1000 },
+      });
+      expect(find(result, 'balance')?.title).toBe('Você guardou 20% do que recebeu');
+      expect(find(result, 'top-category')?.title).toBe('Alimentação é seu maior gasto: 100% do mês');
+      expect(find(result, 'category-limit')?.title).toBe('Alimentação chegou a 80% do limite');
     });
   });
 

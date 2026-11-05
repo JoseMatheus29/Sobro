@@ -17,8 +17,9 @@ import {
   type InsightInput,
   type InsightTone,
 } from './insightRules-type';
-import { daysInMonth, MONTH_NAMES } from './month';
-import { spendingDayInMonth } from './spendingDay';
+import { daysInMonth, monthKey, MONTH_NAMES } from './month';
+import { occurrenceIn } from './recurrence';
+import { type RecurrenceRecord } from './recurrence-type';
 import { withoutTransfers } from './transfer';
 
 interface CategorySum {
@@ -46,39 +47,75 @@ function sumByCategory(expenses: TransactionRecord[]): Map<string, CategorySum> 
   return byCategory;
 }
 
+// The day of the month a purchase was made (the day itself at noon UTC, see `TransactionRecord.occurredAt`).
+const purchaseDay = (t: TransactionRecord) => new Date(t.occurredAt).getUTCDate();
+
+// What the recurring expenses will still put in this month: the ones whose occurrence of the month falls after `now`
+// and was not turned into a transaction yet. The server only makes it when it falls due.
+function recurringAhead(recurrences: RecurrenceRecord[], now: Date): number {
+  const month = monthKey(now);
+  const nowIso = now.toISOString();
+  let ahead = 0;
+  for (const r of recurrences) {
+    if (r.generatedUntil >= month) continue;
+    const occurrence = occurrenceIn(r, month);
+    if (occurrence && occurrence.date > nowIso) ahead += r.amount;
+  }
+  return ahead;
+}
+
 // Insights and tips drawn from what the user registered: this month against the same stretch of
 // the last one, where the money goes, and where the month is heading. Rule-based and on-device,
 // like the rest of the app. Most relevant first.
-export function generateInsights({ current: allCurrent, previous: allPrevious, now, limits }: InsightInput): Insight[] {
+//
+// Two views of the same money, on purpose. How the person *behaves* (the trend against last month, the category that
+// grew, the pace of the month) is read by the day of each purchase: an invoice falls due on one day as a lump, and
+// counting it there made a first week look like a spree and the pace look like ten times the income. What the month
+// *comes to* (the balance, the biggest category, a single heavy expense, the limits) is read the way the Início and the
+// Detalhamento show it, by the month each spending counts in, so the tips match the figures on screen.
+export function generateInsights({
+  current: allCurrent,
+  previous: allPrevious,
+  byPurchase,
+  recurrences = [],
+  now,
+  limits,
+}: InsightInput): Insight[] {
   // Moving money between accounts says nothing about how the person spends.
   const current = withoutTransfers(allCurrent);
   const previous = withoutTransfers(allPrevious);
+  const purchasesThisMonth = withoutTransfers(byPurchase?.current ?? allCurrent);
+  const purchasesLastMonth = withoutTransfers(byPurchase?.previous ?? allPrevious);
   const month = MONTH_NAMES[now.getUTCMonth()];
   const previousMonth = MONTH_NAMES[(now.getUTCMonth() + 11) % 12];
   const day = now.getUTCDate();
 
-  if (current.length === 0) {
-    if (previous.length === 0) return [];
+  if (current.length === 0 && purchasesThisMonth.length === 0) {
+    if (previous.length === 0 && purchasesLastMonth.length === 0) return [];
     return [{ id: 'empty-month', tone: 'neutral', icon: 'edit-note', ...INSIGHT_COPY.emptyMonth(month) }];
   }
 
   const expenses = current.filter((t) => t.type === 'expense');
   const spent = sumAbs(expenses);
   const received = sumAbs(current.filter((t) => t.type === 'income'));
-  // Only the days that already happened this month: the first week of a month is not "below" a whole one.
-  const previousExpenses = previous.filter((t) => t.type === 'expense' && spendingDayInMonth(t) <= day);
-  const previousSpent = sumAbs(previousExpenses);
+
+  // What was bought up to today, and in the same stretch of last month: the first week of a month is not "below" a
+  // whole one.
+  const bought = purchasesThisMonth.filter((t) => t.type === 'expense' && purchaseDay(t) <= day);
+  const boughtSpent = sumAbs(bought);
+  const boughtBefore = purchasesLastMonth.filter((t) => t.type === 'expense' && purchaseDay(t) <= day);
+  const boughtBeforeSpent = sumAbs(boughtBefore);
 
   const found: Insight[] = [];
   const add = (id: string, tone: InsightTone, icon: string, copy: { title: string; tip: string }) =>
     found.push({ id, tone, icon, ...copy });
 
   // Spending against the same stretch of last month.
-  if (spent > 0 && previousSpent > 0) {
-    const change = (spent - previousSpent) / previousSpent;
-    const difference = formatMoney(Math.abs(spent - previousSpent));
+  if (boughtSpent > 0 && boughtBeforeSpent > 0) {
+    const change = (boughtSpent - boughtBeforeSpent) / boughtBeforeSpent;
+    const difference = formatMoney(Math.abs(boughtSpent - boughtBeforeSpent));
     if (Math.abs(change) < TREND_STABLE_BELOW) {
-      add('trend', 'neutral', 'trending-flat', INSIGHT_COPY.trendStable(previousMonth, day, formatMoney(spent)));
+      add('trend', 'neutral', 'trending-flat', INSIGHT_COPY.trendStable(previousMonth, day, formatMoney(boughtSpent)));
     } else if (change < 0) {
       add('trend', 'positive', 'trending-down', INSIGHT_COPY.trendDown(percent(-change), previousMonth, day, difference));
     } else {
@@ -124,11 +161,13 @@ export function generateInsights({ current: allCurrent, previous: allPrevious, n
         INSIGHT_COPY.bigExpense(biggest.name, percent(Math.abs(biggest.amount) / spent), formatMoney(Math.abs(biggest.amount)))
       );
     }
+  }
 
-    // The category that grew the most against the same stretch of last month.
-    const previousByCategory = sumByCategory(previousExpenses);
+  // The category that grew the most against the same stretch of last month, by what was bought.
+  if (bought.length >= MIN_EXPENSES_FOR_BREAKDOWN) {
+    const previousByCategory = sumByCategory(boughtBefore);
     let spike: { category: CategorySum; increase: number; ratio: number } | null = null;
-    for (const category of categories) {
+    for (const category of sumByCategory(bought).values()) {
       const before = previousByCategory.get(category.id)?.total ?? 0;
       const increase = category.total - before;
       if (before > 0 && increase >= SPIKE_MIN_INCREASE && increase / before >= SPIKE_MIN_RATIO) {
@@ -167,13 +206,18 @@ export function generateInsights({ current: allCurrent, previous: allPrevious, n
     }
   }
 
-  // Where the month is heading at the current pace.
-  if (spent > 0 && day >= PACE_MIN_DAY) {
-    const projected = formatMoney((spent / day) * daysInMonth(now));
-    if (received > 0 && (spent / day) * daysInMonth(now) > received) {
+  // Where the month is heading. What is bought day to day is projected at its average; the bills and installments
+  // (what a recurring expense made) are not a daily habit, so what is already in the month and what is still to fall
+  // due in it are added as they are instead of being stretched over the days.
+  if (boughtSpent > 0 && day >= PACE_MIN_DAY) {
+    const daily = sumAbs(bought.filter((t) => !t.recurrence));
+    const fixed = sumAbs(bought.filter((t) => t.recurrence)) + recurringAhead(recurrences, now);
+    const projectedValue = (daily / day) * daysInMonth(now) + fixed;
+    const projected = formatMoney(projectedValue);
+    if (received > 0 && projectedValue > received) {
       add('pace', 'warning', 'speed', INSIGHT_COPY.paceOverIncome(month, projected, formatMoney(received)));
     } else {
-      add('pace', 'neutral', 'speed', INSIGHT_COPY.paceNeutral(month, projected, formatMoney(spent / day)));
+      add('pace', 'neutral', 'speed', INSIGHT_COPY.paceNeutral(month, projected, formatMoney(daily / day), fixed > 0));
     }
   }
 

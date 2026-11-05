@@ -225,24 +225,71 @@ export function useMonthTransactions(month: string) {
   };
 }
 
+// What the behavior insights are drawn from (see utils/insightRules.ts): a month and the one before it by the day each
+// purchase was made (a purchase on credit counts the day it was bought, not the day its invoice is due), and the
+// recurring expenses, whose bills still to fall due are added to the pace of the month.
+export function usePurchaseView(month: string) {
+  const thisMonth = useTransactions({ month });
+  const lastMonth = useTransactions({ month: addMonths(month, -1) });
+  const { recurrences, loading: loadingRecurrences, error: recurrencesError, refetch: refetchRecurrences } = useRecurrences();
+
+  const { transactions: current } = thisMonth;
+  const { transactions: previous } = lastMonth;
+  const byPurchase = useMemo(() => ({ current, previous }), [current, previous]);
+
+  const { refetch: refetchThis } = thisMonth;
+  const { refetch: refetchLast } = lastMonth;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchThis(), refetchLast(), refetchRecurrences()]);
+  }, [refetchThis, refetchLast, refetchRecurrences]);
+
+  return {
+    byPurchase,
+    recurrences,
+    loading: thisMonth.loading || lastMonth.loading || loadingRecurrences,
+    error: thisMonth.error ?? lastMonth.error ?? recurrencesError,
+    refetch,
+  };
+}
+
 // Tips and insights for the current month, drawn from this and the previous month's transactions.
-// It also hands back the two months it read, so a screen that needs them does not fetch them twice.
+// It also hands back the two months it read, so a screen that needs them does not fetch them twice. Nothing is
+// drawn while what the behavior tips need is still being read: from the other view they would be nonsense.
 export function useInsights() {
-  const { current, previous, loading, error, refetch } = useMonthTransactions(currentMonthKey());
+  const month = currentMonthKey();
+  const { current, previous, loading: loadingMonths, error: monthsError, refetch: refetchMonths } = useMonthTransactions(month);
+  const purchases = usePurchaseView(month);
   const { entries: limitEntries } = useCategoryBudgets();
 
+  const ready = !purchases.loading && !purchases.error;
   const insights = useMemo(
     () =>
-      generateInsights({
-        current,
-        previous,
-        now: localNow(),
-        limits: limitsForMonth(limitEntries, currentMonthKey()),
-      }),
-    [current, previous, limitEntries]
+      ready
+        ? generateInsights({
+            current,
+            previous,
+            byPurchase: purchases.byPurchase,
+            recurrences: purchases.recurrences,
+            now: localNow(),
+            limits: limitsForMonth(limitEntries, month),
+          })
+        : [],
+    [ready, current, previous, purchases.byPurchase, purchases.recurrences, limitEntries, month]
   );
 
-  return { insights, current, previous, loading, error, refetch };
+  const { refetch: refetchPurchases } = purchases;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchMonths(), refetchPurchases()]);
+  }, [refetchMonths, refetchPurchases]);
+
+  return {
+    insights,
+    current,
+    previous,
+    loading: loadingMonths || purchases.loading,
+    error: monthsError ?? purchases.error,
+    refetch,
+  };
 }
 
 // The spending limit of each category, kept per month like the monthly budget (utils/categoryBudget.ts).
