@@ -9,6 +9,8 @@ import { lastMonthOf, nextOccurrence, recurrenceBadge } from '@/utils/recurrence
 import { type RecurrenceRecord } from '@/utils/recurrence-type';
 import RecurrenceBadge from '@/app/components/ui/RecurrenceBadge';
 import {
+  DELETE_RECURRENCE_HINT,
+  DELETE_RECURRENCE_LABEL,
   END_HINT,
   END_LABEL,
   RECURRENCE_ENDED,
@@ -27,10 +29,13 @@ interface RecurrenceCardProps {
   /** This transaction's payment number, when it is part of an installment plan. */
   installment: number | null;
   onEnd: () => void;
+  /** Deletes the recurrence and every transaction it made. */
+  onDeleteAll: () => void;
 }
 
-// Where this transaction stands in its recurring expense, and the way to end it.
-export default function RecurrenceCard({ recurrence, installment, onEnd }: RecurrenceCardProps) {
+// Where this transaction stands in its recurring expense, and the ways out of it: end it (what was made stays) or
+// delete it with everything it made.
+export default function RecurrenceCard({ recurrence, installment, onEnd, onDeleteAll }: RecurrenceCardProps) {
   const colors = useColors();
   const next = nextOccurrence(recurrence);
   const last = lastMonthOf(recurrence);
@@ -83,6 +88,21 @@ export default function RecurrenceCard({ recurrence, installment, onEnd }: Recur
           <Text className="text-xs text-subtle text-center mt-2">{END_HINT}</Text>
         </>
       )}
+
+      {/* Always there, also once it ended or ran out: what it made stays until it is deleted. */}
+      <TouchableOpacity
+        onPress={onDeleteAll}
+        activeOpacity={0.8}
+        accessibilityLabel={DELETE_RECURRENCE_LABEL}
+        className="min-h-12 mt-3.5 rounded-2xl px-3 py-2 flex-row items-center justify-center gap-2 border-[1.5px]"
+        style={{ borderColor: colors.expense }}
+      >
+        <Icon name="delete-sweep" size={18} color={colors.expense} />
+        <Text className="shrink text-[14px] font-bold text-center" style={{ color: colors.expense }}>
+          {DELETE_RECURRENCE_LABEL}
+        </Text>
+      </TouchableOpacity>
+      <Text className="text-xs text-subtle text-center mt-2">{DELETE_RECURRENCE_HINT}</Text>
     </View>
   );
 }

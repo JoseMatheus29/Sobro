@@ -99,6 +99,24 @@ export const END_CONFIRM: ConfirmOptions = {
   destructive: true,
 };
 export const ENDED_TOAST: ToastOptions = { type: 'success', title: 'Recorrência encerrada', icon: 'event-busy' };
+// Deleting the recurrence takes every transaction it made, in every month: for one made by mistake.
+export const DELETE_RECURRENCE_LABEL = 'Excluir recorrência e todos os lançamentos';
+export const DELETE_RECURRENCE_HINT = 'Apaga a recorrência e tudo o que ela lançou, de todos os meses. Não dá para desfazer.';
+export const DELETE_RECURRENCE_CONFIRM = (name: string): ConfirmOptions => ({
+  title: 'Excluir a recorrência inteira?',
+  message:
+    `A recorrência "${name}" e todos os lançamentos que ela criou serão apagados, também os de meses que já passaram, ` +
+    'e os saldos das contas mudam. Esta ação não pode ser desfeita.',
+  confirmLabel: 'Excluir tudo',
+  destructive: true,
+});
+export const DELETE_RECURRENCE_FAILED_TITLE = 'Não foi possível excluir a recorrência';
+export const RECURRENCE_DELETED_TOAST: ToastOptions = {
+  type: 'success',
+  title: 'Recorrência excluída',
+  message: 'Todos os lançamentos dela foram apagados.',
+  icon: 'delete-outline',
+};
 export const APPLY_CONFIRM: ConfirmOptions = {
   title: 'Usar nas próximas também?',
   message: 'Você mudou esta transação. As próximas podem seguir o novo valor, nome, categoria e conta, ou só esta muda.',

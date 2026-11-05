@@ -24,6 +24,8 @@ import {
   DELETE_CONFIRM,
   DELETE_FAILED_TITLE,
   DELETE_LABEL,
+  DELETE_RECURRENCE_CONFIRM,
+  DELETE_RECURRENCE_FAILED_TITLE,
   DELETED_TOAST,
   DETAILS_TITLE,
   END_CONFIRM,
@@ -33,6 +35,7 @@ import {
   FIELD_LABELS,
   MISSING_HINT,
   NOT_FOUND_MESSAGE,
+  RECURRENCE_DELETED_TOAST,
   RECURRENCE_ENDED_BY_TYPE,
   SAVE_FAILED_TITLE,
   SAVE_LABEL,
@@ -43,7 +46,7 @@ import { categoriesForType, formatCents } from '@/utils/transactionForm';
 import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
 import { useCards, useCategories, useRecurrence, useTransaction } from '@/db/hooks';
-import { endRecurrence } from '@/db/recurrences';
+import { deleteRecurrence, endRecurrence } from '@/db/recurrences';
 import { refreshReminders } from '@/db/reminders';
 import { deleteTransaction, updateTransaction, type PaymentMethod } from '@/db/transactions';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
@@ -233,6 +236,21 @@ export default function DetailsSpend() {
     showToast(ENDED_TOAST);
   };
 
+  // Deletes the recurrence and every transaction it made, this one included: there is nothing left to show here.
+  const handleDeleteRecurrence = async () => {
+    if (!recurrence || !(await confirm(DELETE_RECURRENCE_CONFIRM(recurrence.name)))) return;
+    try {
+      await deleteRecurrence(recurrence.id);
+    } catch (failure) {
+      showToast(errorToast(failure, DELETE_RECURRENCE_FAILED_TITLE));
+      return;
+    }
+    notifyDataChanged();
+    refreshReminders();
+    showToast(RECURRENCE_DELETED_TOAST);
+    router.back();
+  };
+
   const handleDelete = async () => {
     if (!(await confirm(DELETE_CONFIRM))) return;
     try {
@@ -292,6 +310,7 @@ export default function DetailsSpend() {
             recurrence={recurrence}
             installment={transaction.recurrence.installment}
             onEnd={handleEndRecurrence}
+            onDeleteAll={handleDeleteRecurrence}
           />
         )}
 
