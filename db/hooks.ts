@@ -4,10 +4,12 @@ import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
 import { buildInvoice, dayOf, openInvoiceMonth, plannedPurchases, spendingDayOf, todayKey } from '@/utils/invoice';
 import { type Invoice, type InvoiceRules } from '@/utils/invoice-type';
-import { carryOver } from '@/utils/carryOver';
+import { buildFlow, cashOf, cashPosition, monthChange, savedInMonth } from '@/utils/cashFlow';
+import { type MonthCash } from '@/utils/cashFlow-type';
+import { freeBalance, totalReserved } from '@/utils/goals';
 import { buildHistory } from '@/utils/history';
 import { generateInsights } from '@/utils/insightRules';
-import { addMonths, currentMonthKey, localNow } from '@/utils/month';
+import { addMonths, currentMonthKey, localNow, monthEnd } from '@/utils/month';
 import { futureSpendingMonths, plannedBySpendingMonth } from '@/utils/plannedSpending';
 import { plannedTransactions } from '@/utils/recurrence';
 
@@ -22,6 +24,7 @@ import { queryKeys } from './queryKeys';
 import { getProfile } from './profile';
 import { getRecurrenceById, getRecurrences } from './recurrences';
 import {
+  getCashByMonth,
   getCategoryTotals,
   getMonthlyTotals,
   getTransactionById,
@@ -225,29 +228,41 @@ export function useMonthTransactions(month: string) {
   };
 }
 
-// What the behavior insights are drawn from (see utils/insightRules.ts): a month and the one before it by the day each
-// purchase was made (a purchase on credit counts the day it was bought, not the day its invoice is due), and the
-// recurring expenses, whose bills still to fall due are added to the pace of the month.
-export function usePurchaseView(month: string) {
+// A month and the one before it by the day each transaction was made (a purchase on credit counts the day it was
+// bought, not the day its invoice is due).
+function useMonthsByDay(month: string) {
   const thisMonth = useTransactions({ month });
   const lastMonth = useTransactions({ month: addMonths(month, -1) });
-  const { recurrences, loading: loadingRecurrences, error: recurrencesError, refetch: refetchRecurrences } = useRecurrences();
 
   const { transactions: current } = thisMonth;
   const { transactions: previous } = lastMonth;
-  const byPurchase = useMemo(() => ({ current, previous }), [current, previous]);
+  const byDay = useMemo(() => ({ current, previous }), [current, previous]);
 
   const { refetch: refetchThis } = thisMonth;
   const { refetch: refetchLast } = lastMonth;
   const refetch = useCallback(async () => {
-    await Promise.all([refetchThis(), refetchLast(), refetchRecurrences()]);
-  }, [refetchThis, refetchLast, refetchRecurrences]);
+    await Promise.all([refetchThis(), refetchLast()]);
+  }, [refetchThis, refetchLast]);
+
+  return { byDay, loading: thisMonth.loading || lastMonth.loading, error: thisMonth.error ?? lastMonth.error, refetch };
+}
+
+// What the behavior insights are drawn from (see utils/insightRules.ts): the two months by the day of each purchase,
+// and the recurring expenses, whose bills still to fall due are added to the pace of the month.
+export function usePurchaseView(month: string) {
+  const days = useMonthsByDay(month);
+  const { recurrences, loading: loadingRecurrences, error: recurrencesError, refetch: refetchRecurrences } = useRecurrences();
+
+  const { refetch: refetchDays } = days;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchDays(), refetchRecurrences()]);
+  }, [refetchDays, refetchRecurrences]);
 
   return {
-    byPurchase,
+    byPurchase: days.byDay,
     recurrences,
-    loading: thisMonth.loading || lastMonth.loading || loadingRecurrences,
-    error: thisMonth.error ?? lastMonth.error ?? recurrencesError,
+    loading: days.loading || loadingRecurrences,
+    error: days.error ?? recurrencesError,
     refetch,
   };
 }
@@ -342,24 +357,92 @@ export function useMonthlyHistory() {
   return { history, loading: query.isLoading, error: loadError(query), refetch: query.refetch };
 }
 
-// The money the person has when `month` starts (see utils/carryOver.ts): what the accounts began with plus what was
-// left of every month before it. The Início adds the month to it, so a new month starts from what was kept.
-export function useCarryOver(month: string) {
-  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
-  const query = useScreenQuery({ queryKey: queryKeys.monthlyTotals, queryFn: getMonthlyTotals });
-  const totals = query.data ?? NONE;
+// Everything that was put into the caixinhas or taken out of them, with its day: what a month set aside. One read of the
+// entries of each caixinha (a person has a handful).
+export function useGoalMovements() {
+  const { goals, loading: loadingGoals, error: goalsError } = useGoals();
+  const ids = goals.map((goal) => goal.id).join(',');
+  const query = useScreenQuery({
+    queryKey: queryKeys.goalMovements(ids),
+    queryFn: async () => (await Promise.all(goals.map((goal) => getGoalEntries(goal.id)))).flat(),
+    enabled: !loadingGoals && !goalsError,
+  });
+  return {
+    entries: query.data ?? NONE,
+    loading: loadingGoals || query.isLoading,
+    error: goalsError ?? loadError(query),
+    refetch: query.refetch,
+  };
+}
 
-  const carry = useMemo(() => {
-    const startingBalance = cards.reduce((sum, card) => sum + card.startingBalance, 0);
-    return carryOver(totals, month, startingBalance);
-  }, [cards, totals, month]);
+const NO_CASH: Record<string, MonthCash> = {};
 
-  const { refetch: refetchTotals } = query;
+// What came in and went out of the accounts in each month after `month`, up to the current one. Only an older month
+// needs it: its balance is worked out going back from today (see `cashPosition`).
+function useCashFlowsAfter(month: string) {
+  const currentMonth = currentMonthKey();
+  const enabled = month < currentMonth;
+  const query = useScreenQuery({
+    queryKey: queryKeys.cashFlows(month, currentMonth),
+    queryFn: () => getCashByMonth(addMonths(month, 1), currentMonth),
+    enabled,
+  });
+  const { refetch: refetchQuery } = query;
   const refetch = useCallback(async () => {
-    await Promise.all([refetchTotals(), refetchCards()]);
-  }, [refetchTotals, refetchCards]);
+    if (enabled) await refetchQuery();
+  }, [enabled, refetchQuery]);
+  return { flows: query.data ?? NO_CASH, loading: enabled && query.isLoading, error: loadError(query), refetch };
+}
 
-  return { carry, loading: query.isLoading || loadingCards, error: loadError(query) ?? cardsError, refetch };
+// The money the person can spend, which is what the Saldo of the Início shows (see utils/cashFlow.ts): the balances of
+// the accounts minus what is set aside in caixinhas, the way an account works. What was paid with Pix or debit left it at
+// once, an invoice leaves it when it is paid, and what goes into a caixinha leaves it too. For an older month it is what
+// it was at the end of that month, worked out going back from today. Also the Fluxo de Caixa of the month.
+export function useCashPosition(month: string) {
+  const currentMonth = currentMonthKey();
+  const days = useMonthsByDay(month);
+  const { cards, loading: loadingCards, error: cardsError, refetch: refetchCards } = useCards();
+  const { goals, loading: loadingGoals, error: goalsError, refetch: refetchGoals } = useGoals();
+  const movements = useGoalMovements();
+  const after = useCashFlowsAfter(month);
+
+  const { byDay } = days;
+  const { entries } = movements;
+  const { flows } = after;
+  const result = useMemo(() => {
+    const availableNow = freeBalance(
+      cards.map((card) => card.balance),
+      totalReserved(goals)
+    );
+    const saved = savedInMonth(entries, month);
+    const change = monthChange(cashOf(byDay.current), saved);
+    const changesAfter = Object.entries(flows)
+      .filter(([m]) => m > month && m <= currentMonth)
+      .map(([m, cash]) => monthChange(cash, savedInMonth(entries, m)));
+    return {
+      position: cashPosition({ availableNow, month, currentMonth, change, changesAfter }),
+      flow: buildFlow({
+        current: byDay.current,
+        previous: byDay.previous,
+        saved,
+        now: month === currentMonth ? localNow() : monthEnd(month),
+      }),
+    };
+  }, [cards, goals, entries, flows, byDay, month, currentMonth]);
+
+  const { refetch: refetchDays } = days;
+  const { refetch: refetchMovements } = movements;
+  const { refetch: refetchAfter } = after;
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchDays(), refetchCards(), refetchGoals(), refetchMovements(), refetchAfter()]);
+  }, [refetchDays, refetchCards, refetchGoals, refetchMovements, refetchAfter]);
+
+  return {
+    ...result,
+    loading: days.loading || loadingCards || loadingGoals || movements.loading || after.loading,
+    error: days.error ?? cardsError ?? goalsError ?? movements.error ?? after.error,
+    refetch,
+  };
 }
 
 // The months ahead that have something committed in them, for the history: the purchases on credit whose invoice

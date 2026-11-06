@@ -35,7 +35,7 @@ import {
 import {
   useBudgetEntries,
   useCards,
-  useCarryOver,
+  useCashPosition,
   useCategoryBudgets,
   useMonthTransactions,
   useProfile,
@@ -55,13 +55,15 @@ export default function DashboardScreen() {
 
   const { month, isCurrent, isFuture } = useSelectedMonth();
   const { current, previous, loading: loadingMonthOnly, error: monthOnlyError, refetch: refetchMonthOnly } = useMonthTransactions(month);
-  // What was kept before the month: the balance starts from it, so it has to be known before a balance is drawn.
-  const { carry, loading: loadingCarry, error: carryError, refetch: refetchCarry } = useCarryOver(month);
-  const loadingMonth = loadingMonthOnly || loadingCarry;
-  const monthError = monthOnlyError ?? carryError;
+  // The money the person can spend (the Saldo) and what came in and went out of the accounts (the Fluxo de Caixa):
+  // read apart from the spending of the month, which is by the invoice it counts in. Until it is read there is no
+  // balance to draw, and one that left out the invoices or the caixinhas would be wrong.
+  const { position, flow, loading: loadingCash, error: cashError, refetch: refetchCash } = useCashPosition(month);
+  const loadingMonth = loadingMonthOnly || loadingCash;
+  const monthError = monthOnlyError ?? cashError;
   const refetchMonth = useCallback(async () => {
-    await Promise.all([refetchMonthOnly(), refetchCarry()]);
-  }, [refetchMonthOnly, refetchCarry]);
+    await Promise.all([refetchMonthOnly(), refetchCash()]);
+  }, [refetchMonthOnly, refetchCash]);
   const { transactions: recent } = useTransactions({ spendingMonth: month, limit: RECENT_MAX });
   const { entries: budgetEntries } = useBudgetEntries();
   const { entries: limitEntries } = useCategoryBudgets();
@@ -133,9 +135,10 @@ export default function DashboardScreen() {
               onCreate={() => router.push({ pathname: '/wallet', params: { newAccount: '1' } })}
               onImport={() => router.push('/editAcount')}
             />
-          ) : monthError && (carryError !== null || current.length === 0) ? (
-            // Without what was kept before the month the balance would be wrong, so that alone is an error too.
+          ) : monthError && (cashError !== null || current.length === 0) ? (
             // The month could not be read: nothing is shown as if it had loaded (a balance of zero would be a lie).
+            // Without the accounts, the invoices paid and the caixinhas the balance would be wrong, so that alone is an
+            // error too.
             <View className="bg-card rounded-[24px]">
               <LoadError error={monthError} onRetry={() => refetchMonth()} />
             </View>
@@ -151,7 +154,8 @@ export default function DashboardScreen() {
                 <View ref={balanceRef} collapsable={false}>
                   <CardBalance
                     summary={summary}
-                    carry={carry}
+                    position={position}
+                    isCurrent={isCurrent}
                     budget={budget}
                     onPressBudget={isCurrent ? () => router.push('/editAcount') : undefined}
                   />
@@ -160,7 +164,7 @@ export default function DashboardScreen() {
 
               {!isFuture && (
                 <View style={{ marginTop: SECTION_GAP }}>
-                  <FlowSection summary={summary} monthLabel={monthKeyWithYear(month)} />
+                  <FlowSection flow={flow} monthLabel={monthKeyWithYear(month)} />
                 </View>
               )}
 

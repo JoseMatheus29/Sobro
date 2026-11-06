@@ -1,17 +1,23 @@
+import { type CashPosition } from '@/utils/cashFlow-type';
 import { type MonthSummary } from '@/utils/summary-type';
 
 export interface BalanceCardProps {
+  /** What the month's spending comes to, for the budget bar (by the month each spending counts in). */
   summary: MonthSummary;
-  /** The money the person had when the month started (see utils/carryOver.ts); the month adds to it or takes from it. */
-  carry: number;
+  /** The money that can be spent, at the end and at the start of the month, and what the month did to it. */
+  position: CashPosition;
+  /** The month shown is the current one: its end is today. */
+  isCurrent: boolean;
   /** The monthly spending ceiling that applied to the month shown, if there was one. */
   budget: number | null;
   /** Opens where the budget is set; offered when there is none, for the current month only. */
   onPressBudget?: () => void;
 }
 
-// The balance is what the person has: it starts the month with what was kept before and the month adds to it.
-export const BALANCE_LABEL = 'Saldo';
+// The balance is the money the person can spend, the way an account is: what was paid with Pix or debit, the payments of
+// invoices and what goes into a caixinha all leave it, and a purchase on credit leaves it when its invoice is paid.
+export const BALANCE_LABEL = 'Saldo disponível';
+export const BALANCE_LABEL_PAST = 'Saldo no fim do mês';
 export const MONTH_RESULT_LABEL = 'no mês';
 export const MONTH_START_LABEL = 'Início do mês';
 

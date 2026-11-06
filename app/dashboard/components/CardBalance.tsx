@@ -9,6 +9,7 @@ import { tint } from '@/utils/color';
 import { formatMoney, formatSignedMoney } from '@/utils/format';
 import {
   BALANCE_LABEL,
+  BALANCE_LABEL_PAST,
   BalanceCardProps,
   BUDGET_BAR_MIN_PERCENT,
   BUDGET_CEILING_LABEL,
@@ -22,14 +23,14 @@ import {
   NO_BUDGET_PAST_LABEL,
 } from '@/types/dashboard/cardBalance-type';
 
-// The balance: what the person had when the month started plus what the month added or took, so nothing kept in a
-// month is lost in the next. Under it, how the month is going and how much of the budget is spent.
-export const CardBalance: React.FC<BalanceCardProps> = ({ summary, carry, budget, onPressBudget }) => {
+// The balance: the money the person can spend today, as an account is (see utils/cashFlow.ts). Under it, what the month
+// did to it and where it started, and how much of the budget is spent.
+export const CardBalance: React.FC<BalanceCardProps> = ({ summary, position, isCurrent, budget, onPressBudget }) => {
   const colors = useColors();
   // The label takes the purple of "someone else's finances" while a profile of someone else is open.
   const { active } = useProfiles();
-  const { net } = summary;
-  const better = net >= 0;
+  const { closing, opening, change } = position;
+  const better = change >= 0;
   const changeColor = better ? colors.income : colors.expense;
 
   const use = summary.budgetUse;
@@ -47,10 +48,10 @@ export const CardBalance: React.FC<BalanceCardProps> = ({ summary, carry, budget
         className="text-xs text-primary-lighter font-semibold tracking-[0.8px] uppercase mb-1"
         style={active ? { color: colors.managed } : undefined}
       >
-        {BALANCE_LABEL}
+        {isCurrent ? BALANCE_LABEL : BALANCE_LABEL_PAST}
       </Text>
       <Text className="text-[32px] font-extrabold text-ink tracking-tight">
-        {formatMoney(carry + net)}
+        {formatMoney(closing)}
       </Text>
 
       <View className="flex-row flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-2.5">
@@ -60,10 +61,10 @@ export const CardBalance: React.FC<BalanceCardProps> = ({ summary, carry, budget
         >
           <Icon name={better ? 'arrow-upward' : 'arrow-downward'} size={12} color={changeColor} />
           <Text className="text-xs font-bold" style={{ color: changeColor }}>
-            {formatSignedMoney(net)} {MONTH_RESULT_LABEL}
+            {formatSignedMoney(change)} {MONTH_RESULT_LABEL}
           </Text>
         </View>
-        <Text className="text-xs text-muted">{MONTH_START_LABEL}: {formatMoney(carry)}</Text>
+        <Text className="text-xs text-muted">{MONTH_START_LABEL}: {formatMoney(opening)}</Text>
       </View>
 
       {/* Divisor */}

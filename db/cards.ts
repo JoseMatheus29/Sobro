@@ -10,8 +10,6 @@ export interface CardRecord {
   lightColor: string;
   /** Current balance: the starting balance plus its transactions, worked out by the server. What was bought on credit waits in the invoice and does not count here. */
   balance: number;
-  /** What was in the account when it was made: it is part of the money the person has, before any transaction. */
-  startingBalance: number;
   /** The credit card of the account; null when it has none. */
   credit: CardCredit | null;
 }
@@ -26,7 +24,6 @@ function toRecord(card: ApiCard): CardRecord {
     color: card.color,
     lightColor: card.lightColor,
     balance: card.balance,
-    startingBalance: card.startingBalance ?? 0,
     credit: card.credit ?? null,
   };
 }

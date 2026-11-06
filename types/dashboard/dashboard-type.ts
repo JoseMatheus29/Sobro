@@ -1,15 +1,15 @@
 import { type ReactNode } from 'react';
 
 import { type TransactionRecord } from '@/db/transactions';
+import { type FlowSummary } from '@/utils/cashFlow-type';
 import { type Insight } from '@/utils/insightRules-type';
-import { type MonthSummary } from '@/utils/summary-type';
 
 export interface DashboardHeaderProps {
   userName?: string;
 }
 
 export interface FlowSectionProps {
-  summary: MonthSummary;
+  flow: FlowSummary;
   /** "outubro 2026": the month the figures belong to. */
   monthLabel: string;
 }
@@ -51,6 +51,9 @@ export const FLOW_COMPARED_LABEL = 'vs. mês anterior';
 export const FLOW_THIS_MONTH_LABEL = 'neste mês';
 export const FLOW_USE_LABEL = (percent: number) => `${percent}% uso`;
 export const FLOW_NO_INCOME_LABEL = 'Sem entradas no mês';
+// What went into the caixinhas leaves the money that can be spent, so it is told apart from the spending.
+export const FLOW_SAVED_LABEL = (amount: string) => `Guardado nas caixinhas: ${amount}`;
+export const FLOW_TAKEN_LABEL = (amount: string) => `Retirado das caixinhas: ${amount}`;
 // A bar with anything in it never shrinks below this share, so a small spend is still visible.
 export const FLOW_BAR_MIN_PERCENT = 3;
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 import { useColors } from '@/hooks/useColors';
 import { formatMoney, formatSignedPercent } from '@/utils/format';
 import {
@@ -9,6 +11,8 @@ import {
   FLOW_EXPENSE_LABEL,
   FLOW_INCOME_LABEL,
   FLOW_NO_INCOME_LABEL,
+  FLOW_SAVED_LABEL,
+  FLOW_TAKEN_LABEL,
   FLOW_THIS_MONTH_LABEL,
   FLOW_TITLE,
   FLOW_USE_LABEL,
@@ -16,10 +20,11 @@ import {
 } from '@/types/dashboard/dashboard-type';
 import FlowCard from '@/app/dashboard/components/FlowCard';
 
-// What came in and what went out this month, apart from the balance.
-export default function FlowSection({ summary, monthLabel }: FlowSectionProps) {
+// What came in and what went out of the accounts this month (a purchase on credit goes out when its invoice is paid),
+// and what was set aside in caixinhas: together they are what the balance above moved by.
+export default function FlowSection({ flow, monthLabel }: FlowSectionProps) {
   const colors = useColors();
-  const { income, expense, incomeChange, incomeUse } = summary;
+  const { income, expense, saved, incomeChange, incomeUse } = flow;
   const barPercent = incomeUse === null || incomeUse <= 0 ? 0 : Math.min(100, Math.max(FLOW_BAR_MIN_PERCENT, incomeUse * 100));
 
   return (
@@ -62,6 +67,15 @@ export default function FlowSection({ summary, monthLabel }: FlowSectionProps) {
           )}
         </FlowCard>
       </View>
+
+      {saved !== 0 && (
+        <View className="flex-row items-center gap-2 mt-3 px-1">
+          <Icon name="savings" size={16} color={colors.muted} />
+          <Text className="flex-1 text-[13px] text-muted">
+            {saved > 0 ? FLOW_SAVED_LABEL(formatMoney(saved)) : FLOW_TAKEN_LABEL(formatMoney(-saved))}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

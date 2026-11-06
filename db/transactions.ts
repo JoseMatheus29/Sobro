@@ -13,8 +13,11 @@ import {
   type TransferResult,
 } from '@/api/types';
 import { TRANSACTIONS_MAX_PAGES, TRANSACTIONS_PAGE_SIZE } from '@/types/api/api-type';
+import { cashOf } from '@/utils/cashFlow';
+import { type MonthCash } from '@/utils/cashFlow-type';
 import { type MonthTotals } from '@/utils/history-type';
 import { INVOICE_CATEGORY_ID } from '@/utils/invoice-type';
+import { addMonths } from '@/utils/month';
 import { buildQuery } from '@/utils/queryString';
 
 export type TransactionType = 'income' | 'expense';
@@ -190,6 +193,16 @@ export async function getTransferLegs(transferId: number, month: string): Promis
 
 // Deleting a transfer takes away both legs, or the balances would be left wrong: the server does it from either one.
 export const deleteTransfer = deleteTransaction;
+
+// What came in and went out of the accounts in each month from `from` to `to` ('YYYY-MM', both included), by the day of
+// each transaction (see utils/cashFlow.ts). One read per month, one after the other.
+export async function getCashByMonth(from: string, to: string): Promise<Record<string, MonthCash>> {
+  const byMonth: Record<string, MonthCash> = {};
+  for (let month = from; month <= to; month = addMonths(month, 1)) {
+    byMonth[month] = cashOf(await getTransactions({ month }));
+  }
+  return byMonth;
+}
 
 // What each month with transactions took in and put out, for the history. Transfers between accounts are neither.
 // Grouped by the month each one counts in (a purchase on credit counts when its invoice is due), not by its day.
