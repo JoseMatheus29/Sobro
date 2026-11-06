@@ -105,7 +105,11 @@ function toRecord(t: ApiTransaction): TransactionRecord {
 
 // Newest first. The server answers in pages (`nextCursor`), and every page is read unless a `limit` says how many
 // are wanted. The recurring expenses that fell due are made by the server as it reads.
-export async function getTransactions(filters: TransactionFilters = {}): Promise<TransactionRecord[]> {
+export async function getTransactions(
+  filters: TransactionFilters = {},
+  // `own`: the person's own transactions, whatever profile is open (what the reminders are about).
+  options: { own?: boolean } = {}
+): Promise<TransactionRecord[]> {
   const { limit, q, ...rest } = filters;
   const wanted = limit !== undefined ? Math.max(0, Math.floor(limit)) : Infinity;
   if (wanted === 0) return [];
@@ -116,7 +120,8 @@ export async function getTransactions(filters: TransactionFilters = {}): Promise
     const size = Math.min(wanted - items.length, TRANSACTIONS_PAGE_SIZE);
     const result = await api<TransactionPage>(
       'GET',
-      `/v1/transactions${buildQuery({ ...rest, q: q?.trim().slice(0, SEARCH_MAX_LENGTH), limit: size, cursor })}`
+      `/v1/transactions${buildQuery({ ...rest, q: q?.trim().slice(0, SEARCH_MAX_LENGTH), limit: size, cursor })}`,
+      options.own ? { profileId: null } : undefined
     );
     items.push(...result.items.map(toRecord));
     if (!result.nextCursor || items.length >= wanted) break;

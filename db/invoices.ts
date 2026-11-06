@@ -18,3 +18,16 @@ export async function getInvoiceSources(
   ]);
   return { purchases: byMonth.flat(), payments };
 }
+
+// Everything bought on credit with an account and every payment of its invoices, of any month: what the limit of the
+// card is worked out from (utils/creditLimit.ts). `own` reads the person's own whatever profile is open (the reminders).
+export async function getCreditHistory(
+  cardId: number,
+  options: { own?: boolean } = {}
+): Promise<{ purchases: TransactionRecord[]; payments: TransactionRecord[] }> {
+  const [purchases, payments] = await Promise.all([
+    getTransactions({ cardId, paymentMethod: 'credit' }, options),
+    getTransactions({ cardId, categoryId: INVOICE_CATEGORY_ID }, options),
+  ]);
+  return { purchases, payments };
+}

@@ -36,7 +36,6 @@ export default function CardCarousel({
             <Card
               cardName={item.name}
               cardNumber={item.number ? `****${item.number}` : ''}
-              expensesAmount={item.balance}
               backgroundColor={item.color}
               lightColor={item.lightColor}
             />

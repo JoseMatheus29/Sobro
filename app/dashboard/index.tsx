@@ -11,7 +11,9 @@ import LoadError from '@/app/components/ui/LoadError';
 import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import TutorialOverlay from '@/app/components/tutorial/TutorialOverlay';
+import WhatsNewDialog from '@/app/components/whatsNew/WhatsNewDialog';
 import { useTutorial } from '@/hooks/useTutorial';
+import { useWhatsNew } from '@/hooks/useWhatsNew';
 import { useTutorialTarget } from '@/hooks/useTutorialTarget';
 import CardBalance from '@/app/dashboard/components/CardBalance';
 import DashboardHeader from '@/app/dashboard/components/DashboardHeader';
@@ -80,6 +82,14 @@ export default function DashboardScreen() {
   const tutorial = useTutorial({
     userId: active ? undefined : profile?.id,
     ready: !loadingMonth && !monthError && isCurrent && profile !== null && !noAccounts,
+  });
+
+  // What is new in the app, once, after the tutorial (which a new account is still going through) is out of the way.
+  const whatsNew = useWhatsNew({
+    userId: active ? undefined : profile?.id,
+    ready: !loadingMonth && !monthError && isCurrent && profile !== null && !noAccounts,
+    tutorialSeen: tutorial.seen,
+    tutorialVisible: tutorial.visible,
   });
 
   // The budget that applied to the month shown, and, for a month that is over, "today" is its last
@@ -202,6 +212,8 @@ export default function DashboardScreen() {
 
       <SideBar />
       <AddTransactionFab />
+
+      <WhatsNewDialog releases={whatsNew.releases} onClose={whatsNew.dismiss} />
 
       {tutorial.visible && (
         <TutorialOverlay

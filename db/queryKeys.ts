@@ -8,6 +8,7 @@ export const queryKeys = {
   transactions: (filters: object) => ['transactions', filters] as const,
   invoice: (cardId: number, month: string, closingDay: number, dueDay: number) =>
     ['invoice', cardId, month, closingDay, dueDay] as const,
+  creditHistory: (cardId: number) => ['creditHistory', cardId] as const,
   transaction: (id: number) => ['transaction', id] as const,
   transferLegs: (transferId: number) => ['transferLegs', transferId] as const,
   recurrences: ['recurrences'] as const,

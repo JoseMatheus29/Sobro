@@ -3,7 +3,11 @@ import * as Notifications from 'expo-notifications';
 
 import { OWN_SCOPE } from '@/api/activeProfile';
 import { queryClient } from '@/api/queryClient';
-import { buildReminders } from '@/utils/reminders';
+import { type RecurrenceRecord } from '@/utils/recurrence-type';
+import { buildInvoiceReminders, buildReminders } from '@/utils/reminders';
+import { MAX_REMINDERS, type Reminder } from '@/utils/reminders-type';
+import { getOwnCards } from './cards';
+import { getCreditHistory } from './invoices';
 import { getProfile } from './profile';
 import { queryKeys } from './queryKeys';
 import { getOwnRecurrences } from './recurrences';
@@ -39,6 +43,21 @@ export async function clearReminders(): Promise<void> {
   }
 }
 
+// The reminders for the invoices of the person's own credit cards. If they cannot be read (no signal, say), the rest of
+// the reminders still go: this one is skipped until the next time.
+async function invoiceReminders(recurrences: RecurrenceRecord[], now: Date): Promise<Reminder[]> {
+  try {
+    const cards = await queryClient.fetchQuery({ queryKey: [OWN_SCOPE, ...queryKeys.cards], queryFn: getOwnCards });
+    const credit = cards.filter((card) => card.credit);
+    const entries = await Promise.all(
+      credit.map(async (card) => [card.id, await getCreditHistory(card.id, { own: true })] as const)
+    );
+    return buildInvoiceReminders(credit, Object.fromEntries(entries), recurrences, now);
+  } catch {
+    return [];
+  }
+}
+
 // Schedules again, from scratch, the reminders of what is about to fall due: the morning before. They are the
 // person's own: a profile they care for has none (the phone's notifications are theirs).
 // The app only schedules these, so clearing them all first keeps the list exactly what the recurring
@@ -66,8 +85,12 @@ export async function refreshReminders(): Promise<void> {
       queryKey: [OWN_SCOPE, ...queryKeys.recurrences],
       queryFn: getOwnRecurrences,
     });
-    const reminders = buildReminders(recurrences, new Date());
-    for (const reminder of reminders) {
+    const now = new Date();
+    const reminders = [
+      ...buildReminders(recurrences, now),
+      ...(await invoiceReminders(recurrences, now)),
+    ].sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
+    for (const reminder of reminders.slice(0, MAX_REMINDERS)) {
       await Notifications.scheduleNotificationAsync({
         identifier: reminder.key,
         content: { title: reminder.title, body: reminder.body },

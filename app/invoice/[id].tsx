@@ -10,7 +10,7 @@ import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import ScreenHeader from '@/app/components/ui/ScreenHeader';
 import ScreenScroll from '@/app/components/ui/ScreenScroll';
 import TransactionList from '@/app/components/ui/TransactionList';
-import { useCards, useInvoice, useRecurrences } from '@/db/hooks';
+import { useCards, useCreditUsage, useInvoice, useRecurrences } from '@/db/hooks';
 import { useColors } from '@/hooks/useColors';
 import { SCROLL_PADDING_WITH_SIDEBAR } from '@/types/components/sidebar-type';
 import {
@@ -21,6 +21,8 @@ import {
   INVOICE_SCREEN_TITLE,
   INVOICE_STATUS_LABEL,
   invoiceTitle,
+  LIMIT_LEFT_LINE,
+  LIMIT_OVER_LINE,
   NEXT_MONTH_LABEL,
   NO_CREDIT_MESSAGE,
   NOTHING_TO_PAY_TEXT,
@@ -92,12 +94,20 @@ export default function InvoiceScreen() {
   const [picked, setPicked] = useState<string | null>(monthParam ?? null);
   const month = picked ?? openMonth;
   const { invoice, error, refetch } = useInvoice(card, month);
+  const { usage } = useCreditUsage(card);
   const atLastInvoice = month !== null && lastMonth !== null && month >= lastMonth;
 
   const header = (
     <ScreenHeader title={INVOICE_SCREEN_TITLE} leftComponent={<ArrowBack />}>
       <View className="items-center">
         {card && <Text className="text-sm text-headerInk/80">{card.name}{card.number ? ` · cartão •••• ${card.number}` : ''}</Text>}
+        {usage && (
+          <Text className="text-xs text-headerInk/70 mt-0.5">
+            {usage.available < 0
+              ? LIMIT_OVER_LINE(formatMoney(-usage.available), formatMoney(usage.limit))
+              : LIMIT_LEFT_LINE(formatMoney(usage.available), formatMoney(usage.limit))}
+          </Text>
+        )}
         {month && openMonth && (
           <View className="flex-row items-center gap-1 mt-2">
             <TouchableOpacity

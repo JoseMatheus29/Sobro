@@ -2,6 +2,8 @@ import { useCallback, useMemo } from 'react';
 
 import { useCategoryColor } from '@/hooks/useColors';
 import { limitsForMonth } from '@/utils/categoryBudget';
+import { creditUsage } from '@/utils/creditLimit';
+import { type CreditUsage } from '@/utils/creditLimit-type';
 import { buildInvoice, dayOf, openInvoiceMonth, plannedPurchases, spendingDayOf, todayKey } from '@/utils/invoice';
 import { type Invoice, type InvoiceRules } from '@/utils/invoice-type';
 import { buildFlow, cashOf, cashPosition, monthChange, savedInMonth } from '@/utils/cashFlow';
@@ -15,7 +17,7 @@ import { plannedTransactions } from '@/utils/recurrence';
 
 import { getBudgetEntries } from './budgets';
 import { getCards, type CardRecord } from './cards';
-import { getInvoiceSources } from './invoices';
+import { getCreditHistory, getInvoiceSources } from './invoices';
 import { getCategoryBudgetEntries } from './categoryBudgets';
 import { getGoalById, getGoalEntries, getGoals } from './goals';
 import { getCategories } from './categories';
@@ -89,6 +91,40 @@ export function useInvoice(card: CardRecord | null | undefined, month: string | 
   }, [enabled, data, rules, card, month, recurrences, recolor]);
 
   return { invoice, loading: enabled && query.isLoading, error: loadError(query), refetch: query.refetch };
+}
+
+// What is left of the limit of the credit card of an account (see utils/creditLimit.ts). Null while it loads, when it
+// could not be read and when the account has no credit card: the screen then shows the limit as it is, not a made-up
+// remainder. A card with no limit set (it is optional) has nothing to count against.
+export function useCreditUsage(card: CardRecord | null | undefined) {
+  const limit = card?.credit?.limit ?? null;
+  const enabled = card != null && limit !== null && limit > 0;
+
+  const query = useScreenQuery({
+    queryKey: queryKeys.creditHistory(card?.id ?? 0),
+    queryFn: () => getCreditHistory((card as CardRecord).id),
+    enabled,
+  });
+  const { recurrences, loading: loadingRecurrences, error: recurrencesError } = useRecurrences(enabled);
+
+  const { data } = query;
+  const usage: CreditUsage | null = useMemo(() => {
+    if (!enabled || !data || limit === null || !card || loadingRecurrences || recurrencesError) return null;
+    return creditUsage({
+      limit,
+      cardId: card.id,
+      purchases: data.purchases,
+      payments: data.payments,
+      recurrences,
+    });
+  }, [enabled, data, limit, card, recurrences, loadingRecurrences, recurrencesError]);
+
+  return {
+    usage,
+    loading: enabled && (query.isLoading || loadingRecurrences),
+    error: loadError(query),
+    refetch: query.refetch,
+  };
 }
 
 // The invoice that is taking purchases now.

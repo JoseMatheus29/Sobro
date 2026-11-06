@@ -48,7 +48,8 @@ import { notifyDataChanged } from '@/db/events';
 import { useCards, useCategories, useRecurrence, useTransaction } from '@/db/hooks';
 import { deleteRecurrence, endRecurrence } from '@/db/recurrences';
 import { refreshReminders } from '@/db/reminders';
-import { deleteTransaction, updateTransaction, type PaymentMethod } from '@/db/transactions';
+import { deleteTransaction, updateTransaction, type PaymentMethod, type TransactionRecord } from '@/db/transactions';
+import { useSpendingAlertToast } from '@/hooks/useSpendingAlertToast';
 import { calendarDayAtNoonUtc, centsToAmount } from '@/utils/apiInput';
 import { errorToast } from '@/utils/apiErrors';
 import { nextOccurrence } from '@/utils/recurrence';
@@ -63,6 +64,7 @@ export default function DetailsSpend() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { confirm, showToast } = useFeedback();
+  const announceSpendingAlerts = useSpendingAlertToast();
   const { categories } = useCategories();
   const { cards } = useCards();
 
@@ -188,10 +190,11 @@ export default function DetailsSpend() {
     const applyToNext = changedForNext ? await confirm(APPLY_CONFIRM) : false;
 
     setSaving(true);
+    let updated: TransactionRecord;
     try {
       // One call does it all: with `applyToNext` the server also changes the recurrence for the next ones, and
       // it ends the recurrence when the expense is turned into an income.
-      await updateTransaction(transaction.id, {
+      updated = await updateTransaction(transaction.id, {
         cardId,
         categoryId,
         name: name.trim(),
@@ -210,7 +213,9 @@ export default function DetailsSpend() {
 
     // Reads again what this screen shows (and marks the rest old): the form goes back to what is stored.
     await notifyDataChanged();
-    if (recurrence && (applyToNext || turnedIntoIncome)) await refreshReminders();
+    // Also when what was bought on credit changed: the invoice reminder carries what is left to pay.
+    const onCredit = storedPayment === 'credit' || effectivePayment === 'credit';
+    if ((recurrence && (applyToNext || turnedIntoIncome)) || onCredit) await refreshReminders();
     setSaving(false);
     Keyboard.dismiss();
     showToast({
@@ -221,6 +226,8 @@ export default function DetailsSpend() {
         : `R$ ${formatCents(cents)} em ${category?.name ?? ''}`.trim(),
       icon: category?.icon,
     });
+    // If the change took the month's budget or the limit of the category close to the ceiling, or past it, say so.
+    announceSpendingAlerts(updated, transaction);
   };
 
   const handleEndRecurrence = async () => {
@@ -260,6 +267,8 @@ export default function DetailsSpend() {
       return;
     }
     notifyDataChanged();
+    // What was bought on credit is part of an invoice's reminder.
+    if (transaction.paymentMethod === 'credit') refreshReminders();
     showToast(DELETED_TOAST);
     router.back();
   };

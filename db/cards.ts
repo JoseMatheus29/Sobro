@@ -32,6 +32,11 @@ export async function getCards(): Promise<CardRecord[]> {
   return (await api<ApiCard[]>('GET', '/v1/cards')).map(toRecord);
 }
 
+// The person's own accounts, whatever profile is open: the reminders are always about their own invoices.
+export async function getOwnCards(): Promise<CardRecord[]> {
+  return (await api<ApiCard[]>('GET', '/v1/cards', { profileId: null })).map(toRecord);
+}
+
 // Null when it does not exist (anymore), or is not the person's.
 export async function getCardById(id: number): Promise<CardRecord | null> {
   try {

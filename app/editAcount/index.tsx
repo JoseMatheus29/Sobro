@@ -16,6 +16,7 @@ import BackupCard from '@/app/editAcount/components/BackupCard';
 import ManagedProfileView from '@/app/editAcount/components/ManagedProfileView';
 import ProfilesCard from '@/app/editAcount/components/ProfilesCard';
 import TutorialCard from '@/app/editAcount/components/TutorialCard';
+import WhatsNewCard from '@/app/editAcount/components/WhatsNewCard';
 import AccountCard from '@/app/editAcount/components/AccountCard';
 import { useProfiles } from '@/hooks/useProfiles';
 import { useFeedback } from '@/app/components/feedback/FeedbackProvider';
@@ -138,6 +139,8 @@ function OwnProfile() {
           />
 
           <TutorialCard />
+
+          <WhatsNewCard />
 
           <BackupCard />
 

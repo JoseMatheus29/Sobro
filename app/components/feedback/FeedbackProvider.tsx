@@ -51,6 +51,7 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
       Animated.timing(progress, { toValue: 1, duration: TOAST_SHOW_MS, useNativeDriver: true }).start();
       if (options.type === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (options.type === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      if (options.type === 'warning') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       timer.current = setTimeout(hideToast, TOAST_DURATION_MS[options.type]);
     },
     [hideToast, progress]

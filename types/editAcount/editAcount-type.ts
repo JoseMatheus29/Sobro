@@ -92,9 +92,9 @@ export const THEME_OPTIONS: { value: ThemePreference; label: string; icon: strin
   { value: 'dark', label: 'Escuro', icon: 'dark-mode' },
 ];
 
-// Reminders of what is about to fall due (recurring expenses).
+// Reminders of what is about to fall due (recurring expenses and credit card invoices).
 export const REMINDERS_LABEL = 'Lembretes de vencimento';
-export const REMINDERS_HINT = 'Avisa na manhã anterior, às 9h, das contas e parcelas que vencem no dia seguinte.';
+export const REMINDERS_HINT = 'Avisa na manhã anterior, às 9h, das contas, parcelas e faturas do cartão que vencem no dia seguinte.';
 export const REMINDERS_DENIED_TOAST: ToastOptions = {
   type: 'error',
   title: 'Notificações desativadas',

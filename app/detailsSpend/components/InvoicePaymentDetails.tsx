@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { useColors } from '@/hooks/useColors';
 import { notifyDataChanged } from '@/db/events';
+import { refreshReminders } from '@/db/reminders';
 import { useCards } from '@/db/hooks';
 import { deleteTransaction, type TransactionRecord } from '@/db/transactions';
 import { errorToast } from '@/utils/apiErrors';
@@ -44,6 +45,8 @@ export default function InvoicePaymentDetails({ transaction }: { transaction: Tr
       return;
     }
     notifyDataChanged();
+    // The invoice is owed again, so its reminder comes back.
+    refreshReminders();
     showToast(INVOICE_PAYMENT_DELETED_TOAST);
     router.back();
   };

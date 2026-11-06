@@ -12,7 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCards, useCategories } from '@/db/hooks';
 import { notifyDataChanged } from '@/db/events';
 import { ensureReminderPermission, refreshReminders } from '@/db/reminders';
-import { createTransaction, type PaymentMethod } from '@/db/transactions';
+import { createTransaction, type PaymentMethod, type TransactionRecord } from '@/db/transactions';
+import { useSpendingAlertToast } from '@/hooks/useSpendingAlertToast';
 import { DEFAULT_PAYMENT_METHOD } from '@/types/components/ui/payment-type';
 import { fromDateInputValue } from '@/utils/dateInput';
 import { installmentLabels, installmentPlan } from '@/utils/installments';
@@ -56,6 +57,7 @@ export default function RegistrationSpent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showToast } = useFeedback();
+  const announceSpendingAlerts = useSpendingAlertToast();
   const saveKey = useSaveKey();
   // Registered in the profile of someone else when one is open: the header says so, and so does the toast.
   const { active: forProfile } = useProfiles();
@@ -186,9 +188,10 @@ export default function RegistrationSpent() {
     };
 
     setSaving(true);
+    let created: TransactionRecord;
     try {
       // The same key on a retry of the same form, so a lost answer never makes two transactions.
-      await createTransaction(input, saveKey.keyFor(input));
+      created = await createTransaction(input, saveKey.keyFor(input));
       saveKey.clear();
     } catch (error) {
       // The form stays as it is, so the person can try again.
@@ -200,8 +203,9 @@ export default function RegistrationSpent() {
     notifyDataChanged();
     // The first recurrence is the moment to ask to notify, in context; the reminders follow what is planned.
     // They are about the person's own expenses, so a recurrence in the profile of someone else has none.
-    if (repeating && !forProfile) {
-      await ensureReminderPermission();
+    // A purchase on credit changes what the reminder of its invoice says.
+    if (!forProfile && (repeating || paymentMethod === 'credit')) {
+      if (repeating) await ensureReminderPermission();
       await refreshReminders();
     }
 
@@ -216,6 +220,8 @@ export default function RegistrationSpent() {
       }${forProfile ? ` · ${forProfile.name}` : ''}`.trim(),
       icon: category?.icon,
     });
+    // If this expense took the month's budget or the limit of its category close to the ceiling, or past it, say so.
+    announceSpendingAlerts(created);
     router.back();
   };
 

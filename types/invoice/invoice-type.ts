@@ -32,5 +32,9 @@ export const PREVIOUS_MONTH_LABEL = 'Fatura anterior';
 export const NEXT_MONTH_LABEL = 'Próxima fatura';
 export const NO_CREDIT_MESSAGE = 'Esta conta não tem cartão de crédito.';
 
+// Under the name of the card on the invoice screen: what is left of its limit (see utils/creditLimit.ts).
+export const LIMIT_LEFT_LINE = (available: string, limit: string) => `Limite disponível ${available} de ${limit}`;
+export const LIMIT_OVER_LINE = (over: string, limit: string) => `Limite excedido em ${over} (limite de ${limit})`;
+
 // A closed invoice still waiting for its payment, on the Carteira.
 export const PREVIOUS_UNPAID = (monthName: string, amount: string) => `Fatura de ${monthName} fechada: ${amount} para pagar`;

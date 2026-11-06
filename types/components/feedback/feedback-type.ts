@@ -3,7 +3,7 @@ import { type Animated, type ViewStyle } from 'react-native';
 import { palette, type Palette } from '@/constants/palette';
 import { tint } from '@/utils/color';
 
-export type FeedbackType = 'success' | 'error' | 'info';
+export type FeedbackType = 'success' | 'error' | 'info' | 'warning';
 
 export interface ToastOptions {
   type: FeedbackType;
@@ -44,11 +44,14 @@ export const feedbackStyles = (colors: Palette): Record<FeedbackType, { icon: st
   success: { icon: 'check', color: colors.income, tint: tint(colors.income) },
   error: { icon: 'error-outline', color: colors.expense, tint: tint(colors.expense) },
   info: { icon: 'info-outline', color: colors.primary.DEFAULT, tint: tint(colors.primary.DEFAULT) },
+  // Something the person should know about but did not do wrong: a limit that is close or was crossed.
+  warning: { icon: 'warning-amber', color: colors.warning, tint: tint(colors.warning) },
 });
 
 export const TOAST_DURATION_MS: Record<FeedbackType, number> = {
   success: 3500,
   info: 3500,
+  warning: 5000,
   error: 5000,
 };
 export const TOAST_SHOW_MS = 220;

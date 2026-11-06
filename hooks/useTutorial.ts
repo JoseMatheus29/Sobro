@@ -55,5 +55,6 @@ export function useTutorial({ userId, ready }: UseTutorialInput) {
 
   const back = useCallback(() => setIndex((current) => Math.max(0, current - 1)), []);
 
-  return { visible: steps.length > 0, steps, index, next, back, finish };
+  // `seen` is null until the flag of the account is read.
+  return { visible: steps.length > 0, seen, steps, index, next, back, finish };
 }

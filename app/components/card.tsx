@@ -5,13 +5,10 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import { CardValues } from '@/types/components/card-type';
 
-const formatCurrency = (value: number) =>
-  value.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
+// The account's card: its name and the last digits. The saldo is in the summary right under it, so it is not repeated here.
 export const Card: React.FC<CardValues> = ({
   cardName,
   cardNumber,
-  expensesAmount,
   backgroundColor,
   lightColor,
   style,
@@ -45,21 +42,9 @@ export const Card: React.FC<CardValues> = ({
         </View>
 
         {/* Final do cartão, quando a conta tem um */}
-        <Text className="text-white/60 text-[15px] tracking-[3px] font-medium mt-7 h-[22px]">
+        <Text className="text-white/60 text-[15px] tracking-[3px] font-medium h-[22px]">
           {lastDigits ? `•••• •••• ${lastDigits}` : ''}
         </Text>
-
-        {/* Rodapé */}
-        <View className="flex-row justify-between items-end mt-3">
-          <View>
-            <Text className="text-white/60 text-[10px] font-medium mb-0.5 uppercase tracking-wide">
-              Saldo
-            </Text>
-            <Text className="text-white text-xl font-extrabold">
-              R$ {formatCurrency(expensesAmount)}
-            </Text>
-          </View>
-        </View>
       </LinearGradient>
     </View>
   );

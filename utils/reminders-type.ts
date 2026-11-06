@@ -17,6 +17,10 @@ export const REMINDER_WINDOW_DAYS = 45;
 export const MAX_REMINDERS = 50;
 
 export const REMINDER_TITLE = (name: string) => `${name} vence amanhã`;
+// The invoice of a credit card: the day before it falls due, with what is left to pay of it.
+export const INVOICE_REMINDER_TITLE = (cardName: string) => `Fatura do ${cardName} vence amanhã`;
+export const INVOICE_REMINDER_BODY = (invoiceName: string, amount: number) =>
+  `Fatura de ${invoiceName.toLowerCase()} · ${formatMoney(amount)}`;
 export const REMINDER_BODY = (amount: number, installment: number | null, total: number | null) =>
   total !== null && installment !== null
     ? `Parcela ${installment}/${total} · ${formatMoney(amount)}`

@@ -19,6 +19,7 @@ import LoadError from '@/app/components/ui/LoadError';
 import LoadingBlock from '@/app/components/ui/LoadingBlock';
 import MoneyInput from '@/app/components/ui/MoneyInput';
 import { notifyDataChanged } from '@/db/events';
+import { refreshReminders } from '@/db/reminders';
 import { useCards, useInvoice } from '@/db/hooks';
 import { payInvoice } from '@/db/transactions';
 import { useColors } from '@/hooks/useColors';
@@ -98,6 +99,8 @@ export default function PayInvoiceSheet() {
       return;
     }
     notifyDataChanged();
+    // A paid invoice has no reminder left (or one for less).
+    refreshReminders();
     showToast(PAID_TOAST(formatMoney(value).replace('R$ ', ''), monthNameOf(invoice.dueOn.slice(0, 7))));
     router.back();
   };
